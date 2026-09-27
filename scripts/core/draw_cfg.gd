@@ -41,9 +41,8 @@ static func enemy(id: String) -> Dictionary:
 	var title := "Nouvel ennemi : %s" % def.name
 	if boss:
 		title = ("BOSS : %s" if def.boss == 2 else "MINI-BOSS : %s") % def.name
-	# Tout ennemi de base doit utiliser au moins 90 % de son encre (ses PV, eux, sont fixes).
-	var min_ink := ceili(def.ink * 0.9)
-	var sub := "%s  Utilise au moins 90%% de l'encre (%d). Sa couleur = son élément." % [def.desc, min_ink]
+	var sub := "%s  Plus d'encre = plus de PV, mais plus de butin. Sa couleur = son élément." % def.desc
+	var min_ink := 0
 	if boss:
 		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
 		min_ink = ceili(def.ink * 0.95)

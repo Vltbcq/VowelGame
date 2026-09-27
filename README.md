@@ -104,7 +104,7 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 
 ## Ennemis (comportements pensés autour du dessin)
 
-**Tous les ennemis de base doivent utiliser au moins 90 % de leur encre** (boss : 95 %). Leurs PV (×0,7 pour les ennemis de base, ×1,25 pour les boss) et leur butin ne dépendent plus du dessin (sa couleur donne toujours leur élément) ; leur encre suit leur vie : **encre = 12 × racine(PV)** (Punaise 29, Tache 38, Colosse 118, Équation 126).
+Plus tu mets d'encre dans un ennemi, plus il a de PV (×0,6 à ×1,4) et plus il lâche d'or (×0,5 à ×2). Sa couleur donne son élément. Les boss doivent utiliser au moins 95 % de leur encre.
 
 | Ennemi | Comportement |
 |---|---|

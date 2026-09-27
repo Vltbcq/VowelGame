@@ -267,16 +267,10 @@ static func _apply_effect(st: Dictionary, effect: String) -> void:
 
 # ------------------------------------------------------------------ Ennemis
 
-## PV et butin des ennemis : FIXES (le dessin doit de toute façon utiliser 90 % de l'encre).
-## Ennemis de base : ×0,7 de PV (comme les petits dessins d'avant) ; boss : ×1,25.
-## Le butin garde la valeur sur laquelle l'économie est réglée.
-## Le dessin donne seulement l'élément (couleur) et la taille de l'ennemi.
-const ENEMY_HP := 0.7
-const BOSS_HP := 1.25
-
-static func enemy_art(a: Dictionary, _ink: int, boss := false) -> Dictionary:
+static func enemy_art(a: Dictionary, ink: int) -> Dictionary:
+	var fill := clampf(float(a.pixels) / (ink * FILL_REF), 0.0, 1.0)
 	return {
-		"hp": BOSS_HP if boss else ENEMY_HP, "loot": 1.7, "element": a.dominant,
+		"hp": 0.6 + 0.8 * fill, "loot": 0.5 + 1.5 * fill, "element": a.dominant,
 		"radius": clampf(sqrt(float(a.pixels)) * 0.5, 3.0, 40.0),
 	}
 

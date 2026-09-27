@@ -255,12 +255,12 @@ func _stats_text(id: String) -> String:
 			var def := EnemyDB.get_def(id)
 			var kind := "Boss" if def.get("boss", 0) == 2 else ("Mini-boss" if def.has("boss") else "Ennemi")
 			L.append("%s — %s, vague %d. %s" % [kind, MapDB.get_def(int(def.get("map", 1))).name, def.wave, def.desc])
-			L.append("PV %d · dégâts %s · vitesse %d · encre %d%s" % [roundi(def.hp * (Stats.BOSS_HP if def.has("boss") else Stats.ENEMY_HP)), str(def.dmg), roundi(def.spd), def.ink,
-				" (95 %% minimum)" if def.has("boss") else " (90 %% minimum)"])
+			L.append("PV de base %d · dégâts %s · vitesse %d · encre %d%s" % [roundi(def.hp), str(def.dmg), roundi(def.spd), def.ink,
+				" (95 %% minimum)" if def.has("boss") else ""])
 			var d = Meta.bestiary_get(id)
 			if d != null:
 				var m := Stats.enemy_art(Analyzer.analyze(d.image), def.ink)
-				L.append("Avec ton dessin : élément %s (ses PV ne dépendent pas du dessin)" % Pal.NAMES[m.element])
+				L.append("Avec ton dessin : PV ×%.2f, butin ×%.2f, élément %s" % [m.hp, m.loot, Pal.NAMES[m.element]])
 	return "\n".join(L)
 
 

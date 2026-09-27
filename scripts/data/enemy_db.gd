@@ -1,42 +1,41 @@
 class_name EnemyDB
 extends RefCounted
 ## Types d'ennemis. Le comportement est fixe ; le joueur dessine leur apparence.
-## Les PV et le butin ne dépendent PAS du dessin : un ennemi de base doit utiliser au moins 90 %
-## de son encre, et son encre suit sa vie (encre = 12 × racine(PV)) : un tank se dessine plus grand.
+## Plus le joueur met d'encre dans un ennemi, plus il a de PV... et plus il lâche d'or.
 ## La couleur dominante du dessin donne son élément à l'ennemi. "map" : carte (1 par défaut).
 ## Les comportements sont pensés autour du dessin : flaques, traits, règle, compas, gomme...
 
 const TYPES := {
-	"tache": {"name": "Tache", "beh": "hop", "hp": 10.0, "dmg": 3.9, "spd": 58.0, "wave": 1, "weight": 10, "canvas": 24, "ink": 38, "loot": 1,
+	"tache": {"name": "Tache", "beh": "hop", "hp": 10.0, "dmg": 3.9, "spd": 58.0, "wave": 1, "weight": 10, "canvas": 24, "ink": 160, "loot": 1,
 		"desc": "Avance par bonds et laisse des flaques d'encre qui ralentissent."},
-	"gribouille": {"name": "Gribouille", "beh": "scribble", "hp": 8.0, "dmg": 3.9, "spd": 84.0, "wave": 2, "weight": 8, "canvas": 24, "ink": 34, "loot": 1,
+	"gribouille": {"name": "Gribouille", "beh": "scribble", "hp": 8.0, "dmg": 3.9, "spd": 84.0, "wave": 2, "weight": 8, "canvas": 24, "ink": 140, "loot": 1,
 		"desc": "Gribouille le sol en zigzag : ses traits d'encre font mal, ne marche pas dessus !"},
-	"crachoir": {"name": "Crachoir", "beh": "mortar", "hp": 14.0, "dmg": 5.2, "spd": 45.0, "wave": 3, "weight": 5, "canvas": 24, "ink": 45, "loot": 2, "shoots": true,
+	"crachoir": {"name": "Crachoir", "beh": "mortar", "hp": 14.0, "dmg": 5.2, "spd": 45.0, "wave": 3, "weight": 5, "canvas": 24, "ink": 160, "loot": 2, "shoots": true,
 		"desc": "Crache des pâtés en cloche là où tu te tiens, puis s'enfonce et réapparaît ailleurs."},
-	"belier": {"name": "Bélier", "beh": "ruler", "hp": 22.0, "dmg": 7.8, "spd": 40.0, "wave": 6, "weight": 5, "canvas": 24, "ink": 56, "loot": 2,
+	"belier": {"name": "Bélier", "beh": "ruler", "hp": 22.0, "dmg": 7.8, "spd": 40.0, "wave": 6, "weight": 5, "canvas": 24, "ink": 180, "loot": 2,
 		"desc": "Trace une ligne à la règle... puis fonce dessus d'un bord à l'autre de la page."},
-	"scinde": {"name": "Scinde", "beh": "mirror", "hp": 26.0, "dmg": 5.2, "spd": 50.0, "wave": 7, "weight": 5, "canvas": 24, "ink": 61, "loot": 2, "shoots": true,
+	"scinde": {"name": "Scinde", "beh": "mirror", "hp": 26.0, "dmg": 5.2, "spd": 50.0, "wave": 7, "weight": 5, "canvas": 24, "ink": 180, "loot": 2, "shoots": true,
 		"desc": "Se place toujours en miroir de toi et te renvoie des reflets. Se divise en deux."},
-	"eclaboussure": {"name": "Éclaboussure", "beh": "compass", "hp": 19.0, "dmg": 5.2, "spd": 72.0, "wave": 9, "weight": 5, "canvas": 24, "ink": 52, "loot": 2, "shoots": true,
+	"eclaboussure": {"name": "Éclaboussure", "beh": "compass", "hp": 19.0, "dmg": 5.2, "spd": 72.0, "wave": 9, "weight": 5, "canvas": 24, "ink": 160, "loot": 2, "shoots": true,
 		"desc": "Trace des cercles au compas, de plus en plus serrés autour de toi, et tire en éventail."},
-	"colosse": {"name": "Colosse", "beh": "dvd", "hp": 96.0, "dmg": 10.4, "spd": 26.0, "wave": 11, "weight": 3, "canvas": 32, "ink": 118, "loot": 5,
+	"colosse": {"name": "Colosse", "beh": "dvd", "hp": 96.0, "dmg": 10.4, "spd": 26.0, "wave": 11, "weight": 3, "canvas": 32, "ink": 320, "loot": 5,
 		"desc": "Gomme géante qui rebondit sur les bords de la page. Insensible au recul."},
-	"pate": {"name": "Pâté", "beh": "mine", "hp": 13.0, "dmg": 15.6, "spd": 96.0, "wave": 13, "weight": 2, "canvas": 24, "ink": 43, "loot": 2,
+	"pate": {"name": "Pâté", "beh": "mine", "hp": 13.0, "dmg": 15.6, "spd": 96.0, "wave": 13, "weight": 2, "canvas": 24, "ink": 140, "loot": 2,
 		"desc": "Tache piégée posée par groupes : elle gonfle et explose quand tu t'approches."},
 	# --- Le Tableau noir (carte 2)
-	"punaise": {"name": "Punaise", "beh": "pin", "map": 2, "hp": 6.0, "dmg": 4.5, "spd": 110.0, "wave": 1, "weight": 9, "canvas": 20, "ink": 29, "loot": 1,
+	"punaise": {"name": "Punaise", "beh": "pin", "map": 2, "hp": 6.0, "dmg": 4.5, "spd": 110.0, "wave": 1, "weight": 9, "canvas": 20, "ink": 120, "loot": 1,
 		"desc": "Vise, fonce sur toi puis reste plantée un instant, pointe en l'air."},
-	"craie": {"name": "Craie", "beh": "chalk", "map": 2, "hp": 12.0, "dmg": 4.5, "spd": 50.0, "wave": 2, "weight": 6, "canvas": 24, "ink": 42, "loot": 1, "shoots": true,
+	"craie": {"name": "Craie", "beh": "chalk", "map": 2, "hp": 12.0, "dmg": 4.5, "spd": 50.0, "wave": 2, "weight": 6, "canvas": 24, "ink": 150, "loot": 1, "shoots": true,
 		"desc": "Écrit une ligne de projectiles qui restent suspendus au tableau... puis partent tous vers toi."},
-	"trombone": {"name": "Trombones", "beh": "clip", "map": 2, "hp": 18.0, "dmg": 5.0, "spd": 62.0, "wave": 3, "weight": 5, "canvas": 24, "ink": 51, "loot": 2,
+	"trombone": {"name": "Trombones", "beh": "clip", "map": 2, "hp": 18.0, "dmg": 5.0, "spd": 62.0, "wave": 3, "weight": 5, "canvas": 24, "ink": 160, "loot": 2,
 		"desc": "Arrivent par deux, reliés par un fil qui coupe. Ils tournent autour de toi pour te trancher."},
-	"tampon_e": {"name": "Tampon encreur", "beh": "stamp", "map": 2, "hp": 24.0, "dmg": 7.0, "spd": 45.0, "wave": 4, "weight": 5, "canvas": 24, "ink": 59, "loot": 2,
+	"tampon_e": {"name": "Tampon encreur", "beh": "stamp", "map": 2, "hp": 24.0, "dmg": 7.0, "spd": 45.0, "wave": 4, "weight": 5, "canvas": 24, "ink": 170, "loot": 2,
 		"desc": "Saute très haut et s'écrase sur un carré marqué au sol. Ne reste pas dessous !"},
-	"brouillon": {"name": "Brouillon", "beh": "crumple", "map": 2, "heavy": true, "hp": 70.0, "dmg": 6.0, "spd": 38.0, "wave": 6, "weight": 1, "canvas": 32, "ink": 100, "loot": 4,
+	"brouillon": {"name": "Brouillon", "beh": "crumple", "map": 2, "heavy": true, "hp": 70.0, "dmg": 6.0, "spd": 38.0, "wave": 6, "weight": 1, "canvas": 32, "ink": 280, "loot": 4,
 		"desc": "TANK. Se froisse deux fois quand il perd de la vie : plus petit, plus rapide, et il crache ses boulettes."},
-	"gomme_mie": {"name": "Gomme mie de pain", "beh": "gum", "map": 2, "heavy": true, "hp": 90.0, "dmg": 7.0, "spd": 34.0, "wave": 8, "weight": 1, "canvas": 32, "ink": 114, "loot": 4,
+	"gomme_mie": {"name": "Gomme mie de pain", "beh": "gum", "map": 2, "heavy": true, "hp": 90.0, "dmg": 7.0, "spd": 34.0, "wave": 8, "weight": 1, "canvas": 32, "ink": 300, "loot": 4,
 		"desc": "TANK. EFFACE tes projectiles autour d'elle : il faut aller la frapper de près."},
-	"equation": {"name": "Équation", "beh": "equation", "map": 2, "heavy": true, "hp": 110.0, "dmg": 8.0, "spd": 24.0, "wave": 11, "weight": 1, "canvas": 40, "ink": 126, "loot": 5,
+	"equation": {"name": "Équation", "beh": "equation", "map": 2, "heavy": true, "hp": 110.0, "dmg": 8.0, "spd": 24.0, "wave": 11, "weight": 1, "canvas": 40, "ink": 340, "loot": 5,
 		"desc": "TANK. Avance lentement et « calcule » : chaque résultat est une nouvelle punaise."},
 	# Boss
 	"rature": {"name": "Le Raturé", "beh": "b_rature", "boss": 2, "hp": 2400.0, "dmg": 10.4, "spd": 55.0, "wave": 5, "canvas": 64, "ink": 300, "loot": 30, "shoots": true,
