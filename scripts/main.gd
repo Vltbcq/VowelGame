@@ -1,0 +1,426 @@
+extends Node
+## Chef d'orchestre : enchaîne les écrans (titre → dessins → vagues → boutique → fin).
+
+var current: Node
+
+
+func _ready() -> void:
+	randomize()
+	Meta.ensure_settings_file()
+	_choose_slot()
+
+
+func _swap(n: Node) -> void:
+	if current:
+		current.queue_free()
+	current = n
+	add_child(n)
+	# Les écrans sont posés sous un Node : sans taille explicite ils font 0×0, et leurs
+	# voiles / fenêtres (conseils, confirmations...) ne bloqueraient pas les clics.
+	if n is Control:
+		(n as Control).position = Vector2.ZERO
+		(n as Control).size = get_viewport().get_visible_rect().size
+
+
+## Affiche un écran et attend son signal done(result).
+func _ask(n: Node):
+	_swap(n)
+	return await n.done
+
+
+func _paint(cfg: Dictionary):
+	return await _ask(DrawScreen.new(cfg))
+
+
+# ------------------------------------------------------------------ Menus
+
+## Choix de la sauvegarde (au lancement, ou depuis le titre).
+func _choose_slot() -> void:
+	while true:
+		var r = await _ask(ChoiceScreens.slots())
+		match r.a:
+			"play":
+				Meta.select_slot(r.n)
+				break
+			"delete":
+				var ok = await _ask(ChoiceScreens.confirm("Supprimer la sauvegarde %d ?" % r.n,
+					"Progression, pigments, galerie, Bestiaire et partie en cours seront effacés. Impossible de revenir en arrière.",
+					"Supprimer", "Annuler", true))
+				if ok:
+					Meta.delete_slot(r.n)
+			"quit":
+				get_tree().quit()
+				return
+	_title()
+
+
+func _title() -> void:
+	Run.active = false
+	# Plus de partie en cours (nouvelle partie annulée avant la 1re vague) : rien ne doit rester en attente
+	if not Meta.has_run():
+		Meta.apply_pending_unlocks()
+	var r = await _ask(TitleScreen.new())
+	match r:
+		"play":
+			if Meta.has_run():
+				var ok = await _ask(ChoiceScreens.confirm("Nouvelle partie ?",
+					"Ta partie en cours sera perdue (elle ne comptera pas comme une défaite).", "Nouvelle partie", "Annuler"))
+				if not ok:
+					_title()
+					return
+				Meta.clear_run()
+				# La partie abandonnée compte comme finie pour les succès qu'elle a rapportés
+				var got := Meta.apply_pending_unlocks()
+				if not got.is_empty():
+					await _ask(ChoiceScreens.unlock_recap(got))
+			_new_run()
+		"resume":
+			_resume()
+		"slots":
+			_choose_slot()
+		"atelier":
+			await _ask(AtelierScreen.new())
+			_title()
+		"gallery":
+			await _ask(GalleryScreen.new())
+			_title()
+		"options":
+			await _ask(OptionsPanel.new())
+			_title()
+		"codex":
+			await _codex()
+			_title()
+		"quit":
+			get_tree().quit()
+
+
+func _new_run() -> void:
+	var map := 1
+	if Meta.map_unlocked(2):
+		var m = await _ask(ChoiceScreens.map_choice())
+		if m == null:
+			_title()
+			return
+		map = int(m)
+	var d = await _ask(ChoiceScreens.difficulty(map))
+	if d == null:
+		_title()
+		return
+	Run.start(d, map)
+	var r = await _obtain("perso", DrawCfg.character(), 0, "TON DERNIER PERSO")
+	if r == null:
+		_title()
+		return
+	Run.set_character(r.image, r.effect, r.outline)
+	var type = await _ask(ChoiceScreens.weapon_kind())
+	await _get_weapon(type, 0, 0, false)
+	_game_loop()
+
+
+## Obtenir une arme. Chaque RARETÉ a son propre dessin (et sa propre encre), puis on la pose
+## sur le perso. Retourne false si annulé.
+func _get_weapon(type: String, rar: int, price: int, cancel := true) -> bool:
+	if not Run.has_art(type, rar):
+		if not await _draw_rarity(type, rar, cancel):
+			return false
+	var p = await _ask(ArrangeScreen.new(type, rar))
+	Run.apply_weapon_moves(p.moves)
+	Run.add_weapon(type, rar, price, p.new.anchor, p.new.rot, p.new.flip)
+	return true
+
+
+## Dessin d'une rareté pas encore dessinée dans la partie (achat ou fusion) :
+## - le Bestiaire a un dessin pour CETTE rareté, ou le type n'a encore aucun dessin dans la
+##   partie : sélection (utiliser / modifier / nouveau) ;
+## - sinon : on retouche le dessin d'une autre rareté avec l'encre de celle-ci.
+func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
+	var key := Run.weapon_key(type, rar)
+	var base := Run.closest_art(type, rar)
+	if not base.is_empty() and Meta.bestiary_get(key) == null:
+		return await _retouch_rarity(type, rar, base, cancel)
+	var def := WeaponDB.get_def(type)
+	var r = await _obtain(key, DrawCfg.weapon(type, rar, cancel), 0, "TON ARME " + Pal.RARITY_NAMES_F[rar].to_upper())
+	if r == null:
+		return false
+	var bullet: Image = null
+	var beffect := ""
+	var boutline := true
+	if not base.is_empty():
+		# Les balles sont les mêmes pour toutes les raretés du type
+		bullet = base.bullet
+		beffect = base.beffect
+		boutline = base.get("boutline", true)
+	elif def.kind == "ranged" and not def.get("nobullet", false):
+		var bb = await _obtain("balle_" + type, DrawCfg.bullet(type, Analyzer.analyze(r.image), r.effect, rar), 0, "TES DERNIÈRES BALLES")
+		bullet = bb.image
+		beffect = bb.effect
+		boutline = bb.outline
+	Run.set_weapon_art(type, rar, r.image, r.effect, bullet, beffect, r.outline, boutline)
+	return true
+
+
+## Nouvelle rareté d'un type déjà dessiné : on retouche le dessin existant avec l'encre de
+## cette rareté. Les exemplaires des autres raretés gardent leur dessin.
+## cancel = false (fusion) : pas de retour possible, il faut valider un dessin. Retourne false si annulé.
+func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -> bool:
+	var def := WeaponDB.get_def(type)
+	var cfg := DrawCfg.weapon(type, rar, true)
+	cfg.ink = maxi(int(cfg.ink), Analyzer.ink_cost(base.image))
+	cfg.base = base.image
+	cfg.effect = base.effect
+	cfg.outline = base.outline
+	cfg.random = false
+	cfg.title = "%s %s : retouche ton dessin" % [def.name, Pal.RARITY_NAMES_F[rar].to_lower()]
+	cfg.sub = "Cette rareté a son propre dessin (%d d'encre). Tes armes des autres raretés gardent le leur." % int(cfg.ink)
+	cfg.cancel = cancel
+	cfg.cancel_label = "Retour"
+	var r = await _paint(cfg)
+	if r == null:
+		return false
+	Run.set_weapon_art(type, rar, r.image, r.effect, base.bullet, base.beffect, r.outline, base.boutline)
+	# Premier dessin de cette rareté : il devient son dessin par défaut dans le Bestiaire
+	_remember(Run.weapon_key(type, rar), Meta.bestiary_get(Run.weapon_key(type, rar)), r)
+	return true
+
+
+## Obtenir une amulette : dessin (une seule fois par partie) puis pose avec rotation / miroir.
+func _get_amulet(id: String) -> bool:
+	var def := AmuletDB.get_def(id)
+	if not Run.amulet_art.has(id):
+		var r = await _obtain("amulette_" + id, DrawCfg.amulet(def), 0, "TA DERNIÈRE AMULETTE")
+		if r == null:
+			return false
+		Run.set_amulet_art(id, r.image, r.effect, r.outline)
+	var p = await _ask(PlaceScreen.new("amulet", Run.amulet_art[id].image, def, Run.amulet_art[id].outline))
+	Run.add_amulet(id, p.image, p.pos)
+	return true
+
+
+# ------------------------------------------------------------------ Partie
+
+## Reprend la partie sauvegardée de la sauvegarde active.
+func _resume() -> void:
+	var d := Meta.read_run()
+	if not Run.from_save(d):
+		Meta.clear_run()
+		_title()
+		return
+	_game_loop(String(d.stage), int(d.wave))
+
+
+## Point de sauvegarde automatique (reprise possible après avoir quitté le jeu).
+func _checkpoint(stage: String) -> void:
+	Meta.check_achievements(Run.achievement_ctx())
+	Meta.save_run(Run.to_save(stage))
+
+
+## stage "wave" : la vague `start` commence ; "after" : elle est finie (niveaux + boutique).
+func _game_loop(stage := "wave", start := 1) -> void:
+	for w in range(start, Run.WAVES + 1):
+		if not (w == start and stage == "after"):
+			Run.wave = w
+			await _pre_wave(w)
+			_checkpoint("wave")
+			var res = await _ask(Arena.new())
+			if res == "suspend":
+				_title()   # la partie reprendra au début de cette vague
+				return
+			if res != "cleared":
+				await _end(false)
+				return
+			if w == Run.WAVES:
+				await _end(true)
+				return
+			Run.shop_offers = []
+			_checkpoint("after")
+		await _level_ups()
+		if await _shop():
+			_title()
+			return
+
+
+## Premier contact avec un nouvel ennemi ou boss : on reprend le dessin du carnet
+## (ou un de la galerie), ou on le dessine. Les projectiles ennemis sont automatiques.
+func _pre_wave(w: int) -> void:
+	for id in EnemyDB.intro_at(w):
+		if Run.enemy_art.has(id):
+			continue
+		var def := EnemyDB.get_def(id)
+		var art = await _obtain(id, DrawCfg.enemy(id), 5 if def.has("boss") else 2)
+		Run.set_enemy_art(id, art.image, art.effect, art.outline)
+		if def.get("shoots", false):
+			Run.auto_eproj(id)
+	# Difficultés hautes : une version élite par vague
+	if Run.difficulty >= 2 and w >= 4 and EnemyDB.boss_for(w) == "":
+		for id in EnemyDB.pool(w):
+			if Run.enemy_art.has(id) and not Run.elite_art.has(id):
+				var art = await _obtain(id + "_elite", DrawCfg.elite(id), 3)
+				Run.set_elite_art(id, art.image, art.effect, art.outline)
+				break
+
+
+## Pour TOUT ce qui se dessine (seulement la 1re fois dans la partie) : on propose d'abord le
+## dessin par défaut du Bestiaire, ou un dessin compatible de la galerie, ou de dessiner.
+## « < Choix » dans l'écran de dessin ramène à cette sélection.
+## Retourne {image, effect, outline}, ou null si le joueur annule (quand c'est permis).
+func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET"):
+	var existing = Meta.bestiary_get(key)
+	if existing != null:
+		caption = "TON DESSIN DU BESTIAIRE"
+	while true:
+		var r = await _ask(BestiaryPrompt.new(cfg, existing, reward, caption))
+		match r.a:
+			"cancel":
+				return null
+			"keep":
+				_remember(key, existing, r)
+				return {"image": r.image, "effect": r.effect, "outline": r.outline}
+		var c: Dictionary = cfg.duplicate()
+		c.cancel = true
+		c.cancel_label = "< Choix"
+		c.outline = r.get("outline", true)
+		if r.a == "redraw":
+			c.base = r.image
+			c.effect = r.effect
+			c.random = false
+		var d = await _paint(c)
+		if d == null:
+			continue   # retour à la sélection
+		# Pigments seulement si on fait évoluer le dessin de son carnet (pas un dessin de galerie)
+		if reward > 0 and r.a == "redraw" and r.get("from_carnet", false) and d.image.get_data() != r.image.get_data():
+			Meta.add_pigments(reward)
+		_remember(key, existing, d)
+		return {"image": d.image, "effect": d.effect, "outline": d.outline}
+
+
+## Le dessin choisi en partie ne devient le dessin par défaut que s'il n'y en avait pas :
+## celui réglé dans le Bestiaire reste la référence.
+func _remember(key: String, existing, r: Dictionary) -> void:
+	if existing == null:
+		Meta.bestiary_set(key, r.image, r.effect, r.outline)
+
+
+## Bestiaire : régler le dessin par défaut de chaque arme / amulette / ennemi.
+func _codex() -> void:
+	var tab := "armes"
+	var sel := ""
+	while true:
+		var r = await _ask(CodexScreen.new(tab, sel))
+		if r == null:
+			return
+		tab = r.tab
+		sel = r.sel
+		var c: Dictionary = r.cfg.duplicate()
+		var d0 = Meta.bestiary_get(r.key)
+		if d0 != null:
+			c.base = d0.image
+			c.effect = d0.effect
+			c.outline = d0.outline
+		c.cancel = true
+		c.cancel_label = "Retour"
+		c.random = c.get("random", false) and d0 == null
+		var d = await _paint(c)
+		if d != null:
+			Meta.bestiary_set(r.key, d.image, d.effect, d.outline)
+
+
+## Pour chaque niveau gagné : 1 bonus parmi 3 (plus de dessin de marque).
+func _level_ups() -> void:
+	while Run.pending_levels > 0:
+		# Les 3 choix sont tirés AVANT la sauvegarde : quitter / reprendre ne les relance pas
+		if Run.levelup_choices.is_empty():
+			Run.levelup_choices = Run.roll_upgrades()
+		_checkpoint("after")
+		var u = await _ask(LevelUpScreen.new())
+		Run.levelup_choices = []
+		Run.pending_levels -= 1
+		Run.apply_upgrade(u)
+		_checkpoint("after")
+
+
+## Boutique. Retourne true si le joueur a choisi « Sauvegarder et quitter ».
+func _shop() -> bool:
+	if Run.shop_offers.is_empty():
+		Run.new_shop()
+	while true:
+		_checkpoint("after")
+		var r = await _ask(ShopScreen.new())
+		match r.a:
+			"next":
+				return false
+			"suspend":
+				return true
+			"buy":
+				await _buy(r.i)
+			"fuse":
+				await _fuse(r.type, r.rar)
+			"arrange":
+				var p = await _ask(ArrangeScreen.new("", 0))
+				Run.apply_weapon_moves(p.moves)
+	return false
+
+
+func _buy(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if o.sold or Run.gold < o.price:
+		return
+	Run.gold -= o.price
+	var ok := false
+	if o.type == "weapon":
+		var m := Run.fusion_match(o.wtype, o.rar)
+		if Run.weapons.size() >= Run.max_weapons() and m >= 0:
+			# Plus de place : l'arme achetée fusionne directement avec son double
+			Run.weapons[m].price = int(Run.weapons[m].price) + o.price
+			await _upgrade_weapon(m)
+			ok = true
+		else:
+			ok = Run.weapons.size() < Run.max_weapons() and await _get_weapon(o.wtype, o.rar, o.price)
+	else:
+		ok = await _get_amulet(o.id)
+	if not ok:
+		Run.gold += o.price
+		return
+	o.sold = true
+	Run.recompute()
+
+
+## Fusion : 2 exemplaires du même type et de même rareté -> 1 exemplaire de rareté +1.
+func _fuse(type: String, rar: int) -> void:
+	var idx := []
+	for i in Run.weapons.size():
+		if Run.weapons[i].type == type and Run.weapons[i].rar == rar:
+			idx.append(i)
+	if idx.size() < 2 or rar >= 3:
+		return
+	var gone: Dictionary = Run.weapons[idx[1]]
+	Run.weapons[idx[0]].price = int(Run.weapons[idx[0]].price) + int(gone.price)
+	Run.weapons.remove_at(idx[1])
+	await _upgrade_weapon(idx[0])
+
+
+## Monte une arme d'une rareté. Si cette rareté n'a pas encore de dessin, on repart du dessin
+## actuel avec de l'encre en plus pour l'agrandir (« Garder » = même dessin).
+## Les exemplaires de la rareté d'avant gardent leur dessin.
+func _upgrade_weapon(i: int) -> void:
+	var w: Dictionary = Run.weapons[i]
+	var old: int = w.rar
+	if old >= 3:
+		return
+	Sfx.play("level")
+	if not Run.has_art(w.type, old + 1):
+		await _draw_rarity(w.type, old + 1, false)
+	w.rar = old + 1
+	Run.rebuild_weapon(w)
+
+
+func _end(win: bool) -> void:
+	Meta.clear_run()
+	var earned := Run.pigments_earned(win)
+	var new_map := Meta.record_run(Run.wave, win, Run.difficulty, earned, Run.kills, Run.map)
+	var unlocked := Meta.apply_pending_unlocks()
+	if new_map:
+		unlocked.push_front("map:2")
+	Run.active = false
+	Sfx.play("win" if win else "lose")
+	await _ask(ChoiceScreens.end_run(win, earned, unlocked))
+	_title()

@@ -1,0 +1,97 @@
+class_name DrawCfg
+extends RefCounted
+## Configurations de l'écran de dessin pour chaque type de dessin.
+
+
+static func character() -> Dictionary:
+	var s := 32 + Meta.canvas_bonus()
+	return {"kind": "character", "gallery": "character", "size": Vector2i(s, s), "ink": Meta.base_ink(),
+		"title": "Dessine ton personnage",
+		"sub": "Seuls les traits coûtent de l'encre : remplir est gratuit. Petit = rapide mais fragile, gros = solide mais lent.",
+		"cancel": true, "min": 12}
+
+
+static func weapon(type: String, rar := 0, cancel := true) -> Dictionary:
+	var def := WeaponDB.get_def(type)
+	var s: int = def.canvas + Meta.canvas_bonus()
+	var kind: String = def.kind
+	var sub := "Manche à GAUCHE, pointe à DROITE → (c'est elle qui frappe).  %s  Plus d'encre = plus fort mais plus lent." % def.desc
+	if kind == "ranged":
+		sub = "Crosse à GAUCHE, canon à DROITE → (les tirs partent de là).  %s  Plus d'encre = tirs plus puissants mais plus lents." % def.desc
+	return {"kind": kind, "wtype": type, "gallery": kind, "size": Vector2i(s, s),
+		"ink": roundi(def.ink * WeaponDB.RAR_INK[rar]) + Meta.weapon_ink_bonus(), "rar": rar,
+		"title": "Dessine ton arme : %s" % def.name, "sub": sub + "  (Ce dessin servira pour toute la partie.)",
+		"cancel": cancel, "min": 6}
+
+
+static func bullet(type: String, weapon_a: Dictionary, weapon_effect: String, rar := 0) -> Dictionary:
+	var def := WeaponDB.get_def(type)
+	@warning_ignore("integer_division")
+	var s: int = def.bcanvas + Meta.canvas_bonus() / 2
+	return {"kind": "bullet", "wtype": type, "gallery": "bullet", "size": Vector2i(s, s), "ink": roundi(def.bink * WeaponDB.RAR_INK[rar]),
+		"weapon_a": weapon_a, "weapon_effect": weapon_effect,
+		"title": "Dessine les projectiles : %s" % def.name,
+		"sub": "Gros = lent mais puissant. Allongé = perforant. Chaque morceau séparé = un projectile en plus !",
+		"cancel": false, "min": 1}
+
+
+static func enemy(id: String) -> Dictionary:
+	var def := EnemyDB.get_def(id)
+	var boss := def.has("boss")
+	var title := "Nouvel ennemi : %s" % def.name
+	if boss:
+		title = ("BOSS : %s" if def.boss == 2 else "MINI-BOSS : %s") % def.name
+	# Tout ennemi de base doit utiliser au moins 90 % de son encre (ses PV, eux, sont fixes).
+	var min_ink := ceili(def.ink * 0.9)
+	var sub := "%s  Utilise au moins 90%% de l'encre (%d). Sa couleur = son élément." % [def.desc, min_ink]
+	if boss:
+		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
+		min_ink = ceili(def.ink * 0.95)
+		sub = "%s  Un boss doit utiliser au moins 95%% de l'encre (%d) ! Sa couleur = son élément." % [def.desc, min_ink]
+	return {"kind": "boss" if boss else "enemy", "gallery": "boss" if boss else "enemy",
+		"size": Vector2i(def.canvas, def.canvas), "ink": def.ink, "title": title, "sub": sub,
+		"cancel": false, "min": 6, "min_ink": min_ink, "random": true}
+
+
+## Version élite : on repart du dessin de l'ennemi, sur une toile un peu plus grande, et on AJOUTE.
+static func elite(id: String) -> Dictionary:
+	var def := EnemyDB.get_def(id)
+	var base: Image = Run.enemy_art[id].image
+	var base_cost := Analyzer.ink_cost(base)
+	var ink := maxi(roundi(def.ink * 1.4), base_cost + 30)
+	var s: int = def.canvas + 8
+	return {"kind": "enemy", "gallery": "enemy", "size": Vector2i(s, s), "ink": ink, "base": base,
+		"effect": Run.enemy_art[id].effect, "outline": Run.enemy_art[id].get("outline", true),
+		"title": "ÉLITE : %s" % def.name,
+		"sub": "Complète ton dessin : c'est sa version élite (aura, PV ×3, butin ×3). Ajoute au moins 15 d'encre.",
+		"cancel": false, "min": 6, "min_ink": base_cost + 15, "random": false}
+
+
+static func eproj(id: String) -> Dictionary:
+	var def := EnemyDB.get_def(id)
+	return {"kind": "eproj", "gallery": "eproj", "size": Vector2i(12, 12), "ink": 40,
+		"title": "Dessine les projectiles de : %s" % def.name,
+		"sub": "Gros = lent mais facile à toucher. Petit = rapide mais discret. Sa couleur = son élément.",
+		"cancel": false, "min": 1, "random": true}
+
+
+static func amulet(def: Dictionary) -> Dictionary:
+	var s := AmuletDB.canvas(def)
+	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def),
+		"def": def, "title": "Dessine l'amulette : %s" % def.name,
+		"sub": AmuletDB.describe(def) + "  La taille ne change pas l'effet ; ses couleurs donnent des résistances. Ce dessin servira pour toute la partie.",
+		"cancel": true, "min": 3}
+
+
+## Marque d'encre dessinée en montant de niveau (petite, ne compte pas dans la taille).
+## Plus le bonus est rare, plus la marque peut être grande.
+const MARK_INK := [10, 16, 24, 34]
+const MARK_SIZE := [14, 16, 20, 24]
+
+
+static func mark(u: Dictionary) -> Dictionary:
+	var s: int = MARK_SIZE[u.rar]
+	return {"kind": "mark", "gallery": "mark", "size": Vector2i(s, s), "ink": MARK_INK[u.rar], "upgrade": u,
+		"title": "Dessine ta marque : %s" % u.text,
+		"sub": "Tatouage, cicatrice, peinture de guerre... Elle s'ajoute sur ton perso sans compter dans sa taille.",
+		"cancel": true, "cancel_label": "Passer", "min": 1, "random": true}

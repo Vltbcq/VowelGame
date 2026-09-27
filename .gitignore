@@ -1,0 +1,9 @@
+.godot/
+/android/
+*.tmp
+
+# Exports (partagés via les Releases GitHub, pas dans le dépôt)
+builds/
+*.exe
+*.pck
+*.zip

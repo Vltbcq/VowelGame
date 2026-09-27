@@ -1,0 +1,412 @@
+class_name Stats
+extends RefCounted
+## Transforme les dessins en statistiques. C'est ici qu'on équilibre (ou qu'on casse) le jeu.
+
+const EFFECTS := ["", "pulse", "shimmer", "rainbow"]
+const EFFECT_NAMES := {"": "Aucun", "pulse": "Pulse", "shimmer": "Scintille", "rainbow": "Arc-en-ciel"}
+const EFFECT_UNLOCK := {"pulse": "fx_pulse", "shimmer": "fx_shimmer", "rainbow": "fx_rainbow"}
+const EFFECT_COST := 0.15
+## Rareté des armes : une rare vaut presque 2 communes, une légendaire environ 6.
+## Fusionner 2 exemplaires garde donc les dégâts... et libère un emplacement.
+const RAR_DMG := [1.0, 1.6, 2.5, 4.0]
+const RAR_ATK := [0.0, 10.0, 20.0, 35.0]      # % de vitesse d'attaque
+const RAR_CRIT := [0.0, 5.0, 10.0, 15.0]      # % de critique
+const RAR_REACH := [1.0, 1.1, 1.2, 1.35]      # allonge / zone (mêlée)
+const RAR_PIERCE := [0, 0, 1, 2]              # perforation (distance)
+const RAR_PROC := [0.0, 0.1, 0.2, 0.3]        # chances d'effets élémentaires en plus
+## L'encre ne paie que les contours : un dessin rempli contient environ
+## FILL_REF fois plus de pixels que d'encre dépensée.
+const FILL_REF := 1.6
+
+const STAT_LABELS := [
+	["max_hp", "PV max", ""], ["regen", "Régénération", ""], ["armor", "Armure", ""],
+	["dodge", "Esquive", "%"], ["move", "Vitesse", ""], ["dmg", "Dégâts", "%"],
+	["atk_speed", "Vit. d'attaque", "%"], ["crit", "Critique", "%"], ["range", "Portée", "%"],
+	["lifesteal", "Vol de vie", "%"], ["luck", "Chance", ""], ["harvest", "Récolte", ""],
+	["thorns", "Épines", ""], ["el_power", "Puissance élém.", "%"], ["pickup", "Ramassage", ""],
+]
+
+
+static func empty_player() -> Dictionary:
+	return {
+		"max_hp": 0.0, "regen": 0.0, "armor": 0.0, "dodge": 0.0, "speed": 0.0, "speed_base": 0.0,
+		"move": 0.0, "dmg": 0.0, "atk_speed": 0.0, "crit": 0.0, "crit_mult": 2.0, "range": 0.0,
+		"lifesteal": 0.0, "luck": 0.0, "harvest": 0.0, "pickup": 0.0, "thorns": 0.0, "el_power": 0.0,
+		"radius": 6.0, "res": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+	}
+
+
+# ------------------------------------------------------------------ Personnage
+
+## Stats données par le dessin du perso seul.
+static func character_part(a: Dictionary, effect: String) -> Dictionary:
+	var s := empty_player()
+	var p := float(a.pixels)
+	# Peu d'encre = fragile mais rapide ; beaucoup d'encre = robuste mais lent.
+	s.max_hp = 6.0 + p * 0.05
+	s.speed_base = 150.0 * clampf(1.4 - p / 650.0, 0.5, 1.35)
+	s.radius = clampf(sqrt(p) * 0.45, 3.0, 14.0)
+	if p <= 0.0:
+		return s
+	s.dodge = a.sym * 12.0                          # symétrique = esquive
+	s.armor = roundf(a.solidity * 4.0)              # dessin plein = armure
+	s.crit = (1.0 - a.solidity) * 8.0               # traits fins = critique
+	s.luck = minf(25.0, (a.components - 1) * 5.0)   # morceaux séparés = chance
+	if a.bh > a.bw:
+		s.range = minf(30.0, (float(a.bh) / a.bw - 1.0) * 20.0)   # grand = portée
+	elif a.bw > a.bh:
+		s.armor += roundf(minf(4.0, (float(a.bw) / a.bh - 1.0) * 3.0))  # large = armure
+	var f: Array = a.frac
+	s.dmg += f[Pal.FEU] * 30.0
+	s.armor += roundf(f[Pal.GLACE] * 8.0)
+	s.atk_speed += f[Pal.FOUDRE] * 30.0
+	s.regen += f[Pal.POISON] * 6.0
+	s.lifesteal += f[Pal.ARCANE] * 10.0
+	s.dodge += f[Pal.LUMIERE] * 15.0
+	for e in range(1, Pal.COUNT):
+		s.res[e] = f[e] * 60.0
+	match effect:
+		"pulse":
+			s.atk_speed += 10.0
+		"shimmer":
+			s.crit += 5.0
+			s.dodge += 5.0
+		"rainbow":
+			s.el_power += 30.0
+			for e in range(1, Pal.COUNT):
+				s.res[e] += 5.0
+	return s
+
+
+static func player(run: Node) -> Dictionary:
+	var a: Dictionary = run.char_a
+	var s := character_part(a, run.char_effect)
+	var chef: int = run.amulet_count("chef_oeuvre")
+	if chef > 0:
+		var m := pow(1.5, chef)
+		for k in ["max_hp", "regen", "armor", "dodge", "dmg", "atk_speed", "crit", "range", "lifesteal", "luck"]:
+			s[k] *= m
+		for e in Pal.COUNT:
+			s.res[e] *= m
+	s.max_hp += run.level
+	for am in run.amulets:
+		var def := AmuletDB.get_def(am.id)
+		if def.has("stat"):
+			s[def.stat] += def.v * am.mag
+		if def.has("malus"):
+			s[def.malus[0]] += def.malus[1]
+		var z: Dictionary = AmuletDB.ZONES[am.zone]
+		s[z.stat] += z.v
+		# La couleur d'une amulette donne un peu de résistance à son élément.
+		var af: Array = am.a.frac
+		for e in range(1, Pal.COUNT):
+			s.res[e] += af[e] * 20.0
+	# Bonus choisis en montant de niveau
+	for k in run.bonus:
+		s[k] += run.bonus[k]
+	# Marques d'encre : leur couleur donne un peu de résistance (elles ne comptent pas dans la taille)
+	for m in run.marks:
+		var mf: Array = m.a.frac
+		for e in range(1, Pal.COUNT):
+			s.res[e] += mf[e] * 10.0
+	var n := 0
+	n = run.amulet_count("palette")
+	if n > 0:
+		s.dmg += 8.0 * n * a.elements
+	n = run.amulet_count("esquisse")
+	if n > 0 and a.pixels < 120:
+		s.dmg += 40.0 * n
+		s.speed += 20.0 * n
+	n = run.amulet_count("poids")
+	if n > 0:
+		s.armor += floorf(a.pixels / 60.0) * n
+	s.dmg += 3.0 * run.signature
+	n = run.amulet_count("pinceau_fou")
+	s.atk_speed += 40.0 * n
+	n = run.amulet_count("encrier")
+	s.max_hp *= pow(0.85, n)
+	n = run.amulet_count("perspective")
+	s.range += 30.0 * n
+	n = run.amulet_count("tache")
+	s.speed -= 12.0 * n
+	s.radius += 2.0 * n
+	s.dmg += 12.0 * run.joconde
+	n = run.amulet_count("cadre_dore")
+	if n > 0:
+		s.dmg += minf(40.0, floorf(run.gold / 5.0)) * n
+	n = run.amulet_count("collage")
+	if n > 0:
+		var kinds := {}
+		for w in run.weapons:
+			kinds[w.type] = true
+		s.dmg += 8.0 * kinds.size() * n
+	# Finalisation
+	s.max_hp = maxf(1.0, roundf(s.max_hp))
+	s.move = s.speed_base * maxf(0.25, 1.0 + s.speed / 100.0)
+	s.dodge = minf(s.dodge, 60.0)
+	for e in Pal.COUNT:
+		s.res[e] = minf(s.res[e], 80.0)
+	s.pickup += 50.0
+	return s
+
+
+# ------------------------------------------------------------------ Armes
+
+## w = {type, rar, a, effect, [ba, bullet, beffect]}. Le type donne le comportement et
+## des multiplicateurs ; le remplissage (pixels / encre du type) donne la force.
+static func weapon(w: Dictionary) -> Dictionary:
+	var def := WeaponDB.get_def(w.type)
+	if def.kind == "melee":
+		return melee(w, def)
+	return ranged(w, def)
+
+
+## La TAILLE change le style, pas la puissance : les dégâts par seconde restent proches.
+## Petit = coups rapides, +critique, plus d'effets par seconde (brûlure, gel, vol de vie...).
+## Gros = gros coups, allonge, zone et recul.
+static func melee(w: Dictionary, def: Dictionary) -> Dictionary:
+	var a: Dictionary = w.a
+	var p := float(a.pixels)
+	var fill := clampf(p / (def.ink * FILL_REF), 0.05, 1.5)
+	var st := {"kind": "melee", "type": w.type}
+	st.damage = 8.0 * def.dmg * (0.35 + 0.9 * fill) * RAR_DMG[w.rar]   # gros = coups forts
+	st.cooldown = 0.85 * def.cd * (0.35 + 0.8 * fill)                  # ... mais lents
+	st.reach = (36.0 + a.diag * 1.2) * def.reach                        # long = allonge
+	st.knock = 30.0 + p * 0.2
+	st.crit = a.sym * 10.0 + 3.0 + def.get("crit", 0.0) + _small_crit(fill, 25.0)
+	st.style = def.style
+	st.hit_r = clampf(a.long * 0.35, 8.0, 18.0)
+	st.aoe = 18.0 + a.long * 0.6
+	st.fill = fill
+	st.frac = (a.frac as Array).duplicate()
+	_apply_rarity(st, w.rar)
+	st.reach *= RAR_REACH[w.rar]
+	st.aoe *= RAR_REACH[w.rar]
+	st.hit_r *= RAR_REACH[w.rar]
+	_apply_effect(st, w.effect)
+	return st
+
+
+static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
+	var nobullet: bool = def.get("nobullet", false)
+	if nobullet:
+		# Pas de balles dessinées : un orbe standard, l'arme fait tout.
+		w = w.duplicate()
+		w.bullet = WeaponDB.orb()
+		w.ba = Analyzer.analyze(w.bullet)
+	var a: Dictionary = w.a
+	var b: Dictionary = w.ba
+	var p := float(a.pixels)
+	var fill := clampf(p / (def.ink * FILL_REF), 0.05, 1.5)
+	var parts := Analyzer.split_components(w.bullet, b)
+	# Taille totale des balles (par rapport à l'encre prévue pour elles)
+	var bpx := 0.0
+	for part in parts:
+		bpx += part.count
+	var bfill := clampf(bpx / (def.bink * FILL_REF), 0.05, 1.5)
+	var st := {"kind": "ranged", "type": w.type, "style": def.style}
+	# Arme ET balles : gros = tirs forts mais lents, petit = rafales rapides
+	st.cooldown = 0.6 * def.cd * (0.4 + 0.75 * fill) * (0.45 + 0.8 * bfill)
+	st.dmg_mult = def.dmg * (0.4 + 0.85 * fill) * RAR_DMG[w.rar]
+	st.range = (150.0 + a.diag * 3.0) * (0.6 if def.style == "spread" else 1.0)
+	st.spread = (1.0 - a.sym) * 12.0                                     # symétrique = précis
+	st.crit = a.sym * 5.0 + 3.0 + _small_crit(fill, 15.0) + _small_crit(bfill, 10.0)
+	st.pellets = int(def.get("pellets", 1))
+	st.fill = fill
+	st.bullets = []
+	# Dégâts d'un tir répartis entre les morceaux (chaque morceau = un projectile)
+	var shot: float = 12.0 * st.dmg_mult * (0.45 + 0.9 * bfill)
+	var penalty := 1.0 / (1.0 + 0.08 * (parts.size() - 1))
+	var scale := 45.0 / float(def.bink)
+	for part in parts:
+		var pc := float(part.count) * scale
+		st.bullets.append({
+			"image": part.image, "center": part.center,
+			"damage": shot * penalty * float(part.count) / maxf(1.0, bpx),   # part du tir selon la taille du morceau
+			"speed": clampf(380.0 - pc * 3.2, 90.0, 420.0) * def.speed,         # grosse balle = lente
+			"radius": clampf(maxf(part.size.x, part.size.y) / 2.0, 2.0, 12.0),
+			"pierce": clampi(int(part.elong - 1.0), 0, 4) + int(def.get("pierce", 0)),  # allongée = perforante
+		})
+	var frac := []
+	for e in Pal.COUNT:
+		frac.append(a.frac[e] if nobullet else a.frac[e] * 0.4 + b.frac[e] * 0.6)
+	st.frac = frac
+	_apply_rarity(st, w.rar)
+	for bl in st.bullets:
+		bl.pierce += RAR_PIERCE[w.rar]
+	_apply_effect(st, w.effect)
+	_apply_effect(st, w.get("beffect", ""))
+	return st
+
+
+## Bonus communs à toutes les armes selon la rareté.
+static func _apply_rarity(st: Dictionary, rar: int) -> void:
+	st.cooldown /= 1.0 + RAR_ATK[rar] / 100.0
+	st.crit += RAR_CRIT[rar]
+	for e in range(1, Pal.COUNT):
+		if st.frac[e] > 0.0:
+			st.frac[e] *= 1.0 + RAR_PROC[rar]
+	st.rar = rar
+
+
+## Bonus de critique des petits dessins : maximal à ~0 de remplissage, nul à 100%.
+static func _small_crit(fill: float, amount: float) -> float:
+	return (1.0 - minf(fill, 1.0)) * amount
+
+
+static func _apply_effect(st: Dictionary, effect: String) -> void:
+	match effect:
+		"pulse":
+			st.cooldown *= 0.9
+		"shimmer":
+			st.crit += 8.0
+		"rainbow":
+			for e in range(1, Pal.COUNT):
+				st.frac[e] += 0.1
+
+
+# ------------------------------------------------------------------ Ennemis
+
+## PV et butin des ennemis : FIXES (le dessin doit de toute façon utiliser 90 % de l'encre).
+## Ennemis de base : ×0,7 de PV (comme les petits dessins d'avant) ; boss : ×1,25.
+## Le butin garde la valeur sur laquelle l'économie est réglée.
+## Le dessin donne seulement l'élément (couleur) et la taille de l'ennemi.
+const ENEMY_HP := 0.7
+const BOSS_HP := 1.25
+
+static func enemy_art(a: Dictionary, _ink: int, boss := false) -> Dictionary:
+	return {
+		"hp": BOSS_HP if boss else ENEMY_HP, "loot": 1.7, "element": a.dominant,
+		"radius": clampf(sqrt(float(a.pixels)) * 0.5, 3.0, 40.0),
+	}
+
+
+static func eproj_art(a: Dictionary) -> Dictionary:
+	return {
+		"speed": clampf(1.3 - a.pixels / 40.0, 0.5, 1.3),
+		"radius": clampf(a.long / 2.0, 2.0, 8.0), "element": a.dominant,
+	}
+
+
+## Puissance de l'effet d'une amulette : TOUJOURS ×1, quelle que soit la taille du dessin.
+## (Seules ses couleurs comptent : résistances élémentaires, voir player().)
+static func amulet_mag(_a: Dictionary, _def: Dictionary) -> float:
+	return 1.0
+
+
+# ------------------------------------------------------------------ Aperçus (écran de dessin)
+
+static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
+	var a := Analyzer.analyze(img)
+	var L := []
+	match cfg.kind:
+		"character":
+			var s := character_part(a, effect)
+			L.append("PV : %d" % roundi(s.max_hp))
+			L.append("Vitesse : %d" % roundi(s.speed_base))
+			L.append("Taille : %d" % roundi(s.radius))
+			_line(L, "Esquive", s.dodge, "%")
+			_line(L, "Armure", s.armor, "")
+			_line(L, "Critique", s.crit, "%")
+			_line(L, "Chance", s.luck, "")
+			_line(L, "Portée", s.range, "%")
+			_line(L, "Dégâts", s.dmg, "%")
+			_line(L, "Vit. attaque", s.atk_speed, "%")
+			_line(L, "Régén.", s.regen, "")
+			_line(L, "Vol de vie", s.lifesteal, "%")
+			_res_lines(L, s.res)
+		"melee":
+			if a.pixels > 0:
+				var def := WeaponDB.get_def(cfg.wtype)
+				var st := melee({"type": cfg.wtype, "a": a, "rar": 0, "effect": effect}, def)
+				L.append("Dégâts : %.1f  /  %.2fs" % [st.damage, st.cooldown])
+				L.append("Dégâts/s : %.1f" % (st.damage / st.cooldown))
+				L.append("Allonge : %d" % roundi(st.reach))
+				L.append("Critique : %d%%" % roundi(st.crit))
+				_el_lines(L, st.frac)
+		"ranged":
+			if a.pixels > 0:
+				var def := WeaponDB.get_def(cfg.wtype)
+				var fill := clampf(a.pixels / (def.ink * FILL_REF), 0.05, 1.5)
+				L.append("Cadence : %s" % ("très rapide" if fill < 0.35 else ("rapide" if fill < 0.7 else ("normale" if fill < 1.05 else "lente"))))
+				L.append("Puissance : x%.2f" % (def.dmg * (0.4 + 0.85 * fill)))
+				L.append("Critique bonus : +%d%%" % roundi(_small_crit(fill, 15.0)))
+				L.append("Portée : %d" % roundi(150.0 + a.diag * 3.0))
+				L.append("Précision : %d%%" % roundi(a.sym * 100.0))
+				_el_lines(L, a.frac)
+				L.append("")
+				L.append("Ensuite : ses balles !")
+		"bullet":
+			if a.pixels > 0:
+				var w := {"type": cfg.wtype, "a": cfg.weapon_a, "ba": a, "bullet": img, "rar": 0, "effect": cfg.get("weapon_effect", ""), "beffect": effect}
+				var st := ranged(w, WeaponDB.get_def(cfg.wtype))
+				var bl: Array = st.bullets
+				L.append("Projectiles : %d" % (bl.size() * st.pellets))
+				var tot := 0.0
+				for b in bl:
+					tot += b.damage
+				L.append("Dégâts/tir : %.1f" % (tot * st.pellets))
+				L.append("Dégâts/s : %.1f" % (tot * st.pellets / st.cooldown))
+				L.append("Vitesse : %d" % roundi(bl[0].speed))
+				L.append("Perforation : %d" % bl[0].pierce)
+				L.append("Recharge : %.2fs" % st.cooldown)
+				_el_lines(L, st.frac)
+		"enemy", "boss":
+			var e := enemy_art(a, cfg.ink)
+			L.append("PV : x%.2f" % e.hp)
+			L.append("Butin : x%.2f" % e.loot)
+			L.append("Élément : %s" % Pal.NAMES[e.element])
+			if e.element > 0:
+				L.append("(résiste au %s)" % Pal.NAMES[e.element].to_lower())
+		"eproj":
+			var e := eproj_art(a)
+			L.append("Vitesse : x%.2f" % e.speed)
+			L.append("Taille : %d" % roundi(e.radius))
+			L.append("Élément : %s" % Pal.NAMES[e.element])
+		"mark":
+			L.append("Bonus : " + String(cfg.upgrade.text))
+			L.append("Ne compte pas dans ta taille.")
+			for e in range(1, Pal.COUNT):
+				if a.frac[e] > 0.0:
+					L.append("Résist. %s +%d%%" % [Pal.NAMES[e], roundi(a.frac[e] * 10.0)])
+		"amulet":
+			var def: Dictionary = cfg.def
+			L.append(AmuletDB.describe(def))
+			L.append("(La taille du dessin ne change pas l'effet.)")
+			for e in range(1, Pal.COUNT):
+				if a.frac[e] > 0.0:
+					L.append("Résist. %s +%d%%" % [Pal.NAMES[e], roundi(a.frac[e] * 20.0)])
+	return "\n".join(L)
+
+
+static func _line(L: Array, label: String, v: float, unit: String) -> void:
+	if absf(v) >= 0.5:
+		L.append("%s : %+d%s" % [label, roundi(v), unit])
+
+
+static func _res_lines(L: Array, res: Array) -> void:
+	var parts := []
+	for e in range(1, Pal.COUNT):
+		if res[e] >= 0.5:
+			parts.append("%s %d%%" % [Pal.NAMES[e], roundi(res[e])])
+	# Deux résistances par ligne pour rester compact
+	for i in range(0, parts.size(), 2):
+		L.append("Rés. " + " · ".join(parts.slice(i, i + 2)))
+
+
+static func _el_lines(L: Array, frac: Array) -> void:
+	for e in range(1, Pal.COUNT):
+		if frac[e] >= 0.01:
+			L.append("%s : %d%%" % [Pal.WEAPON_EFFECT[e], roundi(minf(frac[e], 1.0) * 100.0)])
+
+
+static func describe_player(s: Dictionary) -> String:
+	var L := []
+	for row in STAT_LABELS:
+		var v: float = s[row[0]]
+		if row[0] == "pickup" or row[0] == "move" or row[0] == "max_hp":
+			L.append("%s : %d" % [row[1], roundi(v)])
+		else:
+			L.append("%s : %s%d%s" % [row[1], "+" if v > 0 else "", roundi(v), row[2]])
+	_res_lines(L, s.res)
+	return "\n".join(L)

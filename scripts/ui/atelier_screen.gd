@@ -1,0 +1,206 @@
+class_name AtelierScreen
+extends Control
+## L'ATELIER du peintre (améliorations permanentes) :
+## - à gauche, l'ÉTABLI : encre et boutique, achetés avec les pigments (des pots sur une étagère) ;
+## - à droite, le TABLEAU EN LIÈGE : les succès épinglés, chacun débloque couleurs, outils ou effets.
+
+signal done(result)
+
+const PLANK := Color("6b4428")
+const PLANK_DARK := Color("54341d")
+const PLANK_LINE := Color("3b2413")
+const CORK := Color("b98a55")
+const CORK_DOT := Color("a0733f")
+const NOTE := Color("f3e9cf")
+const NOTE_DONE := Color("dcefcf")
+const PIN_ON := Color("4caf50")
+const PIN_OFF := Color("d2433a")
+## Couleur du pot de chaque amélioration achetable
+const POT := {"ink": Color("1a1423"), "canvas": Color("e9dcbc"), "shop_slot": Color("d6ab4f"),
+	"free_reroll": Color("3a86ff"), "start_gold": Color("f0c43a")}
+
+
+func _ready() -> void:
+	set_anchors_preset(PRESET_FULL_RECT)
+	_build()
+	(func(): Tips.show(self, "atelier")).call_deferred()
+
+
+func _build() -> void:
+	for c in get_children():
+		c.queue_free()
+	var bg := _Workshop.new()
+	bg.set_anchors_preset(PRESET_FULL_RECT)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
+
+	# Enseigne + bocal de pigments
+	var sign := UI.panel(UI.WOOD, UI.GOLD, 2)
+	UI.put(self, sign, Vector2(12, 6), Vector2(150, 28))
+	UI.put(sign, UI.label("ATELIER", 20, UI.GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 2), Vector2(150, 24))
+	var jar := UI.panel(Color(0.9, 0.95, 1.0, 0.18), Color(0.85, 0.9, 1.0, 0.6), 1)
+	UI.put(self, jar, Vector2(470, 6), Vector2(158, 28))
+	UI.put(jar, UI.label("◆ %d pigments" % Meta.pigments(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(158, 14))
+	var hint := UI.label("Les pigments achètent l'encre et la boutique.\nLe reste se gagne en succès.", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(self, hint, Vector2(164, 6), Vector2(304, 28))
+
+	_bench()
+	_board()
+	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 336), Vector2(80, 18))
+
+
+# ------------------------------------------------------------------ Établi (pigments)
+
+func _bench() -> void:
+	UI.put(self, UI.label("L'ÉTABLI · achats en pigments", 10, UI.GOLD), Vector2(14, 42))
+	var y := 56.0
+	for d in UnlockDB.LIST:
+		if not UnlockDB.for_pigments(d):
+			continue
+		var card := UI.panel(Color(0, 0, 0, 0.22), Color(0, 0, 0, 0), 0)
+		UI.put(self, card, Vector2(12, y), Vector2(296, 50))
+		var pot := _Pot.new()
+		pot.col = POT.get(d.id, Pal.ACCENT)
+		pot.fill = float(Meta.level(d.id)) / float(d.cost.size())
+		UI.put(card, pot, Vector2(6, 6), Vector2(30, 38))
+		var lv := Meta.level(d.id)
+		var mx: int = d.cost.size()
+		UI.put(card, UI.label(d.name + ("  %d/%d" % [lv, mx] if mx > 1 else ""), 10, Pal.ACCENT if lv > 0 else Pal.TEXT), Vector2(42, 4), Vector2(170, 12))
+		var ds := UI.label(d.desc, 10, Pal.DIM)
+		ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.put(card, ds, Vector2(42, 18), Vector2(170, 30))
+		var cost := Meta.next_cost(d.id)
+		var id: String = d.id
+		var b: Button
+		if cost < 0:
+			b = UI.button("Acquis", func(): pass)
+			b.disabled = true
+		else:
+			b = UI.button("◆ %d" % cost, func():
+				if Meta.buy(id):
+					Sfx.play("buy")
+					_build())
+			b.disabled = Meta.pigments() < cost
+		UI.put(card, b, Vector2(218, 16), Vector2(72, 18))
+		y += 54.0
+
+
+# ------------------------------------------------------------------ Tableau des succès
+
+func _board() -> void:
+	var frame := UI.panel(CORK, UI.WOOD, 4)
+	UI.put(self, frame, Vector2(318, 40), Vector2(310, 290))
+	var cork := _Cork.new()
+	cork.set_anchors_preset(PRESET_FULL_RECT)
+	cork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(cork)
+	var done_n := 0
+	for a in AchievementDB.LIST:
+		if Meta.achieved(a.id):
+			done_n += 1
+	UI.put(frame, UI.label("SUCCÈS  %d / %d" % [done_n, AchievementDB.LIST.size()], 10, UI.WOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(310, 12))
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.put(frame, sc, Vector2(6, 22), Vector2(298, 262))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	sc.add_child(grid)
+	var i := 0
+	for a in AchievementDB.LIST:
+		grid.add_child(_note(a, i))
+		i += 1
+
+
+func _note(a: Dictionary, i: int) -> Control:
+	var ok := Meta.achieved(a.id)
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(142, 62)
+	var n := UI.panel(NOTE_DONE if ok else NOTE, Color(0, 0, 0, 0.25), 1)
+	n.position = Vector2(2, 4)
+	n.size = Vector2(138, 56)
+	n.pivot_offset = n.size / 2.0
+	n.rotation = deg_to_rad([-1.5, 1.0, 0.5, -1.0, 1.5, -0.5][i % 6])   # notes épinglées un peu de travers
+	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(n)
+	UI.put(n, UI.label(a.name, 10, Pal.INK), Vector2(6, 4), Vector2(128, 12))
+	var ds := UI.label(a.desc, 10, Color("5a4a3a"))
+	ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(n, ds, Vector2(6, 16), Vector2(128, 26))
+	var reward: String = UnlockDB.get_def(a.unlock).name
+	var wait := ok and Meta.pending(a.id)   # obtenu pendant la partie en cours : arrive à la fin
+	var line := ("⌛ " + reward + " (fin de partie)") if wait else (("✓ " if ok else "→ ") + reward)
+	UI.put(n, UI.label(line, 10, Color("b06a10") if wait else (Color("2e7d32") if ok else Color("8a5a2b"))), Vector2(6, 41), Vector2(128, 12))
+	var pin := _Pin.new()
+	pin.col = Color("f0a030") if wait else (PIN_ON if ok else PIN_OFF)
+	pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.put(holder, pin, Vector2(64, 0), Vector2(12, 12))
+	holder.tooltip_text = "%s\n%s\nDébloque : %s — %s" % [a.name, a.desc, reward, UnlockDB.get_def(a.unlock).desc]
+	holder.mouse_filter = Control.MOUSE_FILTER_STOP
+	return holder
+
+
+# ------------------------------------------------------------------ Décor
+
+## Mur de planches, étagère, sol en bois taché de peinture.
+class _Workshop extends Control:
+	func _draw() -> void:
+		var s := get_viewport_rect().size
+		draw_rect(Rect2(Vector2.ZERO, s), AtelierScreen.PLANK)
+		var x := 0
+		var k := 0
+		while x < s.x:
+			var w := 22 + (k * 7) % 9
+			draw_rect(Rect2(x, 0, w, s.y), AtelierScreen.PLANK if k % 2 == 0 else AtelierScreen.PLANK_DARK)
+			draw_line(Vector2(x, 0), Vector2(x, s.y), AtelierScreen.PLANK_LINE, 1.0)
+			draw_circle(Vector2(x + w / 2.0, 22 + (k * 37) % 30), 1.0, AtelierScreen.PLANK_LINE)   # clous
+			x += w
+			k += 1
+		# Étagère sous l'établi + sol
+		draw_rect(Rect2(8, 330, 304, 4), UI.WOOD)
+		draw_rect(Rect2(0, s.y - 14, s.x, 14), UI.FLOOR)
+		for i in range(0, int(s.x), 40):
+			draw_line(Vector2(i, s.y - 14), Vector2(i, s.y), Color(0, 0, 0, 0.2), 1.0)
+		# Taches de peinture sur le sol
+		var cols := [Color("d2433a"), Color("3a86ff"), Color("f0c43a"), Color("4caf50"), Color("c071f0")]
+		for i in 9:
+			var p := Vector2(110 + i * 58 + (i * 13) % 20, s.y - 7 + (i % 3) - 1)
+			draw_circle(p, 2.0 + (i % 3), Color(cols[i % cols.size()], 0.8))
+
+
+class _Cork extends Control:
+	func _draw() -> void:
+		if size.x < 2.0 or size.y < 2.0:
+			return
+		for i in 140:
+			var p := Vector2((i * 53) % int(size.x), (i * 97) % int(size.y))
+			draw_rect(Rect2(p, Vector2(1, 1)), AtelierScreen.CORK_DOT)
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_RESIZED:
+			queue_redraw()
+
+
+## Pot de peinture : se remplit avec le niveau de l'amélioration.
+class _Pot extends Control:
+	var col := Color.WHITE
+	var fill := 0.0
+
+	func _draw() -> void:
+		var body := Rect2(3, 8, size.x - 6, size.y - 8)
+		draw_rect(body, Color(1, 1, 1, 0.18))
+		var h := (body.size.y - 2) * clampf(fill, 0.0, 1.0)
+		draw_rect(Rect2(body.position.x + 1, body.end.y - 1 - h, body.size.x - 2, h), col)
+		draw_rect(body, Color(0.9, 0.95, 1.0, 0.7), false, 1.0)
+		draw_rect(Rect2(1, 3, size.x - 2, 5), UI.GOLD_DARK)   # couvercle
+		draw_rect(Rect2(6, 10, 2, body.size.y - 6), Color(1, 1, 1, 0.35))   # reflet
+
+
+class _Pin extends Control:
+	var col := Color.RED
+
+	func _draw() -> void:
+		draw_circle(size / 2.0 + Vector2(1, 1), 4.0, Color(0, 0, 0, 0.3))
+		draw_circle(size / 2.0, 4.0, col)
+		draw_circle(size / 2.0 - Vector2(1.5, 1.5), 1.2, Color(1, 1, 1, 0.7))
