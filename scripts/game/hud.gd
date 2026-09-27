@@ -100,6 +100,23 @@ func _text(pos: Vector2, text: String, col: Color, fs := 10, w := -1.0, align :=
 
 
 func _draw_hud() -> void:
+	# Interro du Professeur : la question, en grand, toujours visible
+	for qz in arena.quizzes:
+		var k: float = clampf(1.0 - qz.t / qz.dur, 0.0, 1.0)
+		draw_layer.draw_rect(Rect2(200, 44, 240, 44), Color(Pal.BG, 0.9))
+		draw_layer.draw_rect(Rect2(200, 44, 240, 44), Pal.ACCENT, false, 2.0)
+		_text(Vector2(200, 70), String(qz.question), Pal.TEXT, 20, 240, HORIZONTAL_ALIGNMENT_CENTER)
+		draw_layer.draw_rect(Rect2(206, 80, 228 * k, 4), Pal.ACCENT if k > 0.35 else Pal.BAD)
+		# Les colonnes du tableau, de gauche à droite (toutes visibles, même zoomé) ; la tienne est encadrée
+		var n: int = qz.cols
+		var cw := 240.0 / n
+		var mine := clampi(int(arena.player.position.x / (float(Arena.W) / n)), 0, n - 1)
+		for i in n:
+			var r := Rect2(200 + i * cw + 2, 90, cw - 4, 18)
+			draw_layer.draw_rect(r, Color(Pal.BG, 0.9))
+			draw_layer.draw_rect(r, Pal.ACCENT if i == mine else Pal.BORDER, false, 2.0 if i == mine else 1.0)
+			_text(Vector2(r.position.x, 104), str(qz.answers[i]), Pal.TEXT, 10, r.size.x, HORIZONTAL_ALIGNMENT_CENTER)
+		_text(Vector2(160, 122), "Va dans la colonne de la bonne réponse !", Pal.ACCENT, 10, 320, HORIZONTAL_ALIGNMENT_CENTER)
 	# Nuit d'encre (Encrier renversé) : noir partout sauf autour du joueur
 	if arena.dark_t > 0.0:
 		var a := clampf(arena.dark_t, 0.0, 1.0) * clampf((6.0 - arena.dark_t) * 2.0, 0.0, 1.0)

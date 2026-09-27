@@ -62,7 +62,7 @@ var sponges: Array = []   # {horiz, c, t, tele, dur, hit}
 var chalks: Array = []    # pluie de craies {pos, r, t, dmg}
 var stars: Array = []     # bons points {pos, t}
 var squares: Array = []   # Tampon encreur {pos, half, t, dur, dmg, col}
-var quizzes: Array = []   # Professeur {cols, safe, t, dur, dmg}
+var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, dmg}
 var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit}
 var dark_t := 0.0         # Nuit d'encre
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
@@ -814,7 +814,7 @@ func _tick_board(delta: float) -> void:
 		var cw := float(W) / n
 		for i in n:
 			if i == qz.safe:
-				float_text(Vector2(cw * (i + 0.5), 40), "BONNE RÉPONSE !", Pal.GOOD)
+				float_text(Vector2(cw * (i + 0.5), 40), "BONNE RÉPONSE : %d" % qz.answers[i], Pal.GOOD)
 				continue
 			for k in 4:
 				explosion(Vector2(cw * (i + 0.5), H * (k + 0.5) / 4.0), cw * 0.45, Color(Pal.BAD, 0.6), k > 0)
@@ -863,9 +863,41 @@ func add_square(pos: Vector2, half: float, dur: float, dmg: float, col: Color) -
 	squares.append({"pos": pos, "half": half, "t": 0.0, "dur": dur, "dmg": dmg, "col": col})
 
 
-## Interro : le tableau est découpé en n colonnes, une seule est sûre.
+## Interro : une question (calcul) en haut de l'écran, le tableau découpé en n colonnes qui
+## portent chacune une réponse. Seule la colonne de la BONNE réponse n'explose pas :
+## rien n'est laissé au hasard, il suffit de calculer vite et d'y aller.
 func quiz(n: int, dmg: float) -> void:
-	quizzes.append({"cols": n, "safe": randi() % n, "t": 0.0, "dur": 2.4, "dmg": dmg})
+	var hard := n >= 4
+	var q := ""
+	var good := 0
+	match randi() % (3 if hard else 2):
+		0:
+			var a := randi_range(3, 12 if hard else 9)
+			var b := randi_range(2, 12 if hard else 9)
+			q = "%d + %d" % [a, b]
+			good = a + b
+		1:
+			var a := randi_range(8, 20 if hard else 15)
+			var b := randi_range(2, a - 1)
+			q = "%d - %d" % [a, b]
+			good = a - b
+		_:
+			var a := randi_range(2, 9)
+			var b := randi_range(2, 9)
+			q = "%d × %d" % [a, b]
+			good = a * b
+	# Mauvaises réponses proches de la bonne (il faut vraiment calculer)
+	var answers := [good]
+	var offsets := [-3, -2, -1, 1, 2, 3]
+	offsets.shuffle()
+	for o in offsets:
+		if answers.size() >= n:
+			break
+		if good + o > 0:
+			answers.append(good + o)
+	answers.shuffle()
+	quizzes.append({"cols": n, "safe": answers.find(good), "answers": answers, "question": q + " = ?",
+		"t": 0.0, "dur": 2.8 if hard else 3.2, "dmg": dmg})
 	hud.announce("INTERRO SURPRISE !", Pal.ACCENT)
 	Sfx.play("zap")
 
@@ -1163,9 +1195,9 @@ class _Marks extends Node2D:
 				var col := Color(1, 1, 1, 0.07 if i % 2 == 0 else 0.03)
 				draw_rect(Rect2(cw * i, 0, cw, H), col)
 				draw_line(Vector2(cw * i, 0), Vector2(cw * i, H), Color(1, 1, 1, 0.5), 2.0)
-				draw_string(UI.font, Vector2(cw * i, H / 2.0 + 20.0), "ABCD"[i], HORIZONTAL_ALIGNMENT_CENTER, cw, 40, Color(1, 1, 1, 0.35))
-			var left: float = qz.dur - qz.t
-			draw_string(UI.font, Vector2(0, 30), "%.1f" % left, HORIZONTAL_ALIGNMENT_CENTER, W, 20, Color(Pal.ACCENT, 0.9))
+				# La réponse de la colonne, répétée sur toute la hauteur (visible même zoomé)
+				for k in 4:
+					draw_string(UI.font, Vector2(cw * i, H * (k + 0.5) / 4.0 + 14.0), str(qz.answers[i]), HORIZONTAL_ALIGNMENT_CENTER, cw, 40, Color(1, 1, 1, 0.55))
 		for sc in arena.scans:
 			if sc.t < sc.tele:
 				draw_line(Vector2(0, 4), Vector2(W, 4), Color(0.6, 1.0, 0.7, 0.4 + 0.4 * sin(arena.elapsed * 25.0)), 3.0)

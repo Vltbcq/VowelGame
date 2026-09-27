@@ -47,7 +47,7 @@ const TYPES := {
 	"toile": {"name": "La Toile Blanche", "beh": "b_toile", "boss": 2, "hp": 26000.0, "dmg": 19.5, "spd": 50.0, "wave": 15, "canvas": 88, "ink": 560, "loot": 0, "shoots": true,
 		"desc": "Boss final (vague 15). Elle veut tout effacer."},
 	"professeur": {"name": "Le Professeur", "beh": "b_prof", "map": 2, "boss": 2, "hp": 3000.0, "dmg": 11.0, "spd": 48.0, "wave": 5, "canvas": 64, "ink": 300, "loot": 30, "shoots": true,
-		"desc": "Boss (vague 5). INTERRO SURPRISE : le tableau se découpe en colonnes A, B, C... une seule est la bonne réponse."},
+		"desc": "Boss (vague 5). INTERRO SURPRISE : une question s'affiche, chaque colonne du tableau porte une réponse. Va dans la bonne avant que les autres explosent !"},
 	"photocopieuse": {"name": "La Photocopieuse", "beh": "b_copy", "map": 2, "boss": 2, "hp": 6500.0, "dmg": 13.0, "spd": 40.0, "wave": 10, "canvas": 80, "ink": 400, "loot": 60, "shoots": true,
 		"desc": "Boss (vague 10). Ses tirs ont une COPIE qui arrive du côté opposé, et son scanner balaie tout l'écran. Parfois : bourrage papier !"},
 	"encrier": {"name": "L'Encrier renversé", "beh": "b_ink", "map": 2, "boss": 2, "hp": 18000.0, "dmg": 18.0, "spd": 45.0, "wave": 15, "canvas": 88, "ink": 540, "loot": 0, "shoots": true,
