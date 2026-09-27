@@ -1,0 +1,68 @@
+name: Release
+
+# Exporte le jeu (Windows) sur les serveurs de GitHub et publie une Release avec le .exe et le zip.
+# - Automatique : quand un tag de version est poussé (v0.2, v0.3, v1.0...)
+# - À la main : onglet Actions > Release > Run workflow (tu saisis la version)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numéro de version (ex. v0.3)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Télécharger Godot et les modèles d'export
+        run: |
+          cd "$RUNNER_TEMP"
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          wget -q "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          wget -q "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q "Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          chmod +x godot
+          unzip -q "Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mv templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+
+      - name: Importer le projet
+        run: timeout 300 "$RUNNER_TEMP/godot" --headless --path . --import || true
+
+      - name: Vérifier que tous les scripts compilent
+        run: |
+          timeout 300 "$RUNNER_TEMP/godot" --headless --path . res://tests/checkall.tscn 2>&1 | tee checkall.log
+          grep -q "0 en erreur" checkall.log
+
+      - name: Exporter le jeu (Windows)
+        run: |
+          mkdir -p builds
+          timeout 600 "$RUNNER_TEMP/godot" --headless --path . --export-release "Windows Desktop" builds/Vowel.exe
+          test -s builds/Vowel.exe
+          cd builds && zip -q Vowel-windows.zip Vowel.exe && ls -la
+
+      - name: Publier la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: Vowel ${{ github.event.inputs.version || github.ref_name }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          body: |
+            **Jouer :** télécharge `Vowel.exe` (ou le zip, plus léger) et lance-le.
+            Windows peut afficher « Windows a protégé votre PC » : *Informations complémentaires* → *Exécuter quand même*.
+          files: |
+            builds/Vowel.exe
+            builds/Vowel-windows.zip

@@ -30,6 +30,14 @@ Test automatique (simule dessins, 9 vagues avec boss, boutique, menus) :
 `Godot --headless --path . res://tests/selftest.tscn`
 Armes spéciales et nouvelles amulettes : `Godot --headless --path . res://tests/specials.tscn`
 
+## Publier une version (GitHub)
+
+Dépôt : https://github.com/Vltbcq/VowelGame. Lien à donner aux joueurs : https://github.com/Vltbcq/VowelGame/releases/latest
+
+La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de GitHub (Godot 4.7.2, Windows), vérifie que tous les scripts compilent, puis publie une Release avec `Vowel.exe` et `Vowel-windows.zip` :
+- en poussant un tag de version : `git tag v0.2` puis `git push origin v0.2` ;
+- ou à la main : onglet **Actions → Release → Run workflow**, en saisissant la version.
+
 ## Sauvegardes et reprise
 
 - **3 sauvegardes** au lancement du jeu : chacune a sa progression (pigments, déblocages, records), sa galerie, son Bestiaire et sa partie en cours. Les options sont communes. Bouton **Supprimer** avec confirmation (il faut cliquer, Entrée ne suffit pas). Depuis le titre : « Sauvegarde N · changer » (touche **S**).
