@@ -56,7 +56,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 2. **Dessin du perso**, avec une encre limitée.
 3. Choix de la première arme parmi 10 types (5 mêlée, 5 distance), puis dessin de l'arme (et de ses balles si c'est une arme à distance). Tu la **poses où tu veux** sur ton perso.
    - Chaque type d'arme et chaque amulette ne se dessine **qu'une fois par partie** : les exemplaires suivants réutilisent ce dessin.
-   - Mêlée : Dague (rapide), Épée (arc), Lance (estoc long), Faux (tour complet), Marteau (onde de choc en zone).
+   - Mêlée : Dague (rapide), Épée (arc), Lance (estoc long), Faux (grand fauchage en spirale, toute la lame coupe), Marteau (onde de choc en zone).
    - Distance : Pistolet, Tromblon (éventail ×3), Arc (perforant), Baguette (tête chercheuse), Mortier (obus explosifs).
    - **Armes à ratio** (toutes raretés, en boutique seulement) : leurs dégâts suivent une stat. Plume solitaire (+60 % par emplacement d'arme libre), Rouleau à peinture (+15 % des PV max en dégâts), Chevalet-bouclier (+1,5 dégât par point d'armure), Aérographe (+1 % par % de vitesse), Cutter (critiques ×(2 + critique ÷ 35)), Compte-gouttes (+0,25 dégât par point de chance, plus d'effets élémentaires), Pinceau doré (+1 dégât par 12 or en poche), Règle graduée (+1,5 % par % de portée), Nuancier (+35 % par couleur sur ton perso), Silhouette (dégâts selon les pixels de ton perso, ×0,5 à ×3,5), Pipette (vol de vie ×3 sur ses coups, +5 % de base ; au-delà de 100 %, plusieurs PV par coup). La boutique affiche la valeur actuelle du ratio, et la taille de ton perso (pixels, couleurs) sous l'autoportrait.
    - **Armes spéciales** (jamais au choix de départ, seulement en boutique) :

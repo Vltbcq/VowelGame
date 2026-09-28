@@ -235,7 +235,7 @@ func _melee_step(delta: float) -> void:
 	var dur := 0.3
 	match st.style:
 		"spin":
-			dur = 0.45
+			dur = 0.55
 		"gust":
 			dur = 0.4
 		"slam", "stamp":
@@ -261,11 +261,17 @@ func _melee_step(delta: float) -> void:
 			rotation = a
 			hit_on = ext > 0.25
 		"spin":
-			var a := atk_angle + TAU * t
-			var ext := minf(1.0, sin(t * PI) * 2.0)
-			position = home * (1.0 - ext) + Vector2.from_angle(a) * reach * 0.8 * ext
+			# Faux : grand fauchage. La lame part près du corps, s'ouvre en spirale jusqu'à
+			# pleine allonge et fait 1 tour 1/4 (accélère puis freine) ; TOUTE la lame coupe.
+			var k := t * t * (3.0 - 2.0 * t)
+			var a := atk_angle - 0.6 + TAU * 1.25 * k
+			var open := minf(1.0, t * 2.5)
+			var close := clampf((t - 0.85) / 0.15, 0.0, 1.0)
+			var rr := reach * (0.4 + 0.6 * open) * (1.0 - 0.5 * close)
+			position = Vector2.from_angle(a) * maxf(4.0, rr - length * 0.5)
 			rotation = a
-			hit_on = ext > 0.4
+			if t > 0.04 and t < 0.96:
+				_reap(a, rr)
 		"slam", "stamp":
 			# Monte, fonce sur le point d'impact, puis revient
 			var local_target := slam_point - player.position
@@ -305,6 +311,25 @@ func _melee_step(delta: float) -> void:
 	if atk_t >= 1.0:
 		attacking = false
 		aim = rotation
+
+
+## Faux : tout le segment du perso à la pointe coupe ; chaque ennemi une fois par coup.
+func _reap(a: float, rr: float) -> void:
+	var arena := player.arena
+	var dir := Vector2.from_angle(a)
+	var from := player.position + dir * 6.0   # du perso (le manche) jusqu'à la pointe
+	var to := player.position + dir * rr
+	var mid := (from + to) / 2.0
+	for e in arena.near(mid, from.distance_to(to) / 2.0 + st.hit_r + 14.0):
+		var id: int = e.get_instance_id()
+		if hit_ids.has(id):
+			continue
+		if Geometry2D.get_closest_point_to_segment(e.position, from, to).distance_to(e.position) > st.hit_r * 0.8 + e.radius:
+			continue
+		hit_ids[id] = true
+		# projeté vers l'extérieur, un peu dans le sens de la rotation
+		var push: Vector2 = ((e.position - player.position).normalized() + dir.orthogonal() * 0.5).normalized()
+		arena.hit_enemy(e, st.damage * metro, st, push, st.knock * (1.0 + Run.amulet_count("ressort")))
 
 
 func _slam_impact() -> void:
