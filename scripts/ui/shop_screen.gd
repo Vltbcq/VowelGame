@@ -235,7 +235,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			kind = "%s · %s" % [_item_name(it), Pal.RARITY_NAMES_F[it.rar].to_lower()]
 			desc = "Enchéris contre un collectionneur. Départ : ● %d" % int(o.bid)
 			frame_cols = FRAME[it.rar]
-			icon = _item_icon(it)
+			icon = _event_icon("auction")
 		"restorer":
 			oname = "Le Restaurateur"
 			kind = "Visiteur"
@@ -761,6 +761,24 @@ func _event_icon(kind: String) -> Image:
 			for y in range(8, 24):
 				img.set_pixel(3, y, ink)
 				img.set_pixel(28, y, ink)
+		"auction":
+			# Marteau de commissaire-priseur, penché à 45°, sur son socle
+			var wood := Color("a0692f")
+			var dark := Color("5a3818")
+			var c := Vector2(11, 11)
+			for y in n:
+				for x in n:
+					var l := (Vector2(x + 0.5, y + 0.5) - c).rotated(-PI / 4.0)   # l.x = long du manche
+					if absf(l.x) <= 4.5 and absf(l.y) <= 8.5:
+						var edge := absf(l.x) > 3.5 or absf(l.y) > 7.5
+						var band := absf(absf(l.y) - 5.5) < 0.8
+						img.set_pixel(x, y, dark if edge else (GOLD if band else wood))
+					elif l.x > 4.5 and l.x < 21.0 and absf(l.y) <= 1.6:
+						img.set_pixel(x, y, dark if absf(l.y) > 0.9 else wood)
+			# socle (le « bloc » qu'on frappe)
+			img.fill_rect(Rect2i(16, 26, 15, 4), dark)
+			img.fill_rect(Rect2i(18, 24, 11, 2), wood)
+			img.fill_rect(Rect2i(18, 24, 11, 1), GOLD)
 		"restorer":
 			# pinceau en diagonale + goutte dorée
 			for k in 18:
