@@ -20,6 +20,7 @@ var tab := "perso"
 var elite := false
 var rar := 0
 var body: Control
+var scroll_mem := {}
 
 
 func _ready() -> void:
@@ -147,6 +148,7 @@ func _enemies(area: Control) -> void:
 	var sc := ScrollContainer.new()
 	UI.put(area, sc, Vector2(0, 22), Vector2(600, 262))
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.keep_scroll(sc, scroll_mem, "ennemis")
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 4)
@@ -258,6 +260,7 @@ func _amulets(area: Control) -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(area, sc, Vector2(0, 22), Vector2(600, 262))
+	UI.keep_scroll(sc, scroll_mem, "amulettes")
 	var grid := GridContainer.new()
 	grid.columns = 4
 	grid.add_theme_constant_override("h_separation", 4)

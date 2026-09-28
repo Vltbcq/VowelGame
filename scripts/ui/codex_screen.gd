@@ -12,6 +12,7 @@ const TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["ennemis", "Enne
 var tab := "armes"
 var sel := ""
 var picker: Control
+var scroll_mem := {}         # position de défilement de la liste, par onglet
 
 
 func _init(start_tab := "armes", start_sel := "") -> void:
@@ -111,6 +112,7 @@ func _build() -> void:
 	# --- Liste
 	var sc := ScrollContainer.new()
 	UI.put(self, sc, Vector2(12, 56), Vector2(250, 272))
+	UI.keep_scroll(sc, scroll_mem, tab)
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 2)
 	vb.custom_minimum_size = Vector2(238, 0)

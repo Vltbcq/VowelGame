@@ -20,6 +20,9 @@ const POT := {"ink": Color("1a1423"), "canvas": Color("e9dcbc"), "shop_slot": Co
 	"free_reroll": Color("3a86ff"), "start_gold": Color("f0c43a")}
 
 
+var scroll_mem := {}
+
+
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	_build()
@@ -102,6 +105,7 @@ func _board() -> void:
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(frame, sc, Vector2(6, 22), Vector2(298, 262))
+	UI.keep_scroll(sc, scroll_mem, "succes")
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 6)

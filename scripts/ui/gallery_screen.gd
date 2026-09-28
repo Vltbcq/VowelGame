@@ -10,6 +10,7 @@ const KINDS := [
 	["amulet", "Amulettes"], ["enemy", "Ennemis"], ["boss", "Boss"],
 ]
 
+var scroll_mem := {}         # position de défilement de la grille, par onglet
 var kind := "character"
 var selected := {}          # entrée de galerie sélectionnée
 var confirm: Control
@@ -42,6 +43,7 @@ func _build() -> void:
 		tabs.add_child(b)
 	var sc := ScrollContainer.new()
 	UI.put(self, sc, Vector2(12, 58), Vector2(616, 268))
+	UI.keep_scroll(sc, scroll_mem, str(kind))
 	var grid := GridContainer.new()
 	grid.columns = 11
 	grid.add_theme_constant_override("h_separation", 4)

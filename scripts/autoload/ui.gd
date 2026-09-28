@@ -169,6 +169,23 @@ func panel(color := Pal.PANEL, border := Pal.BORDER, bw := 2) -> Panel:
 	return p
 
 
+## Garde la position de défilement d'une liste qu'on reconstruit (clic sur un élément...) :
+## elle est mémorisée dans store[key] et remise en place une fois la liste affichée.
+func keep_scroll(sc: ScrollContainer, store: Dictionary, key: String) -> void:
+	var v := int(store.get(key, 0))
+	_restore_scroll(sc, v, store, key)
+
+
+func _restore_scroll(sc: ScrollContainer, v: int, store: Dictionary, key: String) -> void:
+	# Attendre que la liste ait sa taille (sinon le défilement est ramené à 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_instance_valid(sc):
+		return
+	sc.scroll_vertical = v
+	sc.get_v_scroll_bar().value_changed.connect(func(x: float): store[key] = int(x))
+
+
 ## Cartel de musée (papier crème, texte encre) : pour les textes posés sur le mur.
 func cartel() -> Panel:
 	return panel(CARTEL, Color("b9a883"), 1)
