@@ -295,7 +295,7 @@ static func melee(w: Dictionary, def: Dictionary) -> Dictionary:
 	var a: Dictionary = w.a
 	var p := float(a.pixels)
 	var fill := clampf(p / (def.ink * FILL_REF), 0.05, 1.5)
-	var st := {"kind": "melee", "type": w.type}
+	var st := {"kind": "melee", "type": w.type, "atk_dur": float(def.get("atk_dur", 1.0))}
 	st.damage = 8.0 * def.dmg * (0.35 + 0.9 * fill) * RAR_DMG[w.rar]   # gros = coups forts
 	st.cooldown = 0.85 * def.cd * (0.35 + 0.8 * fill)                  # ... mais lents
 	st.reach = (36.0 + a.diag * 1.2) * def.reach                        # long = allonge
@@ -331,7 +331,7 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 	for part in parts:
 		bpx += part.count
 	var bfill := clampf(bpx / (def.bink * FILL_REF), 0.05, 1.5)
-	var st := {"kind": "ranged", "type": w.type, "style": def.style}
+	var st := {"kind": "ranged", "type": w.type, "style": def.style, "pierce_dmg": float(def.get("pierce_dmg", 1.0))}
 	# Arme ET balles : gros = tirs forts mais lents, petit = rafales rapides
 	st.cooldown = 0.6 * def.cd * (0.4 + 0.75 * fill) * (0.45 + 0.8 * bfill)
 	st.dmg_mult = def.dmg * (0.4 + 0.85 * fill) * RAR_DMG[w.rar]

@@ -112,6 +112,8 @@ func tick(delta: float, arena: Arena) -> bool:
 		arena.hit_enemy(e, dmg, wst, vel.normalized(), knock)
 		if not child and Run.amulet_count("mise_abyme") > 0:
 			arena.split_bullet(self)
+		if hit_ids.size() == 1:
+			dmg *= float(wst.get("pierce_dmg", 1.0))   # Arc : les cibles suivantes prennent moins
 		pierce -= 1
 		if pierce < 0:
 			return false

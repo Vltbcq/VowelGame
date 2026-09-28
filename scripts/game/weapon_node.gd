@@ -243,6 +243,7 @@ func _melee_step(delta: float) -> void:
 		"erase":
 			dur = 0.35
 	dur *= clampf(st.cooldown / 0.6, 0.35, 1.0)   # petites armes rapides = coups plus vifs
+	dur *= float(st.get("atk_dur", 1.0))          # Lance : estoc sec, revient vite
 	atk_t += delta / (dur / sqrt(_atk_mult()))
 	var t := clampf(atk_t, 0.0, 1.0)
 	var reach: float = st.reach * _range_mult()
