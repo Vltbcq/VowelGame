@@ -1,0 +1,46 @@
+name: Release notes
+
+# Réécrit la description d'une Release DÉJÀ publiée (sans refaire l'export du jeu).
+# - Automatique : quand un résumé .github/release-notes/<version>.md est modifié et poussé
+# - À la main : onglet Actions > Release notes > Run workflow (tu saisis la version)
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/release-notes/*.md", ".github/scripts/release_body.sh"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version de la Release à mettre à jour (ex. v0.2)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mettre à jour la description
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSIONS="${{ github.event.inputs.version }}"
+          else
+            VERSIONS=$(git diff --name-only "$BEFORE" HEAD -- .github/release-notes/ 2>/dev/null | xargs -r -n1 basename | sed 's/\.md$//')
+          fi
+          for V in $VERSIONS; do
+            if gh release view "$V" >/dev/null 2>&1; then
+              bash .github/scripts/release_body.sh "$V" > body.md
+              cat body.md
+              gh release edit "$V" --notes-file body.md
+            else
+              echo "Pas de Release $V : rien à faire (elle sera créée au prochain tag)."
+            fi
+          done
