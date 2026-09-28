@@ -34,7 +34,8 @@ const HEALS := {
 		"desc": "Vague suivante : régénération ×4 (au moins +8) pendant les 10 premières secondes."},
 }
 ## Roulette de la boutique : 37 cases (0 = vert, puis rouge / noir en alternance)
-const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 15}
+const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 35 contre 1 + la mise
+const ROULETTE_CHANCE := 0.08   # dans la case « événement » de la boutique (sinon une potion)
 
 var active := false
 var map := 1                 # carte de la partie (MapDB)
@@ -662,15 +663,15 @@ func roll_shop() -> void:
 		fresh.append(key)
 	for key in fresh:
 		Meta.mark_seen(key)
-	# Soin : pas à chaque fois !
+	# Case « événement » (une fois sur deux) : une potion... ou, rarement (8 %), la roulette
 	if randf() < 0.5:
-		var roll := randf()
-		var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
-		shop_offers.append({"type": "heal", "id": hid, "rar": 0,
-			"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
-	# Roulette : de temps en temps (pas avant la 2e boutique)
-	if wave >= 2 and randf() < 0.25:
-		shop_offers.append({"type": "roulette", "id": "roulette", "rar": 0, "price": 0, "sold": false})
+		if wave >= 2 and randf() < ROULETTE_CHANCE:
+			shop_offers.append({"type": "roulette", "id": "roulette", "rar": 0, "price": 0, "sold": false})
+		else:
+			var roll := randf()
+			var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
+			shop_offers.append({"type": "heal", "id": hid, "rar": 0,
+				"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
 
 
 ## Le prix de base monte avec les vagues, et chaque relance coûte plus cher

@@ -218,7 +218,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		"roulette":
 			oname = "Roulette"
 			kind = "Jeu de hasard"
-			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×15."
+			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×36."
 			frame_cols = FRAME_ROULETTE
 			icon = _wheel_icon()
 
@@ -553,7 +553,7 @@ func _open_roulette(i: int) -> void:
 	row.add_theme_constant_override("separation", 6)
 	UI.put(inner, row, Vector2(24, 272), Vector2(340, 20))
 	var btns := []
-	for c in [["rouge", "ROUGE ×2", WHEEL_RED], ["noir", "NOIR ×2", WHEEL_BLACK], ["vert", "VERT ×15", WHEEL_GREEN]]:
+	for c in [["rouge", "ROUGE ×2", WHEEL_RED], ["noir", "NOIR ×2", WHEEL_BLACK], ["vert", "VERT ×36", WHEEL_GREEN]]:
 		var cid: String = c[0]
 		var cb := UI.button(c[1], func(): _spin(cid, wheel, info, btns, sl))
 		cb.add_theme_stylebox_override("normal", UI.sb(c[2], GOLD, 1))
