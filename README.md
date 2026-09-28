@@ -30,6 +30,11 @@ Test automatique (simule dessins, 9 vagues avec boss, boutique, menus) :
 `Godot --headless --path . res://tests/selftest.tscn`
 Armes spéciales et nouvelles amulettes : `Godot --headless --path . res://tests/specials.tscn`
 
+## Outil de dev (Ctrl+P en pleine vague)
+
+Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, or, niveaux, tuer tout, finir la vague ; faire apparaître **n'importe quel ennemi ou boss devant soi** (élite ou non) ; donner n'importe quelle **arme** (toute rareté) ou **amulette**. Les dessins manquants sont pris dans le Bestiaire, sinon remplacés par des formes provisoires.
+**À retirer avant de publier le jeu** : `ENABLED := false` dans `scripts/dev/dev_panel.gd` (ou supprimer le dossier `scripts/dev/`).
+
 ## Publier une version (GitHub)
 
 Dépôt : https://github.com/Vltbcq/VowelGame. Lien à donner aux joueurs : https://github.com/Vltbcq/VowelGame/releases/latest
@@ -94,8 +99,6 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 - **Le Tableau noir** : débloquée en gagnant une partie sur La Feuille (Esquisse ou plus dur) ; choix de la carte avant la difficulté. Sol de tableau noir, ennemis et boss **à elle**, et des **événements** en pleine vague (toutes les 11-15 s, hors boss) :
   - *Coup d'éponge* : une bande est annoncée, puis une éponge la balaie (blesse tout le monde, efface l'encre au sol).
   - *Pluie de craies* : des impacts annoncés tombent (dont deux près de toi) et laissent de la poussière qui ralentit.
-  - *Sonnerie* : pendant 5 s, tous les ennemis se précipitent (×1,7).
-  - *Bon point* : une étoile à ramasser (or + soin).
 - Ennemis du Tableau noir : **Punaise** (vise, fonce, reste plantée), **Craie** (projectiles suspendus qui partent ensemble), **Trombones** (par deux, reliés par un fil qui coupe), **Tampon encreur** (saute et s'écrase sur un carré annoncé), et trois **tanks** peu sensibles au recul, rares (jamais plus de 2 à la fois) : **Brouillon** (70 PV, se froisse deux fois : plus petit, plus rapide, crache des boulettes), **Gomme mie de pain** (90 PV, efface tes projectiles autour d'elle), **Équation** (110 PV, fait apparaître des punaises).
 - Boss du Tableau noir : **Le Professeur** (vague 5 : interros surprises, une question de calcul s'affiche en haut et chaque colonne du tableau porte une réponse ; seule la colonne de la bonne réponse n'explose pas, 3,2 s pour y aller, 4 colonnes et multiplications en rage), **La Photocopieuse** (vague 10 : chaque salve a une copie tirée du côté opposé, scanner qui balaie l'écran, bourrage papier = vulnérable), **L'Encrier renversé** (vague 15 : inondations d'encre, spirales, charges ; en rage, la **nuit d'encre** ne laisse voir qu'autour de toi).
 - **Difficultés par carte** : chaque carte a ses propres difficultés débloquées (gagner en Croquis sur La Feuille n'ouvre pas Aquarelle sur Le Tableau noir). Les anciennes sauvegardes gardent leur progression sur La Feuille.

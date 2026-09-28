@@ -19,6 +19,7 @@ var erase_mult := 1.0
 var pimg: Image             # image du perso, modifiable (gomme)
 var ptex: ImageTexture
 var was_hurt := false       # a perdu des PV cette vague (La Joconde)
+var god := false            # OUTIL DE DEV : invincible
 
 
 func setup(a: Arena) -> void:
@@ -110,7 +111,7 @@ func tick(delta: float) -> void:
 
 
 func take_hit(dmg: float, element: int, src: Node) -> void:
-	if inv > 0.0 or arena.ended:
+	if god or inv > 0.0 or arena.ended:
 		return
 	if randf() * 100.0 < st.dodge:
 		arena.float_text(position + Vector2(0, -14), "ESQUIVE", Pal.DIM)
@@ -145,6 +146,25 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			arena.numbers.add(position + Vector2(0, -26), "RENAISSANCE !", Pal.GOOD, 1.8)
 			return
 		arena.player_died()
+
+
+## Recrée les armes (après un changement de Run.weapons en cours de vague).
+func rebuild_weapons() -> void:
+	for wn in weapons:
+		wn.queue_free()
+	weapons.clear()
+	for w in Run.weapons:
+		var wn := WeaponNode.new()
+		add_child(wn)
+		wn.setup(self, w)
+		weapons.append(wn)
+
+
+## Redessine le perso (après avoir ajouté / retiré des amulettes en cours de vague).
+func refresh_image() -> void:
+	pimg = Gfx.padded(Run.build_player_image())
+	ptex = ImageTexture.create_from_image(pimg)
+	sprite.texture = ptex
 
 
 func refresh_max_hp() -> void:

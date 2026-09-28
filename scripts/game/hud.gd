@@ -9,6 +9,7 @@ var pause_menu: Control
 var hint_label: Label
 var hint_t := 0.0
 var hurt_flash := 0.0
+var dev_panel: DevPanel     # OUTIL DE DEV (Ctrl+P) — à retirer avant de publier
 
 
 func _ready() -> void:
@@ -221,11 +222,32 @@ func _draw_arrows() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
+	if DevPanel.ENABLED and ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_P and ev.ctrl_pressed:
+		toggle_dev()
+		get_viewport().set_input_as_handled()
+		return
+	if dev_panel:
+		return   # l'outil de dev gère ses propres touches
 	if ev is InputEventKey and ev.pressed and not ev.echo and (ev.keycode == KEY_ESCAPE or ev.keycode == KEY_P):
 		toggle_pause()
 		get_viewport().set_input_as_handled()
 	elif ev is InputEventJoypadButton and ev.pressed and ev.button_index == JOY_BUTTON_START:
 		toggle_pause()
+
+
+## OUTIL DE DEV : ouvre / ferme le panneau (le jeu est en pause pendant qu'il est ouvert).
+func toggle_dev() -> void:
+	if dev_panel:
+		dev_panel.queue_free()
+		dev_panel = null
+		get_tree().paused = pause_menu != null
+		return
+	if arena.ended or pause_menu:
+		return
+	get_tree().paused = true
+	dev_panel = DevPanel.new()
+	dev_panel.arena = arena
+	add_child(dev_panel)
 
 
 func toggle_pause() -> void:

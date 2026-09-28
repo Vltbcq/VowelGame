@@ -838,7 +838,7 @@ func _tick_board(delta: float) -> void:
 
 func _board_event() -> void:
 	var p := player
-	match ["sponge", "sponge", "chalk", "chalk", "bell", "star"].pick_random():
+	match ["sponge", "chalk"].pick_random():
 		"sponge":
 			var horiz := randf() < 0.5
 			var c := (p.position.y if horiz else p.position.x) + randf_range(-40.0, 40.0)
