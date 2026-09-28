@@ -42,6 +42,7 @@ var cd3 := 0.0
 var dash_dir := Vector2.ZERO
 var spiral_a := 0.0
 var last_atk := ""          # Raturé : dernière attaque (jamais deux fois de suite)
+var atk_bag: Array = []     # Raturé : attaques restantes du cycle en cours
 var hatch_a := 0.0          # Raturé : angle des hachures
 var pattern := 0
 var repeat := 0
@@ -908,7 +909,7 @@ func _enraged() -> bool:
 	return hp < max_hp * 0.5
 
 
-## Le Raturé : il RATURE la page. Enchaîne 4 attaques, jamais deux fois la même à la suite :
+## Le Raturé : il RATURE la page. Enchaîne ses 4 attaques dans un ordre mélangé (toutes avant de recommencer) :
 ## - Zigzag : 3 petites charges (5 enragé), chacune annoncée à la règle, qui laissent un trait d'encre.
 ## - Hachures : des lignes parallèles barrent la page (on se glisse ENTRE elles) ; enragé : en croisillon.
 ## - Croix : il barre ta position d'un X (3 de suite), le centre explose.
@@ -919,8 +920,13 @@ func _boss_rature(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	match state:
 		"walk":
 			if st_t <= 0.0:
-				var picks := ["zigzag", "hatch", "cross", "scribble"].filter(func(a): return a != last_atk)
-				last_atk = picks.pick_random()
+				# Sac mélangé : les 4 attaques passent avant qu'une revienne (jamais 2 fois de suite)
+				if atk_bag.is_empty():
+					atk_bag = ["zigzag", "hatch", "cross", "scribble"]
+					atk_bag.shuffle()
+					if atk_bag[0] == last_atk:
+						atk_bag.reverse()
+				last_atk = atk_bag.pop_front()
 				flash = 0.8
 				match last_atk:
 					"zigzag":

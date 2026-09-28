@@ -16,6 +16,7 @@ const STATS := [
 ]
 
 var arena: Arena
+var unlock_armed := false   # « Tout débloquer » : 2 clics pour confirmer
 var tab := "perso"
 var elite := false
 var rar := 0
@@ -118,6 +119,16 @@ func _perso(area: Control) -> void:
 			if not e.dead:
 				arena.kill_enemy(e)
 		_build()))
+	var ua := UI.button("TOUT DÉBLOQUER (sauvegarde)" if not unlock_armed else "Sûr ? Clique encore pour confirmer", func():
+		if not unlock_armed:
+			unlock_armed = true
+		else:
+			unlock_armed = false
+			Meta.unlock_all()
+			UI.toast("OUTIL DE DEV\nTout est débloqué")
+		_build())
+	ua.tooltip_text = "Objets à succès, succès, améliorations de l'Atelier au max, cartes et difficultés.\nModifie la sauvegarde en cours (irréversible)."
+	col.add_child(ua)
 	col.add_child(UI.button("Finir la vague", func():
 		_close()
 		arena._end_wave()))

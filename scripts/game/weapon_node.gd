@@ -339,7 +339,7 @@ func _slam_impact() -> void:
 	arena.explosion(slam_point, r, Color(Pal.INK, 0.7))
 	arena.shake(4.0)
 	for e in arena.near(slam_point, r):
-		arena.hit_enemy(e, st.damage, st, (e.position - slam_point).normalized(), st.knock * 1.5)
+		arena.hit_enemy(e, arena.boom_dmg(st.damage), st, (e.position - slam_point).normalized(), st.knock * 1.5)
 
 
 ## Traînée : la pointe laisse un sillage pendant les coups (et le Compas en permanence).

@@ -304,6 +304,29 @@ func effects() -> Array:
 
 # ------------------------------------------------------------------ Succès
 
+## OUTIL DE DEV : débloque tout sur la sauvegarde (objets, succès, Atelier au max, cartes, difficultés).
+func unlock_all() -> void:
+	if not data.has("item_unlocks"):
+		data.item_unlocks = {}
+	for key in ItemUnlockDB.CONDS:
+		data.item_unlocks[key] = true
+	if not data.has("achievements"):
+		data.achievements = {}
+	for a in AchievementDB.LIST:
+		data.achievements[a.id] = true
+	for u in UnlockDB.LIST:
+		data.unlocks[u.id] = (u.cost as Array).size()
+	var top := DIFFICULTIES.size() - 1
+	var m: Dictionary = data.get("max_diff_map", {})
+	for id in MapDB.MAPS:
+		data.unlocks["map%d" % id] = 1
+		m[str(id)] = top
+	data.max_diff_map = m
+	data.max_diff = top
+	data.pending_unlocks = []
+	save()
+
+
 ## Arme / amulette disponible ? (pas de condition, ou succès obtenu et partie terminée)
 func item_open(key: String) -> bool:
 	return not ItemUnlockDB.CONDS.has(key) or bool(data.get("item_unlocks", {}).get(key, false))

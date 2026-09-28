@@ -56,7 +56,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 2. **Dessin du perso**, avec une encre limitée.
 3. Choix de la première arme parmi 10 types (5 mêlée, 5 distance), puis dessin de l'arme (et de ses balles si c'est une arme à distance). Tu la **poses où tu veux** sur ton perso.
    - Chaque type d'arme et chaque amulette ne se dessine **qu'une fois par partie** : les exemplaires suivants réutilisent ce dessin.
-   - Mêlée : Dague (rapide), Épée (arc), Lance (estoc long), Faux (grand fauchage en spirale, toute la lame coupe), Marteau (onde de choc en zone).
+   - Mêlée : Dague (rapide), Épée (arc), Lance (estoc long), Marteau (onde de choc en zone). La Faux (grand fauchage en spirale) n'existe qu'en épique ou légendaire.
    - Distance : Pistolet, Tromblon (éventail ×3), Arc (perforant), Baguette (tête chercheuse), Mortier (obus explosifs).
    - **Armes à ratio** (toutes raretés, en boutique seulement) : leurs dégâts suivent une stat. Plume solitaire (+60 % par emplacement d'arme libre), Rouleau à peinture (+15 % des PV max en dégâts), Chevalet-bouclier (+1,5 dégât par point d'armure), Aérographe (+1 % par % de vitesse), Cutter (critiques ×(2 + critique ÷ 35)), Compte-gouttes (+0,25 dégât par point de chance, plus d'effets élémentaires), Pinceau doré (+1 dégât par 12 or en poche), Règle graduée (+1,5 % par % de portée), Nuancier (+35 % par couleur sur ton perso), Silhouette (dégâts selon les pixels de ton perso, ×0,5 à ×3,5), Pipette (vol de vie ×3 sur ses coups, +5 % de base ; au-delà de 100 %, plusieurs PV par coup). La boutique affiche la valeur actuelle du ratio, et la taille de ton perso (pixels, couleurs) sous l'autoportrait.
    - **Armes spéciales** (jamais au choix de départ, seulement en boutique) :
@@ -102,7 +102,7 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 
 ## Objets à débloquer (succès du Bestiaire)
 
-La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 10 armes classiques restent libres) et **62 amulettes sur 123**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
+La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 9 armes classiques restent libres) et **62 amulettes sur 124**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
 
 ## Cartes
 
@@ -168,9 +168,9 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
-## Amulettes (123)
+## Amulettes (124)
 
-- 28 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
+- 29 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
 - Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
 - Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
 - Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).

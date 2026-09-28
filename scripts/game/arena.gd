@@ -540,7 +540,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		explosion(e.position, boom(26.0), Color(Pal.ACCENT, 0.6), true)
 		for o in near(e.position, boom(26.0)):
 			if o != e:
-				o.hurt(dmg * 0.4 * craq, false, (o.position - e.position).normalized() * 40.0)
+				o.hurt(boom_dmg(dmg * 0.4 * craq), false, (o.position - e.position).normalized() * 40.0)
 	Sfx.play("hit")
 	# Vol de vie (Pipette : ×3 + 5 %) ; au-delà de 100 %, plusieurs PV par coup
 	var ls := Stats.lifesteal_of(scale) / 100.0
@@ -619,7 +619,7 @@ func _apply_el(e: Enemy, el: int, dmg: float, spread := true) -> void:
 					if au > 0:
 						o.blind_t = maxf(o.blind_t, 1.0)
 					if o != e:
-						o.hurt(dmg * 0.4, false, (o.position - e.position).normalized() * 60.0, Pal.LUMIERE)
+						o.hurt(boom_dmg(dmg * 0.4), false, (o.position - e.position).normalized() * 60.0, Pal.LUMIERE)
 
 
 func _chain(from: Enemy, dmg: float) -> void:
@@ -756,7 +756,7 @@ func kill_enemy(e: Enemy) -> void:
 		explosion(e.position, boom(42.0), Color(Pal.INK, 0.8))
 		for o in near(e.position, boom(42.0)):
 			if o != e:
-				o.hurt(8.0 + Run.wave * 3.0, false, (o.position - e.position).normalized() * 80.0)
+				o.hurt(boom_dmg(8.0 + Run.wave * 3.0), false, (o.position - e.position).normalized() * 80.0)
 	enemies.erase(e)
 	e.queue_free()
 	if e.is_boss:
@@ -1228,7 +1228,7 @@ func _star(pos: Vector2) -> void:
 	var sr := boom(60.0)
 	explosion(pos, sr, Color(Pal.ACCENT, 0.9))
 	burst(pos, Pal.ACCENT, 16, 120.0)
-	var d: float = (12.0 + Run.wave * 4.0) * (1.0 + Run.stats.dmg / 100.0)
+	var d: float = boom_dmg((12.0 + Run.wave * 4.0) * (1.0 + Run.stats.dmg / 100.0))
 	for o in near(pos, sr):
 		o.hurt(d, false, (o.position - pos).normalized() * 80.0)
 
@@ -1251,9 +1251,9 @@ func squid_cloud(pos: Vector2) -> void:
 	if squid_cd > 0.0 or Run.amulet_count("encre_seiche") == 0:
 		return
 	squid_cd = 15.0
-	explosion(pos, boom(90.0), Color(Pal.INK, 0.8))
+	explosion(pos, 90.0, Color(Pal.INK, 0.8))
 	burst(pos, Pal.INK, 30, 120.0)
-	for o in near(pos, boom(90.0)):
+	for o in near(pos, 90.0):
 		o.blind_t = 2.0
 	float_text(pos + Vector2(0, -26), "ENCRE DE SEICHE !", Pal.TEXT)
 
@@ -1325,7 +1325,7 @@ func _tick_wells(delta: float) -> void:
 		explosion(w.pos, boom(w.r * 0.8), Color(Pal.INK, 0.9))
 		burst(w.pos, Pal.INK, 24, 140.0)
 		for e in near(w.pos, boom(w.r * 0.8)):
-			hit_enemy(e, w.dmg, w.wst, (e.position - w.pos).normalized(), 120.0)
+			hit_enemy(e, boom_dmg(w.dmg), w.wst, (e.position - w.pos).normalized(), 120.0)
 	wells = keep
 
 
@@ -1475,6 +1475,11 @@ func damage_number(pos: Vector2, amount: float, crit: bool, el := 0) -> void:
 ## Rayon d'une explosion du joueur : synergie Lumière = +33 %.
 func boom(r: float) -> float:
 	return r * (1.33 if syn.has(Pal.LUMIERE) else 1.0)
+
+
+## Dégâts d'une explosion du joueur : Pétard = +25 % chacun.
+func boom_dmg(d: float) -> float:
+	return d * (1.0 + 0.25 * Run.amulet_count("petard"))
 
 
 func explosion(pos: Vector2, r: float, color: Color, quiet := false) -> void:

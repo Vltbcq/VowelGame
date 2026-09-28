@@ -96,7 +96,20 @@ func _ready() -> void:
 	var r0 := arena.boom(40.0)
 	arena.syn = {Pal.LUMIERE: 3}
 	_check(is_equal_approx(arena.boom(40.0), 40.0 * 1.33) and is_equal_approx(r0, 40.0), "Lumière : explosions ×1,33 (%.1f → %.1f)" % [r0, arena.boom(40.0)])
+	Run.set_amulet_art("petard", _blob(16, 20), "")
+	Run.add_amulet("petard", Run.amulet_art["petard"].image, Vector2i(30, 30))
+	_check(is_equal_approx(arena.boom_dmg(100.0), 125.0), "Pétard : dégâts d'explosion +25 %% (%.0f)" % arena.boom_dmg(100.0))
+	Run.amulets = []
 	arena.queue_free()
+	_check(int(WeaponDB.TYPES.faux.get("min_rar", 0)) == 2 and not "faux" in WeaponDB.allowed_for(1) and not "faux" in WeaponDB.of_kind("melee"), "Faux : épique ou plus seulement")
+	# Tout débloquer (outil de dev), sur une copie de la sauvegarde
+	var keep: Dictionary = Meta.data
+	Meta.data = Meta.data.duplicate(true)
+	Meta.data.item_unlocks = {}
+	Meta.unlock_all()
+	var all_items := ItemUnlockDB.CONDS.keys().all(func(k): return Meta.item_open(k))
+	_check(all_items and Meta.map_unlocked(2) and Meta.max_diff(2) == Meta.DIFFICULTIES.size() - 1 and Meta.level("ink") == 5, "Tout débloquer : objets, cartes, difficultés, Atelier")
+	Meta.data = keep
 	var base := Stats.player(Run)
 	Run.joconde = 2
 	Run.recompute()

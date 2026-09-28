@@ -76,7 +76,7 @@ func tick(delta: float, arena: Arena) -> bool:
 		if life <= 0.0:
 			arena.explosion(position, arena.boom(lob_r), Color(Pal.main_color(Pal.FEU), 0.7))
 			for e in arena.near(position, arena.boom(lob_r)):
-				arena.hit_enemy(e, dmg, wst, (e.position - position).normalized(), knock * 2.0)
+				arena.hit_enemy(e, arena.boom_dmg(dmg), wst, (e.position - position).normalized(), knock * 2.0)
 			return false
 		return true
 	if burst_r > 0.0:
@@ -84,7 +84,7 @@ func tick(delta: float, arena: Arena) -> bool:
 		if life <= 0.0 or not arena.near(position, radius).is_empty():
 			arena.explosion(position, arena.boom(burst_r), Color(Pal.ACCENT, 0.85))
 			for e in arena.near(position, arena.boom(burst_r)):
-				arena.hit_enemy(e, dmg, wst, (e.position - position).normalized(), knock * 3.0)
+				arena.hit_enemy(e, arena.boom_dmg(dmg), wst, (e.position - position).normalized(), knock * 3.0)
 			return false
 	# Élastique : rebondit sur les bords de la page
 	if bounces > 0 and not hostile and (position.x < 0 or position.y < 0 or position.x > Arena.W or position.y > Arena.H):
