@@ -114,7 +114,13 @@ func _build() -> void:
 	var pf := _frame_panel(FRAME[3], 5)
 	UI.put(self, pf, Vector2(322, 218), Vector2(64, 76))
 	UI.put(pf, UI.thumb(Run.build_player_image(), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
-	UI.put(self, UI.label("Autoportrait", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(316, 296), Vector2(76, 12))
+	# Sous l'autoportrait : taille du perso (pixels dessinés) et couleurs, utiles pour Silhouette / Nuancier
+	var npx := int(Run.char_a.get("pixels", 0))
+	var ncol := int(Run.char_a.get("elements", 0))
+	var px := UI.label("%d px\n%d couleur%s" % [npx, ncol, "s" if ncol > 1 else ""], 10, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	px.mouse_filter = Control.MOUSE_FILTER_STOP
+	px.tooltip_text = "Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d" % [npx, ncol]
+	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
 	var lines := Stats.describe_player(Run.stats).split("\n")
@@ -179,6 +185,9 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 				desc += "\nEncre %d" % roundi(def.ink * mult) + ("+%d" % roundi(def.bink * mult) if def.kind == "ranged" else "")
 			if o.rar > 0:
 				desc += " · ×%s" % ["", "1,8", "3,2", "6"][o.rar]
+			if def.has("scale"):
+				# Arme à ratio : la valeur ACTUELLE d'abord (le cartel est petit)
+				desc = Stats.scale_text(def.scale).replace("Ratio : ", "") + "\n" + desc
 			full = Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) < 0
 			if Run.weapons.size() >= Run.max_weapons() and not full:
 				desc += "\n→ fusionne !"
@@ -376,12 +385,13 @@ func _buy(i: int) -> void:
 func _weapon_tip(w: Dictionary) -> String:
 	var st: Dictionary = w.st
 	var nm: String = WeaponDB.get_def(w.type).name
+	var ratio := ("\n" + Stats.scale_text(st.scale)) if String(st.get("scale", "")) != "" else ""
 	if st.kind == "melee":
-		return "%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach)]
+		return "%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
 	var tot := 0.0
 	for b in st.bullets:
 		tot += b.damage
-	return "%s %s\n%d projectile(s) · %.1f dégâts/tir\nRecharge %.2fs · Portée %d" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown, roundi(st.range)]
+	return "%s %s\n%d projectile(s) · %.1f dégâts/tir\nRecharge %.2fs · Portée %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown, roundi(st.range), ratio]
 
 
 func _refund(w: Dictionary) -> int:

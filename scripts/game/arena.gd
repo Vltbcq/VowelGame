@@ -430,6 +430,9 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if e.dead:
 		return
 	var s := Run.stats
+	var scale: String = wst.get("scale", "")
+	if scale != "":
+		base = Stats.scaled_damage(base, scale)
 	var dmg: float = base * (1.0 + s.dmg / 100.0)
 	var vernis := Run.amulet_count("vernis")
 	if vernis > 0:
@@ -440,9 +443,11 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 			dmg *= 1.25
 		elif dist < 45.0:
 			dmg *= 0.75
-	var crit: bool = randf() * 100.0 < s.crit + float(wst.get("crit", 0.0))
+	var crit_chance: float = s.crit + float(wst.get("crit", 0.0))
+	var crit: bool = randf() * 100.0 < crit_chance
 	if crit:
-		dmg *= s.crit_mult
+		# Cutter : ses critiques grandissent avec le taux de critique
+		dmg *= maxf(s.crit_mult, 2.0 + crit_chance / 35.0) if scale == "crit" else s.crit_mult
 	dmg = maxf(1.0, dmg)
 	if Run.amulet_count("estompe") > 0:
 		e.slow_t = maxf(e.slow_t, 0.8)
@@ -465,6 +470,8 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
 		return
 	var power: float = 1.0 + Run.stats.el_power / 100.0
 	var bonus := 0.15 * Run.amulet_count("arc_en_ciel")
+	if wst.get("scale", "") == "luck":
+		bonus += maxf(0.0, Run.stats.luck) * 0.004   # Compte-gouttes : la chance donne des effets
 	for el in range(1, Pal.COUNT):
 		var chance: float = frac[el] * power + bonus
 		if chance <= 0.0:

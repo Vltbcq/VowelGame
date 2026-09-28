@@ -156,9 +156,68 @@ static func player(run: Node) -> Dictionary:
 ## des multiplicateurs ; le remplissage (pixels / encre du type) donne la force.
 static func weapon(w: Dictionary) -> Dictionary:
 	var def := WeaponDB.get_def(w.type)
-	if def.kind == "melee":
-		return melee(w, def)
-	return ranged(w, def)
+	var st := melee(w, def) if def.kind == "melee" else ranged(w, def)
+	st.scale = def.get("scale", "")
+	return st
+
+
+## Armes à RATIO : dégâts d'un coup selon la stat liée (appliqué à chaque coup, donc
+## toujours à jour : or dans la bourse, armes possédées, stats du moment...).
+static func scaled_damage(base: float, scale: String) -> float:
+	var s: Dictionary = Run.stats
+	match scale:
+		"free_slots":
+			return base * (1.0 + 0.6 * maxi(0, Run.max_weapons() - Run.weapons.size()))
+		"max_hp":
+			return base + 0.15 * float(s.get("max_hp", 0.0))
+		"armor":
+			return base + 1.5 * maxf(0.0, s.get("armor", 0.0))
+		"speed":
+			return base * (1.0 + maxf(0.0, s.get("speed", 0.0)) / 100.0)
+		"luck":
+			return base + 0.25 * maxf(0.0, s.get("luck", 0.0))
+		"gold":
+			return base + floorf(Run.gold / 12.0)
+		"range":
+			return base * (1.0 + 1.5 * maxf(0.0, s.get("range", 0.0)) / 100.0)
+		"colors":
+			return base * (1.0 + 0.35 * int(Run.char_a.get("elements", 0)))
+		"pixels":
+			return base * pixel_mult()
+	return base
+
+
+## Silhouette : ×0,5 pour un tout petit perso, ×1,1 vers 250 px, ×2,1 vers 600 px (max ×3,5).
+static func pixel_mult() -> float:
+	return clampf(0.4 + float(Run.char_a.get("pixels", 0)) / 350.0, 0.5, 3.5)
+
+
+## Texte « valeur actuelle du ratio » (boutique, collection).
+static func scale_text(scale: String) -> String:
+	var s: Dictionary = Run.stats
+	match scale:
+		"free_slots":
+			var free := maxi(0, Run.max_weapons() - Run.weapons.size())
+			return "Ratio : %d emplacement(s) libre(s) = ×%.1f" % [free, 1.0 + 0.6 * free]
+		"max_hp":
+			return "Ratio : %d PV max = +%d dégâts" % [int(s.get("max_hp", 0)), roundi(0.15 * float(s.get("max_hp", 0.0)))]
+		"armor":
+			return "Ratio : %d armure = +%d dégâts" % [int(s.get("armor", 0)), roundi(1.5 * maxf(0.0, s.get("armor", 0.0)))]
+		"speed":
+			return "Ratio : vitesse %+d%% = ×%.2f" % [int(s.get("speed", 0)), 1.0 + maxf(0.0, s.get("speed", 0.0)) / 100.0]
+		"crit":
+			return "Ratio : %d%% critique = critiques ×%.1f" % [int(s.get("crit", 0)), maxf(float(s.get("crit_mult", 2.0)), 2.0 + float(s.get("crit", 0.0)) / 35.0)]
+		"luck":
+			return "Ratio : %d chance = +%d dégâts" % [int(s.get("luck", 0)), roundi(0.25 * maxf(0.0, s.get("luck", 0.0)))]
+		"gold":
+			return "Ratio : %d or = +%d dégâts" % [Run.gold, floori(Run.gold / 12.0)]
+		"range":
+			return "Ratio : portée %+d%% = ×%.2f" % [int(s.get("range", 0)), 1.0 + 1.5 * maxf(0.0, s.get("range", 0.0)) / 100.0]
+		"colors":
+			return "Ratio : %d couleur(s) sur ton perso = ×%.2f" % [int(Run.char_a.get("elements", 0)), 1.0 + 0.35 * int(Run.char_a.get("elements", 0))]
+		"pixels":
+			return "Ratio : %d pixels = ×%.2f" % [int(Run.char_a.get("pixels", 0)), pixel_mult()]
+	return ""
 
 
 ## La TAILLE change le style, pas la puissance : les dégâts par seconde restent proches.
