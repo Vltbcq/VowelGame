@@ -1,0 +1,48 @@
+name: Annonce Discord
+
+# Poste une Release dans un salon Discord (message avec le résumé, le lien et les téléchargements).
+# - Automatique : appelé par le workflow Release après chaque publication
+# - À la main : onglet Actions > Annonce Discord > Run workflow (pour (re)poster une version)
+# Réglage : secret DISCORD_WEBHOOK = URL du webhook du salon (Paramètres du dépôt > Secrets and variables > Actions)
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version à annoncer (ex. v0.2)"
+        required: true
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Poster sur Discord
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then
+            echo "Pas de secret DISCORD_WEBHOOK : annonce ignorée."
+            exit 0
+          fi
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}"
+          DL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
+          # Même résumé que la Release, sans le titre ni la ligne « Télécharge… »
+          bash .github/scripts/release_body.sh "$VERSION" | grep -v '^## ' | grep -v '^▶' > desc.md
+          printf '\n⬇️ [Vowel.exe](%s/Vowel.exe) · [Vowel-windows.zip](%s/Vowel-windows.zip)\n' "$DL" "$DL" >> desc.md
+          jq -n --arg title "🎨 Vowel ${VERSION} est sortie !" --arg url "$URL" --rawfile desc desc.md '{
+            username: "Vowel",
+            embeds: [{title: $title, url: $url, description: ($desc | .[0:4000]), color: 14067247,
+                      footer: {text: "Windows a protégé votre PC ? Informations complémentaires → Exécuter quand même"}}]
+          }' > payload.json
+          cat payload.json
+          curl -sS --fail-with-body -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"

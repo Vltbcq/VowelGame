@@ -72,3 +72,11 @@ jobs:
           files: |
             builds/Vowel.exe
             builds/Vowel-windows.zip
+
+  discord:
+    # Une fois la Release publiée : annonce dans le salon Discord (si le secret DISCORD_WEBHOOK existe)
+    needs: export
+    uses: ./.github/workflows/discord.yml
+    with:
+      version: ${{ github.event.inputs.version || github.ref_name }}
+    secrets: inherit
