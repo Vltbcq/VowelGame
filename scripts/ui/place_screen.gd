@@ -23,12 +23,12 @@ var item_tex: ImageTexture
 var weapon_ghosts: Array = []       # [texture, centre composite, taille]
 var rot := 0                        # quarts de tour (appliqués après le miroir)
 var margin := 0                     # zone en plus autour du perso (armes : bien plus large)
-var outline := true                 # l'objet posé a-t-il un contour noir ?
+var outline := false                 # l'objet posé a-t-il un contour noir ?
 const WEAPON_MARGIN := 34
 var flip := false
 
 
-func _init(m: String, img: Image, d: Dictionary, with_outline := true) -> void:
+func _init(m: String, img: Image, d: Dictionary, with_outline := false) -> void:
 	mode = m
 	item = Analyzer.trim(img)
 	def = d
@@ -54,7 +54,7 @@ func _ready() -> void:
 	var cc := Run.char_center() + Vector2(margin, margin)
 	for w in Run.weapons:
 		var wi := Run.weapon_image(w)
-		var wo: bool = Run.art_of(w).get("outline", true)
+		var wo: bool = Run.art_of(w).get("outline", false)
 		weapon_ghosts.append([_disp_tex(wi, wo), cc + w.anchor, Vector2(wi.get_size()), wo])
 
 	var what: String = {"amulet": "ton amulette : %s", "weapon": "ton arme : %s", "mark": "ta marque : %s"}[mode] % def.name

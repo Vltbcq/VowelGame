@@ -16,7 +16,7 @@ const UPGRADES := [
 	["dodge", 3.0, "+{v}% esquive"], ["speed", 5.0, "+{v}% vitesse"], ["dmg", 5.0, "+{v}% dégâts"],
 	["atk_speed", 5.0, "+{v}% vit. d'attaque"], ["crit", 3.0, "+{v}% critique"], ["range", 8.0, "+{v}% portée"],
 	["lifesteal", 2.0, "+{v}% vol de vie"], ["luck", 5.0, "+{v} chance"], ["harvest", 3.0, "+{v} pourboire"],
-	["el_power", 10.0, "+{v}% puissance élém."], ["pickup", 20.0, "+{v} ramassage"], ["thorns", 2.0, "+{v} épines"],
+	["el_power", 10.0, "+{v}% puissance élém."], ["thorns", 2.0, "+{v} épines"],
 ]
 const UPGRADE_MULT := [1.0, 1.5, 2.2, 3.0]
 const PACT_CHANCE := 0.3     # un choix sur 3 peut être un « pacte » : bonus doublé, mais un malus
@@ -25,12 +25,16 @@ const PACT_CHANCE := 0.3     # un choix sur 3 peut être un « pacte » : bonus 
 const SYNERGY_NEED := 3
 const SYNERGY_DESC := ["", "Brûlure contagieuse", "Éclats de glace à la mort des ennemis gelés",
 	"Chaînes d'éclairs plus longues (4 cibles)", "Nuage toxique à la mort des empoisonnés",
-	"Marque arcanique doublée (+50% dégâts subis)", "Les éclats de lumière te soignent"]
+	"Marque arcanique doublée (+50% dégâts subis)", "Toutes tes explosions sont 33% plus grandes"]
 
 const HEALS := {
 	"potion": {"name": "Fiole d'encre", "heal": 0.3, "price": 7, "desc": "Soigne 30% de tes PV max."},
 	"grande_potion": {"name": "Grand flacon", "heal": 0.7, "price": 15, "desc": "Soigne 70% de tes PV max."},
+	"seve": {"name": "Élixir de sève", "heal": 0.0, "regen": 10.0, "price": 10,
+		"desc": "Vague suivante : régénération ×4 (au moins +8) pendant les 10 premières secondes."},
 }
+## Roulette de la boutique : 37 cases (0 = vert, puis rouge / noir en alternance)
+const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 15}
 
 var active := false
 var map := 1                 # carte de la partie (MapDB)
@@ -39,7 +43,7 @@ var wave := 0
 var hp := 0.0               # les PV sont conservés d'une vague à l'autre
 var character: Image
 var char_effect := ""
-var char_outline := true
+var char_outline := false
 var char_a := {}
 var weapon_art := {}        # "type#rareté" -> {image, effect, a, bullet, beffect, ba} : un dessin par rareté
 var boss_plan := {}         # vague -> boss de cette partie
@@ -62,9 +66,10 @@ var pending_levels := 0     # niveaux gagnés pendant la vague, à choisir aprè
 var stats := {}
 var shop_offers: Array = []
 var rerolls := 0
-var joconde := 0            # vagues parfaites avec La Joconde (+12% dégâts chacune)
+var joconde := 0            # vagues finies avec La Joconde (+15% dégâts chacune)
 var revived := false        # Renaissance déjà utilisée
 var levelup_choices: Array = []   # les 3 bonus proposés au niveau en attente (sauvegardés)
+var regen_boost := 0.0      # Élixir de sève : secondes de régénération boostée au début de la vague suivante
 var elite_kills := 0        # élites effacées dans la partie
 var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
@@ -103,13 +108,14 @@ func start(d: int, map_id := 1) -> void:
 	levelup_choices = []
 	elite_kills = 0
 	boss_ids = {}
+	regen_boost = 0.0
 
 
 func diff() -> Dictionary:
 	return Meta.DIFFICULTIES[difficulty]
 
 
-func set_character(img: Image, effect: String, outline := true) -> void:
+func set_character(img: Image, effect: String, outline := false) -> void:
 	character = img
 	char_effect = effect
 	char_outline = outline
@@ -186,7 +192,7 @@ func art_of(w: Dictionary) -> Dictionary:
 
 ## Chaque rareté a son propre dessin : les exemplaires moins rares gardent le leur.
 func set_weapon_art(type: String, rar: int, img: Image, effect: String, bullet: Image, beffect: String,
-		outline := true, boutline := true) -> void:
+		outline := false, boutline := false) -> void:
 	var art := {"image": img, "effect": effect, "a": Analyzer.analyze(img), "bullet": bullet, "beffect": beffect,
 		"outline": outline, "boutline": boutline}
 	if bullet:
@@ -243,7 +249,7 @@ func weapon_count(type: String) -> int:
 
 # ------------------------------------------------------------------ Amulettes
 
-func set_amulet_art(id: String, img: Image, effect: String, outline := true) -> void:
+func set_amulet_art(id: String, img: Image, effect: String, outline := false) -> void:
 	amulet_art[id] = {"image": Analyzer.trim(img), "effect": effect, "a": Analyzer.analyze(img), "outline": outline}
 
 
@@ -252,7 +258,7 @@ func add_amulet(id: String, img: Image, pos: Vector2i) -> void:
 	var def := AmuletDB.get_def(id)
 	var a: Dictionary = amulet_art[id].a
 	var am := {"id": id, "image": img, "pos": pos, "a": a, "mag": Stats.amulet_mag(a, def),
-		"outline": amulet_art[id].get("outline", true)}
+		"outline": amulet_art[id].get("outline", false)}
 	am.zone = zone_at(pos, img.get_size())
 	amulets.append(am)
 	recompute()
@@ -291,7 +297,7 @@ func build_player_image() -> Image:
 	for m in marks:
 		var mi: Image = m.image
 		var mp: Vector2i = m.pos
-		if m.get("outline", true):
+		if m.get("outline", false):
 			mi = Gfx.baked_outline(mi)
 			mp -= Vector2i.ONE
 		img.blend_rect(mi, Rect2i(Vector2i.ZERO, mi.get_size()), mp)
@@ -300,7 +306,7 @@ func build_player_image() -> Image:
 		var pos: Vector2i = am.pos
 		if am.id == "tache":
 			_ink_blob(img, pos + ai.get_size() / 2)
-		if am.get("outline", true):
+		if am.get("outline", false):
 			ai = Gfx.baked_outline(ai)
 			pos -= Vector2i.ONE
 		img.blend_rect(ai, Rect2i(Vector2i.ZERO, ai.get_size()), pos)
@@ -325,14 +331,14 @@ func _ink_blob(img: Image, c: Vector2i) -> void:
 
 # ------------------------------------------------------------------ Ennemis
 
-func set_enemy_art(id: String, img: Image, effect: String, outline := true) -> void:
+func set_enemy_art(id: String, img: Image, effect: String, outline := false) -> void:
 	var def := EnemyDB.get_def(id)
 	var a := Analyzer.analyze(img)
 	enemy_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, def.ink), "outline": outline}
 
 
 ## Version élite : le dessin de base + des ajouts du joueur (plus d'encre).
-func set_elite_art(id: String, img: Image, effect: String, outline := true) -> void:
+func set_elite_art(id: String, img: Image, effect: String, outline := false) -> void:
 	var def := EnemyDB.get_def(id)
 	var a := Analyzer.analyze(img)
 	elite_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, roundi(def.ink * 1.4)), "outline": outline}
@@ -388,7 +394,7 @@ func auto_eproj(id: String) -> void:
 	eproj_art[id].mods.speed = 1.0
 
 
-func set_eproj_art(id: String, img: Image, effect: String, outline := true) -> void:
+func set_eproj_art(id: String, img: Image, effect: String, outline := false) -> void:
 	var a := Analyzer.analyze(img)
 	eproj_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.eproj_art(a), "outline": outline}
 
@@ -416,26 +422,26 @@ func to_save(stage: String) -> Dictionary:
 		"kills": kills, "bosses": bosses, "signature": signature, "bonus": bonus.duplicate(),
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
-		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate()}
+		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
 		wa[k] = {"image": _png(e.image), "effect": e.effect, "bullet": _png(e.bullet), "beffect": e.beffect,
-			"outline": e.get("outline", true), "boutline": e.get("boutline", true)}
+			"outline": e.get("outline", false), "boutline": e.get("boutline", false)}
 	d.weapon_art = wa
 	d.weapons = weapons.map(func(w): return {"type": w.type, "rar": w.rar, "price": w.price, "anchor": w.anchor,
 		"rot": w.get("rot", 0), "flip": w.get("flip", false)})
 	var aa := {}
 	for k in amulet_art:
-		aa[k] = {"image": _png(amulet_art[k].image), "effect": amulet_art[k].effect, "outline": amulet_art[k].get("outline", true)}
+		aa[k] = {"image": _png(amulet_art[k].image), "effect": amulet_art[k].effect, "outline": amulet_art[k].get("outline", false)}
 	d.amulet_art = aa
 	d.amulets = amulets.map(func(am): return {"id": am.id, "image": _png(am.image), "pos": am.pos})
-	d.marks = marks.map(func(m): return {"image": _png(m.image), "pos": m.pos, "outline": m.get("outline", true)})
+	d.marks = marks.map(func(m): return {"image": _png(m.image), "pos": m.pos, "outline": m.get("outline", false)})
 	for field in ["enemy_art", "elite_art", "eproj_art"]:
 		var src: Dictionary = get(field)
 		var out := {}
 		for k in src:
-			out[k] = {"image": _png(src[k].image), "effect": src[k].effect, "outline": src[k].get("outline", true)}
+			out[k] = {"image": _png(src[k].image), "effect": src[k].effect, "outline": src[k].get("outline", false)}
 		d[field] = out
 	return d
 
@@ -457,7 +463,8 @@ func from_save(d: Dictionary) -> bool:
 		var e: Dictionary = d.amulet_art[k]
 		set_amulet_art(k, _img(e.image), e.effect, e.outline)
 	for am in d.amulets:
-		add_amulet(am.id, _img(am.image), am.pos)
+		if not AmuletDB.get_def(am.id).is_empty():   # amulette retirée du jeu (Aimant, Buvard...)
+			add_amulet(am.id, _img(am.image), am.pos)
 	for m in d.marks:
 		add_mark(_img(m.image), m.pos, m.outline)
 	for k in d.enemy_art:
@@ -476,12 +483,13 @@ func from_save(d: Dictionary) -> bool:
 	signature = int(d.signature)
 	bonus = d.bonus
 	pending_levels = int(d.pending_levels)
-	shop_offers = d.shop_offers
+	shop_offers = (d.shop_offers as Array).filter(func(o): return o.type != "amulet" or not AmuletDB.get_def(o.id).is_empty())
 	rerolls = int(d.rerolls)
 	joconde = int(d.get("joconde", 0))
 	revived = bool(d.get("revived", false))
 	levelup_choices = d.get("levelup_choices", [])
 	elite_kills = int(d.get("elite_kills", 0))
+	regen_boost = float(d.get("regen_boost", 0.0))
 	boss_ids = d.get("boss_ids", {})
 	recompute()
 	hp = clampf(float(d.hp), 1.0, stats.max_hp)
@@ -560,7 +568,7 @@ func apply_upgrade(u: Dictionary) -> void:
 	recompute()
 
 
-func add_mark(img: Image, pos: Vector2i, outline := true) -> void:
+func add_mark(img: Image, pos: Vector2i, outline := false) -> void:
 	marks.append({"image": img, "pos": pos, "a": Analyzer.analyze(img), "outline": outline})
 	recompute()
 
@@ -656,9 +664,13 @@ func roll_shop() -> void:
 		Meta.mark_seen(key)
 	# Soin : pas à chaque fois !
 	if randf() < 0.5:
-		var hid := "grande_potion" if randf() < 0.3 else "potion"
+		var roll := randf()
+		var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
 		shop_offers.append({"type": "heal", "id": hid, "rar": 0,
 			"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
+	# Roulette : de temps en temps (pas avant la 2e boutique)
+	if wave >= 2 and randf() < 0.25:
+		shop_offers.append({"type": "roulette", "id": "roulette", "rar": 0, "price": 0, "sold": false})
 
 
 ## Le prix de base monte avec les vagues, et chaque relance coûte plus cher

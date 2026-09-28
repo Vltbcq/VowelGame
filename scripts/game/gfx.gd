@@ -98,7 +98,7 @@ static func texture(img: Image) -> ImageTexture:
 	return ImageTexture.create_from_image(padded(img))
 
 
-static func material(effect: String, outline := true) -> ShaderMaterial:
+static func material(effect: String, outline := false) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = shader
 	m.set_shader_parameter("effect", FX_ID.get(effect, 0))

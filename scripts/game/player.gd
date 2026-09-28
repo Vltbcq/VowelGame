@@ -25,6 +25,8 @@ var shadow_ready := false   # Ombre portée : prochain coup ×2 après une esqui
 var paper := 0              # Bouclier de papier : coups ignorés restants dans la vague
 var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
 var spike_acc := 0.0        # Hérisson
+var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
+var sap_t := 0.0            # Élixir de sève : régénération boostée restante (s)
 
 
 func setup(a: Arena) -> void:
@@ -90,7 +92,8 @@ func tick(delta: float) -> void:
 	# Correcteur : insensible aux flaques d'encre
 	var hz: Array = [1.0, 0.0] if Run.amulet_count("correcteur") > 0 else arena.hazard_effect(position, radius)
 	var boost := 1.2 if Run.amulet_count("derniere_touche") > 0 and hp < max_hp * 0.25 else 1.0
-	position += d * st.move * hz[0] * boost * delta
+	vel = d * st.move * hz[0] * boost
+	position += vel * delta
 	if hz[1] > 0.0:
 		take_hit(hz[1], 0, null)
 	position.x = clampf(position.x, radius, Arena.W - radius)
@@ -105,8 +108,12 @@ func tick(delta: float) -> void:
 		body.position.y = lerpf(body.position.y, 0.0, 0.3)
 		body.rotation = lerpf(body.rotation, 0.0, 0.3)
 
-	if st.regen > 0.0:
-		heal(st.regen * 0.2 * delta, false)
+	var regen: float = st.regen
+	if sap_t > 0.0:
+		sap_t -= delta
+		regen = maxf(regen * 4.0, regen + 8.0)   # Élixir de sève
+	if regen > 0.0:
+		heal(regen * 0.12 * delta, false)   # (−40 % par rapport à 0,2)
 	# Hérisson : les épines frappent en continu les ennemis collés à toi
 	if st.thorns > 0.0 and Run.amulet_count("herisson") > 0:
 		spike_acc += delta

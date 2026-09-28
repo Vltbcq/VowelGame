@@ -30,7 +30,7 @@ var out_t := 0.0
 var returning := false
 
 
-func setup(tex: Texture2D, effect: String, outline := true) -> void:
+func setup(tex: Texture2D, effect: String, outline := false) -> void:
 	var s := Gfx.sprite(tex, Gfx.material(effect, outline))
 	add_child(s)
 	rotation = vel.angle()
@@ -74,16 +74,16 @@ func tick(delta: float, arena: Arena) -> bool:
 	if lob_r > 0.0:
 		rotation += 8.0 * delta
 		if life <= 0.0:
-			arena.explosion(position, lob_r, Color(Pal.main_color(Pal.FEU), 0.7))
-			for e in arena.near(position, lob_r):
+			arena.explosion(position, arena.boom(lob_r), Color(Pal.main_color(Pal.FEU), 0.7))
+			for e in arena.near(position, arena.boom(lob_r)):
 				arena.hit_enemy(e, dmg, wst, (e.position - position).normalized(), knock * 2.0)
 			return false
 		return true
 	if burst_r > 0.0:
 		rotation = 0.0
 		if life <= 0.0 or not arena.near(position, radius).is_empty():
-			arena.explosion(position, burst_r, Color(Pal.ACCENT, 0.85))
-			for e in arena.near(position, burst_r):
+			arena.explosion(position, arena.boom(burst_r), Color(Pal.ACCENT, 0.85))
+			for e in arena.near(position, arena.boom(burst_r)):
 				arena.hit_enemy(e, dmg, wst, (e.position - position).normalized(), knock * 3.0)
 			return false
 	# Élastique : rebondit sur les bords de la page

@@ -84,7 +84,7 @@ func _ready() -> void:
 	Run.roll_shop()
 	var first_new := true
 	for o in Run.shop_offers:
-		if o.type != "heal":
+		if o.type in ["weapon", "amulet"]:
 			first_new = first_new and o.get("new", false)
 	_check(first_new, "première boutique : tout est nouveau")
 	var again := 0
@@ -93,7 +93,7 @@ func _ready() -> void:
 		Run.roll_shop()
 		var here := {}
 		for o in Run.shop_offers:
-			if o.type == "heal":
+			if not o.type in ["weapon", "amulet"]:
 				continue
 			var key := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
 			if o.new and seen_before.has(key):

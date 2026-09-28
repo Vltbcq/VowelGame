@@ -21,9 +21,9 @@ func _ready() -> void:
 				Run.roll_shop()
 				var has := [false, false]
 				for o in Run.shop_offers:
-					if o.type != "heal" and o.rar == 2:
+					if o.type in ["weapon", "amulet"] and o.rar == 2:
 						has[0] = true
-					if o.type != "heal" and o.rar == 3:
+					if o.type in ["weapon", "amulet"] and o.rar == 3:
 						has[1] = true
 				epi += int(has[0])
 				leg += int(has[1])

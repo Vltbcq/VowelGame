@@ -60,7 +60,7 @@ static func elite(id: String) -> Dictionary:
 	var ink := maxi(roundi(def.ink * 1.4), base_cost + 30)
 	var s: int = def.canvas + 8
 	return {"kind": "enemy", "gallery": "enemy", "size": Vector2i(s, s), "ink": ink, "base": base,
-		"effect": Run.enemy_art[id].effect, "outline": Run.enemy_art[id].get("outline", true),
+		"effect": Run.enemy_art[id].effect, "outline": Run.enemy_art[id].get("outline", false),
 		"title": "ÉLITE : %s" % def.name,
 		"sub": "Complète ton dessin : c'est sa version élite (aura, PV ×3, butin ×3). Ajoute au moins 15 d'encre.",
 		"cancel": false, "min": 6, "min_ink": base_cost + 15, "random": false}

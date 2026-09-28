@@ -17,7 +17,7 @@ var caption := "TON CARNET"
 var sel_img: Image
 var sel_effect := ""
 var from_carnet := false
-var outline := true
+var outline := false
 
 var frame_cap: Label
 var pic: TextureRect

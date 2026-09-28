@@ -120,7 +120,7 @@ func _texture(e: Dictionary) -> Texture2D:
 		if img == null:
 			return null
 		img = Analyzer.trim(img)
-		tex_cache[key] = ImageTexture.create_from_image(Gfx.baked_outline(img))
+		tex_cache[key] = ImageTexture.create_from_image(img)   # sans bord (comme les dessins par défaut)
 	return tex_cache[key]
 
 

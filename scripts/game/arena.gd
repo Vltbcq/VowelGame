@@ -54,6 +54,7 @@ var hazards: Array = []   # flaques et traînées d'encre {pos, r, t, life, slow
 var lobs: Array = []      # tirs en cloche {from, to, t, dur, dmg, r, el, tex}
 var rulers: Array = []    # lignes tracées à la règle {a, b, t, life}
 var erasers: Array = []   # coups de gomme de la Toile Blanche {pos, r, t, dur, dmg}
+var strokes: Array = []   # traits du Raturé annoncés à la règle, qui deviennent de l'encre {a, b, t, dmg, col, boom}
 var clouds: Array = []    # nuages de poison (synergie) {pos, r, t, acc, dps}
 var syn := {}             # synergies de couleur actives : élément -> nombre d'armes
 # Le Tableau noir : événements et attaques spéciales
@@ -126,6 +127,10 @@ func _ready() -> void:
 	player.position = Vector2(W / 2.0, H / 2.0)
 	world.add_child(player)
 	player.setup(self)
+	if Run.regen_boost > 0.0:
+		player.sap_t = Run.regen_boost   # Élixir de sève (acheté à la boutique précédente)
+		Run.regen_boost = 0.0
+		_after(0.6, func(): float_text(player.position + Vector2(0, -24), "SÈVE : RÉGÉN ×4", Pal.GOOD))
 
 	cam = Camera2D.new()
 	var z: float = Meta.setting("zoom")
@@ -415,7 +420,7 @@ func _dot(el: int) -> Texture2D:
 
 # ------------------------------------------------------------------ Projectiles
 
-func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, tex: Texture2D, effect: String, life: float, outline := true) -> Projectile:
+func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, tex: Texture2D, effect: String, life: float, outline := false) -> Projectile:
 	var p := Projectile.new()
 	p.position = pos
 	p.vel = vel
@@ -445,7 +450,7 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0) -> 
 	p.life = 6.0
 	var tex: Texture2D
 	var effect := ""
-	var outline := true
+	var outline := false
 	if Run.eproj_art.has(src.id):
 		var art: Dictionary = Run.eproj_art[src.id]
 		vel *= art.mods.speed
@@ -453,7 +458,7 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0) -> 
 		p.radius = art.mods.radius
 		p.element = art.mods.element
 		effect = art.effect
-		outline = art.get("outline", true)
+		outline = art.get("outline", false)
 		if not eproj_tex.has(src.id):
 			eproj_tex[src.id] = Gfx.texture(Analyzer.trim(art.image))
 		tex = eproj_tex[src.id]
@@ -532,8 +537,8 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		e.hurt(e.hp + 1.0, true, Vector2.ZERO)
 	var craq := Run.amulet_count("craquelure")
 	if crit and craq > 0:
-		explosion(e.position, 26.0, Color(Pal.ACCENT, 0.6), true)
-		for o in near(e.position, 26.0):
+		explosion(e.position, boom(26.0), Color(Pal.ACCENT, 0.6), true)
+		for o in near(e.position, boom(26.0)):
 			if o != e:
 				o.hurt(dmg * 0.4 * craq, false, (o.position - e.position).normalized() * 40.0)
 	Sfx.play("hit")
@@ -605,11 +610,9 @@ func _apply_el(e: Enemy, el: int, dmg: float, spread := true) -> void:
 				if randf() < 0.3:
 					player.heal(1.0)
 			Pal.LUMIERE:
-				var lr := 34.0 * (1.0 + 0.5 * Run.amulet_count("vitrail"))   # Vitrail : +50 % de rayon
+				var lr := boom(34.0 * (1.0 + 0.5 * Run.amulet_count("vitrail")))   # Vitrail : +50 % de rayon
 				var au := Run.amulet_count("aureole")
 				explosion(e.position, lr, Color(1, 1, 0.9, 0.9))
-				if syn.has(Pal.LUMIERE):
-					player.heal(1.0)   # synergie Lumière
 				if au > 0:
 					player.heal(1.0 * au)   # Auréole
 				for o in near(e.position, lr):
@@ -703,9 +706,9 @@ func kill_enemy(e: Enemy) -> void:
 		_after(0.05, func(): spawn_ally(aid, apos, ael))   # (l'ennemi mort est déjà effacé)
 	# Braise : un ennemi qui meurt en brûlant explose et enflamme ses voisins
 	if e.burn_ticks > 0 and Run.amulet_count("braise") > 0:
-		explosion(e.position, 40.0, Color(Pal.main_color(Pal.FEU), 0.8), true)
+		explosion(e.position, boom(40.0), Color(Pal.main_color(Pal.FEU), 0.8), true)
 		burst(e.position, Pal.main_color(Pal.FEU), 12, 110.0)
-		for o in near(e.position, 40.0):
+		for o in near(e.position, boom(40.0)):
 			if o != e and not o.dead:
 				o.burn(e.burn_dmg)
 				o.hurt(e.burn_dmg * 2.0 * Run.amulet_count("braise"), false, (o.position - e.position).normalized() * 50.0, Pal.FEU)
@@ -750,8 +753,8 @@ func kill_enemy(e: Enemy) -> void:
 	# Amulette Rature : explosion
 	var rat := Run.amulet_count("rature")
 	if rat > 0 and not e.is_boss and randf() < 0.08 * rat:
-		explosion(e.position, 42.0, Color(Pal.INK, 0.8))
-		for o in near(e.position, 42.0):
+		explosion(e.position, boom(42.0), Color(Pal.INK, 0.8))
+		for o in near(e.position, boom(42.0)):
 			if o != e:
 				o.hurt(8.0 + Run.wave * 3.0, false, (o.position - e.position).normalized() * 80.0)
 	enemies.erase(e)
@@ -831,7 +834,7 @@ func _end_wave() -> void:
 	allies.clear()
 	Run.hp = player.hp
 	# La Joconde : une vague sans une égratignure = +12% dégâts pour la partie
-	if not player.was_hurt and Run.amulet_count("joconde") > 0:
+	if Run.amulet_count("joconde") > 0:
 		Run.joconde += Run.amulet_count("joconde")
 		numbers.add(player.position + Vector2(0, -34), "LA JOCONDE SOURIT : +12% DÉGÂTS", Pal.ACCENT, 2.0)
 	Run.end_wave()
@@ -901,6 +904,13 @@ func add_ruler(a: Vector2, b: Vector2, life: float) -> void:
 	rulers.append({"a": a, "b": b, "t": life, "life": life})
 
 
+## Raturé : une ligne annoncée à la règle pendant « delay », puis un trait d'encre qui brûle
+## (boom > 0 : explosion au point a, pour le centre d'une croix).
+func add_stroke(a: Vector2, b: Vector2, delay: float, dmg: float, col: Color, boom_r := 0.0) -> void:
+	add_ruler(a, b, delay)
+	strokes.append({"a": a, "b": b, "t": delay, "dmg": dmg, "col": col, "boom": boom_r})
+
+
 func add_eraser(pos: Vector2, r: float, dur: float, dmg: float) -> void:
 	erasers.append({"pos": pos, "r": r, "t": 0.0, "dur": dur, "dmg": dmg})
 
@@ -912,6 +922,21 @@ func _tick_effects(delta: float) -> void:
 	for rl in rulers:
 		rl.t -= delta
 	rulers = rulers.filter(func(rl): return rl.t > 0.0)
+	var sk := []
+	for sk_i in strokes:
+		sk_i.t -= delta
+		if sk_i.t > 0.0:
+			sk.append(sk_i)
+			continue
+		var len_s: float = sk_i.a.distance_to(sk_i.b)
+		var n := maxi(1, int(len_s / 9.0))
+		for k in n + 1:
+			add_hazard(sk_i.a.lerp(sk_i.b, float(k) / n), 7.0, 1.4, 1.0, sk_i.dmg, sk_i.col)
+		if sk_i.boom > 0.0:
+			explosion(sk_i.a, sk_i.boom, Color(sk_i.col, 0.8))
+			if sk_i.a.distance_to(player.position) < sk_i.boom + player.radius:
+				player.take_hit(sk_i.dmg * 2.5, 0, null)
+	strokes = sk
 	var keep := []
 	for lb in lobs:
 		lb.t += delta
@@ -1200,10 +1225,11 @@ func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
 func _star(pos: Vector2) -> void:
 	if ended:
 		return
-	explosion(pos, 60.0, Color(Pal.ACCENT, 0.9))
+	var sr := boom(60.0)
+	explosion(pos, sr, Color(Pal.ACCENT, 0.9))
 	burst(pos, Pal.ACCENT, 16, 120.0)
 	var d: float = (12.0 + Run.wave * 4.0) * (1.0 + Run.stats.dmg / 100.0)
-	for o in near(pos, 60.0):
+	for o in near(pos, sr):
 		o.hurt(d, false, (o.position - pos).normalized() * 80.0)
 
 
@@ -1225,9 +1251,9 @@ func squid_cloud(pos: Vector2) -> void:
 	if squid_cd > 0.0 or Run.amulet_count("encre_seiche") == 0:
 		return
 	squid_cd = 15.0
-	explosion(pos, 90.0, Color(Pal.INK, 0.8))
+	explosion(pos, boom(90.0), Color(Pal.INK, 0.8))
 	burst(pos, Pal.INK, 30, 120.0)
-	for o in near(pos, 90.0):
+	for o in near(pos, boom(90.0)):
 		o.blind_t = 2.0
 	float_text(pos + Vector2(0, -26), "ENCRE DE SEICHE !", Pal.TEXT)
 
@@ -1296,9 +1322,9 @@ func _tick_wells(delta: float) -> void:
 		if w.t < w.dur:
 			keep.append(w)
 			continue
-		explosion(w.pos, w.r * 0.8, Color(Pal.INK, 0.9))
+		explosion(w.pos, boom(w.r * 0.8), Color(Pal.INK, 0.9))
 		burst(w.pos, Pal.INK, 24, 140.0)
-		for e in near(w.pos, w.r * 0.8):
+		for e in near(w.pos, boom(w.r * 0.8)):
 			hit_enemy(e, w.dmg, w.wst, (e.position - w.pos).normalized(), 120.0)
 	wells = keep
 
@@ -1395,6 +1421,10 @@ func ghost_volley(src: Enemy, pos: Vector2, n: int, step: float, delay: float) -
 		burst(pos, Color.WHITE, 10, 80.0))
 
 
+func player_vel() -> Vector2:
+	return player.vel if player else Vector2.ZERO
+
+
 func darkness(sec: float) -> void:
 	dark_t = sec
 
@@ -1440,6 +1470,11 @@ func damage_number(pos: Vector2, amount: float, crit: bool, el := 0) -> void:
 	if crit:
 		c = Pal.ACCENT
 	numbers.add(pos + Vector2(randf_range(-4, 4), -10), str(roundi(amount)) + ("!" if crit else ""), c, 0.7 if crit else 0.6, crit)
+
+
+## Rayon d'une explosion du joueur : synergie Lumière = +33 %.
+func boom(r: float) -> float:
+	return r * (1.33 if syn.has(Pal.LUMIERE) else 1.0)
 
 
 func explosion(pos: Vector2, r: float, color: Color, quiet := false) -> void:

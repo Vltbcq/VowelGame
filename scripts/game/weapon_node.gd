@@ -56,7 +56,7 @@ func setup(p: Player, weapon: Dictionary) -> void:
 	var trimmed := Analyzer.trim(art.image)
 	length = trimmed.get_width()
 	own_tex = Gfx.texture(trimmed)
-	sprite = Gfx.sprite(own_tex, Gfx.material(art.effect, art.get("outline", true)))
+	sprite = Gfx.sprite(own_tex, Gfx.material(art.effect, art.get("outline", false)))
 	add_child(sprite)
 	z_index = 1
 	cd = randf() * st.cooldown
@@ -227,7 +227,7 @@ func _start_melee(target: Enemy) -> void:
 	for i in dt:
 		var a := atk_angle + (i - (dt - 1) / 2.0) * 0.25
 		var p := player.arena.spawn_bullet(origin, Vector2.from_angle(a) * 260.0,
-			{"damage": st.damage * 0.6, "radius": st.hit_r, "pierce": 2}, st, own_tex, art.effect, 1.2, art.get("outline", true))
+			{"damage": st.damage * 0.6, "radius": st.hit_r, "pierce": 2}, st, own_tex, art.effect, 1.2, art.get("outline", false))
 		p.spin = 12.0
 
 
@@ -335,7 +335,7 @@ func _reap(a: float, rr: float) -> void:
 
 func _slam_impact() -> void:
 	var arena := player.arena
-	var r: float = st.aoe * _range_mult()
+	var r: float = arena.boom(st.aoe * _range_mult())
 	arena.explosion(slam_point, r, Color(Pal.INK, 0.7))
 	arena.shake(4.0)
 	for e in arena.near(slam_point, r):
@@ -464,7 +464,7 @@ func _fire(target: Enemy) -> void:
 				if st.style == "lob":
 					life = clampf(muzzle.distance_to(target.position) / b.speed, 0.15, life)
 				var p := arena.spawn_bullet(muzzle + off, Vector2.from_angle(a) * b.speed, b, st, bullet_tex[i],
-					art.beffect, life, art.get("boutline", true))
+					art.beffect, life, art.get("boutline", false))
 				p.dmg *= metro
 				if st.style == "homing":
 					p.homing = true

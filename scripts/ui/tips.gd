@@ -25,7 +25,7 @@ const TEXT := {
 	"arrange": ["Pose tes armes",
 		"Clique pour poser ton arme n'importe où sur ou autour de ton perso : elle attaquera depuis là.\nClique une arme déjà posée pour la déplacer. R = tourner, M = miroir.\n\nTu pourras réorganiser tes armes à tout moment depuis la boutique (« Ranger mes armes »)."],
 	"amulet_zones": ["Pose ton amulette",
-		"L'endroit où tu la poses donne un bonus en plus :\nTête = critique, Cœur = PV, Mains = vitesse d'attaque, Pieds = vitesse, et autour du perso (Aura) = ramassage.\nR = tourner, M = miroir."],
+		"L'endroit où tu la poses donne un bonus en plus :\nTête = critique, Cœur = PV, Mains = vitesse d'attaque, Pieds = vitesse, et autour du perso (Aura) = pourboire.\nR = tourner, M = miroir."],
 	"controls": ["C'est parti !",
 		"• ZQSD / WASD / flèches (ou manette) pour bouger.\n• Tes armes attaquent TOUTES SEULES l'ennemi le plus proche.\n• Ramasse les gouttes d'encre : elles donnent de l'or et de l'expérience.\n• Tes PV ne remontent PAS entre les vagues : fais attention !\n\nÉchap = pause · Molette = zoom. Survis jusqu'à la fin du chrono !"],
 	"levelup": ["Niveau supérieur !",

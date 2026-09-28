@@ -211,10 +211,15 @@ func _save_settings() -> void:
 
 func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(0.0001, float(setting("volume")))))
+	# On ne touche à la fenêtre que si le plein écran change : une fenêtre agrandie (maximisée)
+	# n'est pas « fenêtrée », et la repasser en fenêtré la rétrécissait (ex. à chaque cran de zoom).
 	var fs := bool(setting("fullscreen"))
-	var mode := DisplayServer.WINDOW_MODE_FULLSCREEN if fs else DisplayServer.WINDOW_MODE_WINDOWED
-	if DisplayServer.window_get_mode() != mode:
-		DisplayServer.window_set_mode(mode)
+	var cur := DisplayServer.window_get_mode()
+	var is_fs := cur == DisplayServer.WINDOW_MODE_FULLSCREEN or cur == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if fs and not is_fs:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+	elif not fs and is_fs:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 
 
 func save() -> void:
@@ -451,7 +456,7 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 
 
 func gallery(kind: String) -> Array:
-	var out: Array = data.gallery.filter(func(e): return e.kind == kind and FileAccess.file_exists(e.file))
+	var out: Array = data.gallery.filter(func(e): return (kind == "all" or e.kind == kind) and FileAccess.file_exists(e.file))
 	out.reverse()
 	return out
 
@@ -469,7 +474,7 @@ func bestiary_get(key: String):
 	var img := Image.load_from_file(e.file)
 	if img == null:
 		return null
-	return {"image": img, "effect": e.get("effect", ""), "outline": e.get("outline", true)}
+	return {"image": img, "effect": e.get("effect", ""), "outline": e.get("outline", false)}
 
 
 func bestiary_set(key: String, img: Image, effect: String, outline: bool) -> void:

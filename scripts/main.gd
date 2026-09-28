@@ -144,12 +144,12 @@ func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
 		return false
 	var bullet: Image = null
 	var beffect := ""
-	var boutline := true
+	var boutline := false
 	if not base.is_empty():
 		# Les balles sont les mêmes pour toutes les raretés du type
 		bullet = base.bullet
 		beffect = base.beffect
-		boutline = base.get("boutline", true)
+		boutline = base.get("boutline", false)
 	elif def.kind == "ranged" and not def.get("nobullet", false):
 		var bb = await _obtain("balle_" + type, DrawCfg.bullet(type, Analyzer.analyze(r.image), r.effect, rar), 0, "TES DERNIÈRES BALLES")
 		bullet = bb.image
@@ -278,7 +278,7 @@ func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET")
 		var c: Dictionary = cfg.duplicate()
 		c.cancel = true
 		c.cancel_label = "< Choix"
-		c.outline = r.get("outline", true)
+		c.outline = r.get("outline", false)
 		if r.a == "redraw":
 			c.base = r.image
 			c.effect = r.effect

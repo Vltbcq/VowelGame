@@ -23,7 +23,7 @@ const STAT_LABELS := [
 	["dodge", "Esquive", "%"], ["move", "Vitesse", ""], ["dmg", "Dégâts", "%"],
 	["atk_speed", "Vit. d'attaque", "%"], ["crit", "Critique", "%"], ["range", "Portée", "%"],
 	["lifesteal", "Vol de vie", "%"], ["luck", "Chance", ""], ["harvest", "Pourboire", ""],
-	["thorns", "Épines", ""], ["el_power", "Puissance élém.", "%"], ["pickup", "Ramassage", ""],
+	["thorns", "Épines", ""], ["el_power", "Puissance élém.", "%"],
 ]
 
 
@@ -130,9 +130,11 @@ static func player(run: Node) -> Dictionary:
 	n = run.amulet_count("perspective")
 	s.range += 30.0 * n
 	n = run.amulet_count("tache")
-	s.speed -= 12.0 * n
+	s.speed -= 20.0 * n
+	s.armor += 2.0 * n
+	s.max_hp += 5.0 * n
 	s.radius += 2.0 * n
-	s.dmg += 12.0 * run.joconde
+	s.dmg += 15.0 * run.joconde
 	n = run.amulet_count("cadre_dore")
 	if n > 0:
 		s.dmg += minf(40.0, floorf(run.gold / 5.0)) * n
@@ -164,7 +166,7 @@ static func player(run: Node) -> Dictionary:
 	s.dodge = minf(s.dodge, 60.0)
 	for e in Pal.COUNT:
 		s.res[e] = minf(s.res[e], 80.0)
-	s.pickup += 50.0
+	s.pickup += 50.0   # rayon de ramassage fixe (plus une stat : les gouttes sont aspirées en fin de vague)
 	return s
 
 
@@ -233,7 +235,7 @@ static func amulet_live(id: String) -> String:
 				kinds[w.type] = true
 			return "%d type(s) = +%d%% dégâts" % [kinds.size(), 8 * kinds.size()]
 		"joconde":
-			return "+%d%% dégâts" % (12 * Run.joconde)
+			return "+%d%% dégâts" % (15 * Run.joconde)
 		"fresque":
 			var g := (Meta.data.get("gallery", []) as Array).size()
 			return "%d dessins = +%d%% dégâts" % [g, roundi(minf(60.0, 0.5 * g))]
@@ -525,7 +527,7 @@ static func describe_player(s: Dictionary) -> String:
 	var L := []
 	for row in STAT_LABELS:
 		var v: float = s[row[0]]
-		if row[0] == "pickup" or row[0] == "move" or row[0] == "max_hp":
+		if row[0] == "move" or row[0] == "max_hp":
 			L.append("%s : %d" % [row[1], roundi(v)])
 		else:
 			L.append("%s : %s%d%s" % [row[1], "+" if v > 0 else "", roundi(v), row[2]])

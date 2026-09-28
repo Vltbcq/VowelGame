@@ -12,7 +12,7 @@ const STATS := [
 	["dodge", "Esquive %", 5.0], ["speed", "Vitesse %", 10.0], ["dmg", "Dégâts %", 10.0],
 	["atk_speed", "Vit. d'attaque %", 10.0], ["crit", "Critique %", 5.0], ["range", "Portée %", 10.0],
 	["lifesteal", "Vol de vie %", 5.0], ["luck", "Chance", 10.0], ["harvest", "Pourboire", 5.0],
-	["pickup", "Ramassage", 20.0], ["thorns", "Épines", 2.0], ["el_power", "Puissance élém. %", 10.0],
+	["thorns", "Épines", 2.0], ["el_power", "Puissance élém. %", 10.0],
 ]
 
 var arena: Arena
@@ -189,7 +189,7 @@ func _ensure_enemy_art(id: String) -> void:
 		arena.tex_cache.erase(id)
 	if elite and not Run.elite_art.has(id):
 		var base: Image = Run.enemy_art[id].image
-		Run.set_elite_art(id, base.duplicate(), Run.enemy_art[id].effect, Run.enemy_art[id].get("outline", true))
+		Run.set_elite_art(id, base.duplicate(), Run.enemy_art[id].effect, Run.enemy_art[id].get("outline", false))
 
 
 # ------------------------------------------------------------------ Armes

@@ -28,7 +28,7 @@ var col_b: Color = Pal.SHADES[0][2]
 var gradient := false
 var mirror := false
 var effect := ""
-var outline := true
+var outline := false
 var drawing := false
 var rmb := false
 var stroke_len := 0.0
@@ -71,7 +71,7 @@ func _ready() -> void:
 	var fx: String = cfg.get("effect", "")
 	if fx in Meta.effects():
 		effect = fx
-	outline = cfg.get("outline", true)
+	outline = cfg.get("outline", false)
 	_build_ui()
 	_recount()
 	_changed()
@@ -326,7 +326,7 @@ func _build_body_preview() -> void:
 		var wi := Run.weapon_image(w)
 		var ws := Vector2(wi.get_size())
 		var art: Dictionary = Run.art_of(w)
-		parts.append([Gfx.texture(wi), Gfx.material(art.effect, art.get("outline", true)),
+		parts.append([Gfx.texture(wi), Gfx.material(art.effect, art.get("outline", false)),
 			Rect2(cc + w.anchor - ws / 2.0 - Vector2.ONE, ws + Vector2(2, 2))])
 	parts.append([preview_tex, preview_mat, Rect2(item_c - isz / 2.0 - Vector2.ONE, isz + Vector2(2, 2))])
 	var bounds: Rect2 = parts[0][2]

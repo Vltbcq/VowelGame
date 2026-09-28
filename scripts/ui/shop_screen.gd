@@ -22,6 +22,10 @@ const STICKER := Color("b8322a")
 const FRAME := [[Color("8a5a2b"), Color("5a3818")], [Color("2f6fe0"), Color("173a7a")],
 	[Color("7a3fa6"), Color("3e1d5a")], [Color("e0a830"), Color("8c6414")]]
 const FRAME_HEAL := [Color("5d9a6a"), Color("2e5a38")]
+const FRAME_ROULETTE := [Color("b8322a"), Color("1d1a1a")]
+const WHEEL_RED := Color("c8322a")
+const WHEEL_BLACK := Color("221e1e")
+const WHEEL_GREEN := Color("2f9a4a")
 const WALL_BOTTOM := 212.0
 
 var spots: Array = []      # rectangles des tableaux éclairés
@@ -206,8 +210,17 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			kind = "Consommable"
 			desc = h.desc
 			frame_cols = FRAME_HEAL
-			full = Run.hp >= Run.stats.max_hp
-			icon = Gfx.icon(Gfx.ICON_POTION, Pal.SHADES[1][1] if o.id == "grande_potion" else Pal.SHADES[4][1])
+			full = Run.hp >= Run.stats.max_hp and h.heal > 0.0
+			if o.id == "seve":
+				full = Run.regen_boost > 0.0
+			var liquid: Color = {"grande_potion": Pal.SHADES[1][1], "seve": Pal.main_color(Pal.POISON)}.get(o.id, Pal.SHADES[4][1])
+			icon = Gfx.icon(Gfx.ICON_POTION, liquid)
+		"roulette":
+			oname = "Roulette"
+			kind = "Jeu de hasard"
+			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×15."
+			frame_cols = FRAME_ROULETTE
+			icon = _wheel_icon()
 
 	# Le tableau : cadre + toile
 	var frame := _frame_panel(frame_cols, 5)
@@ -215,7 +228,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	spots.append(Rect2(pos, Vector2(fw, 64)))
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
-	frame.tooltip_text = Pal.RARITY_NAMES_F[o.rar] if o.type != "heal" else "Consommable"
+	frame.tooltip_text = Pal.RARITY_NAMES_F[o.rar] if not o.type in ["heal", "roulette"] else kind
 	if o.get("new", false) and not o.sold:
 		var ukey := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
 		if ItemUnlockDB.CONDS.has(ukey):
@@ -250,15 +263,17 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
 		UI.put(ct, dot, Vector2(fw - 14, 77), Vector2(14, 14))
-		UI.put(ct, UI.label("VENDU", 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
+		UI.put(ct, UI.label("JOUÉ" if o.type == "roulette" else "VENDU", 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
 		frame.modulate = Color(1, 1, 1, 0.55)
 		return
-	var b := UI.button("● %d" % o.price, func(): _buy(i))
+	var b := UI.button("Miser" if o.type == "roulette" else "● %d" % o.price, func(): _buy(i))
 	if i < 9:
 		UI.hotkey(b, [KEY_1 + i])
 	_style_price(b)
-	b.disabled = Run.gold < o.price or full
-	if full and o.type == "weapon":
+	b.disabled = Run.gold < o.price or full or (o.type == "roulette" and Run.gold < 1)
+	if full and o.get("id", "") == "seve":
+		b.tooltip_text = "Tu as déjà un Élixir de sève pour la vague suivante."
+	elif full and o.type == "weapon":
 		b.tooltip_text = "Tu as déjà %d armes : revends-en une." % Run.max_weapons()
 	elif full:
 		b.tooltip_text = "Tes PV sont déjà au max."
@@ -405,13 +420,19 @@ func _fusion_pair() -> Array:
 
 func _buy(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
+	if o.type == "roulette":
+		_open_roulette(i)
+		return
 	if o.type != "heal":
 		done.emit({"a": "buy", "i": i})
 		return
 	if Run.gold < o.price:
 		return
 	Run.gold -= o.price
-	Run.heal(Run.stats.max_hp * Run.HEALS[o.id].heal)
+	if Run.HEALS[o.id].has("regen"):
+		Run.regen_boost = float(Run.HEALS[o.id].regen)   # Élixir de sève : vague suivante
+	else:
+		Run.heal(Run.stats.max_hp * Run.HEALS[o.id].heal)
 	o.sold = true
 	Sfx.play("level")
 	_build()
@@ -448,3 +469,164 @@ func _reroll() -> void:
 	Run.rerolls += 1
 	Run.roll_shop()
 	_build()
+
+
+# ------------------------------------------------------------------ Roulette
+
+## Case de la roue -> couleur ("vert" pour 0, puis rouge / noir en alternance).
+static func wheel_color(slot: int) -> String:
+	if slot == 0:
+		return "vert"
+	return "rouge" if slot % 2 == 1 else "noir"
+
+
+func _wheel_icon() -> Image:
+	var n := 32
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	var c := Vector2(n / 2.0, n / 2.0)
+	for y in n:
+		for x in n:
+			var v := Vector2(x + 0.5, y + 0.5) - c
+			var d := v.length()
+			if d > 15.0:
+				continue
+			var col := GOLD_DARK
+			if d < 13.5 and d > 5.0:
+				var slot := int(fposmod(v.angle() + PI / 2.0, TAU) / TAU * 37.0)
+				col = {"vert": WHEEL_GREEN, "rouge": WHEEL_RED, "noir": WHEEL_BLACK}[wheel_color(slot)]
+			elif d <= 5.0:
+				col = GOLD if d > 2.0 else GOLD_DARK
+			img.set_pixel(x, y, col)
+	return img
+
+
+var roul: Control
+var roul_bet := 10
+var roul_offer := -1
+
+
+func _open_roulette(i: int) -> void:
+	if roul or Run.gold < 1:
+		return
+	roul_offer = i
+	roul_bet = clampi(roul_bet, 1, Run.gold)
+	roul = Control.new()
+	roul.set_anchors_preset(PRESET_FULL_RECT)
+	roul.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(roul)
+	UI.fill_bg(roul, Color(0, 0, 0, 0.65))
+	var p := _frame_panel(FRAME_ROULETTE, 5)
+	UI.put(roul, p, Vector2(120, 24), Vector2(400, 312))
+	var inner := UI.panel(WOOD_PANEL, GOLD_DARK, 1)
+	UI.put(p, inner, Vector2(6, 6), Vector2(388, 300))
+	UI.put(inner, UI.label("ROULETTE", 20, GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(388, 24))
+	var wheel := _Wheel.new()
+	UI.put(inner, wheel, Vector2(114, 34), Vector2(160, 160))
+	var info := UI.label("Choisis ta mise, puis une couleur.", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, info, Vector2(0, 198), Vector2(388, 12))
+	# Mise
+	var bet_l := UI.label("", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, bet_l, Vector2(0, 216), Vector2(388, 12))
+	var sl := HSlider.new()
+	sl.min_value = 1
+	sl.max_value = maxi(1, Run.gold)
+	sl.step = 1
+	sl.value = roul_bet
+	sl.focus_mode = Control.FOCUS_NONE
+	UI.put(inner, sl, Vector2(60, 232), Vector2(268, 14))
+	var upd := func():
+		roul_bet = int(sl.value)
+		bet_l.text = "MISE : ● %d   (bourse ● %d)" % [roul_bet, Run.gold]
+	sl.value_changed.connect(func(_v): upd.call())
+	upd.call()
+	var quick := HBoxContainer.new()
+	quick.add_theme_constant_override("separation", 4)
+	UI.put(inner, quick, Vector2(94, 250), Vector2(200, 14))
+	for q in [["10%", 0.1], ["25%", 0.25], ["50%", 0.5], ["Tout", 1.0]]:
+		var f: float = q[1]
+		var qb := UI.button(q[0], func(): sl.value = maxi(1, roundi(Run.gold * f)))
+		_style_tag(qb)
+		qb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		quick.add_child(qb)
+	# Couleurs
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	UI.put(inner, row, Vector2(24, 272), Vector2(340, 20))
+	var btns := []
+	for c in [["rouge", "ROUGE ×2", WHEEL_RED], ["noir", "NOIR ×2", WHEEL_BLACK], ["vert", "VERT ×15", WHEEL_GREEN]]:
+		var cid: String = c[0]
+		var cb := UI.button(c[1], func(): _spin(cid, wheel, info, btns, sl))
+		cb.add_theme_stylebox_override("normal", UI.sb(c[2], GOLD, 1))
+		cb.add_theme_stylebox_override("hover", UI.sb(Color(c[2]).lightened(0.2), GOLD, 2))
+		cb.add_theme_color_override("font_color", Color.WHITE)
+		cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(cb)
+		btns.append(cb)
+	var close := UI.hotkey(UI.button("×", func(): _close_roulette()), [KEY_ESCAPE])
+	_style_tag(close)
+	UI.put(inner, close, Vector2(366, 6), Vector2(16, 14))
+	btns.append(close)
+
+
+func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) -> void:
+	var bet := mini(roul_bet, Run.gold)
+	if bet < 1 or wheel.spinning:
+		return
+	for b in btns:
+		b.disabled = true
+	sl.editable = false
+	Run.gold -= bet
+	Run.shop_offers[roul_offer].sold = true
+	var slot := randi() % 37
+	var res := wheel_color(slot)
+	info.text = "Ça tourne..."
+	Sfx.play("click")
+	await wheel.spin_to(slot)
+	var win := res == color
+	var gain: int = bet * int(Run.ROULETTE_PAY[color]) if win else 0
+	Run.gold += gain
+	info.add_theme_color_override("font_color", Pal.GOOD if win else Color("f06a5d"))
+	info.text = ("%s ! Gagné : ● %d" % [res.to_upper(), gain]) if win else ("%s... Perdu ● %d" % [res.to_upper(), bet])
+	Sfx.play("level" if win else "hurt")
+	btns[btns.size() - 1].disabled = false   # fermer
+	await get_tree().create_timer(1.6).timeout
+	_close_roulette()
+
+
+func _close_roulette() -> void:
+	if roul:
+		roul.queue_free()
+		roul = null
+	_build()
+
+
+class _Wheel extends Control:
+	var angle := 0.0
+	var spinning := false
+
+	func _draw() -> void:
+		var c := size / 2.0
+		var r := minf(size.x, size.y) / 2.0 - 4.0
+		draw_circle(c, r + 4.0, ShopScreen.GOLD_DARK)
+		for k in 37:
+			var a0 := angle + TAU * k / 37.0 - PI / 2.0
+			var a1 := a0 + TAU / 37.0
+			var col: Color = {"vert": ShopScreen.WHEEL_GREEN, "rouge": ShopScreen.WHEEL_RED, "noir": ShopScreen.WHEEL_BLACK}[ShopScreen.wheel_color(k)]
+			draw_colored_polygon(PackedVector2Array([c, c + Vector2.from_angle(a0) * r, c + Vector2.from_angle((a0 + a1) / 2.0) * r, c + Vector2.from_angle(a1) * r]), col)
+		draw_circle(c, r * 0.35, ShopScreen.WOOD)
+		draw_circle(c, r * 0.12, ShopScreen.GOLD)
+		# pointeur en haut
+		draw_colored_polygon(PackedVector2Array([c + Vector2(-7, -r - 6), c + Vector2(7, -r - 6), c + Vector2(0, -r + 10)]), Color.WHITE)
+
+	## Tourne quelques tours et s'arrête avec la case « slot » sous le pointeur.
+	func spin_to(slot: int) -> void:
+		spinning = true
+		var target := -TAU * (slot + 0.5) / 37.0
+		var end := angle - fposmod(angle, TAU) + TAU * 5.0 + fposmod(target, TAU)
+		var tw := create_tween()
+		tw.tween_method(func(v: float):
+			angle = v
+			queue_redraw(), angle, end, 3.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		await tw.finished
+		angle = fposmod(angle, TAU)
+		spinning = false

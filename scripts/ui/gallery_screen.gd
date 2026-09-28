@@ -1,19 +1,20 @@
 class_name GalleryScreen
 extends Control
-## Tous tes dessins sauvegardés, réutilisables en partie. Clique un dessin pour le sélectionner,
-## puis « Supprimer » pour le retirer de ta galerie (avec confirmation).
+## Tous tes dessins sauvegardés, réutilisables en partie. Onglet « Tout » ou par catégorie.
+## Clique un dessin pour le voir en grand (et le supprimer si tu veux, avec confirmation).
 
 signal done(result)
 
 const KINDS := [
-	["character", "Persos"], ["melee", "Mêlée"], ["ranged", "Distance"], ["bullet", "Balles"],
-	["amulet", "Amulettes"], ["enemy", "Ennemis"], ["boss", "Boss"],
+	["all", "Tout"], ["character", "Persos"], ["melee", "Mêlée"], ["ranged", "Distance"], ["bullet", "Balles"],
+	["amulet", "Amulettes"], ["mark", "Marques"], ["enemy", "Ennemis"], ["boss", "Boss"], ["eproj", "Tirs"],
 ]
 
 var scroll_mem := {}         # position de défilement de la grille, par onglet
-var kind := "character"
+var kind := "all"
 var selected := {}          # entrée de galerie sélectionnée
 var confirm: Control
+var viewer: Control
 
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _build() -> void:
 	for c in get_children():
 		c.queue_free()
 	confirm = null
+	viewer = null
 	UI.fill_bg(self)
 	UI.put(self, UI.label("GALERIE", 20, Pal.ACCENT), Vector2(12, 8))
 	var tabs := HBoxContainer.new()
@@ -54,12 +56,12 @@ func _build() -> void:
 		var img := Meta.gallery_image(e)
 		if img == null:
 			continue
-		var is_sel: bool = not selected.is_empty() and selected.file == e.file
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE
 		b.custom_minimum_size = Vector2(52, 52)
-		b.tooltip_text = "Encre : %d" % Analyzer.ink_cost(img)
-		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.ACCENT if is_sel else Pal.BORDER, 3 if is_sel else 1))
+		b.tooltip_text = "Encre : %d
+Clique pour voir en grand" % Analyzer.ink_cost(img)
+		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.BORDER, 1))
 		b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
 		b.add_theme_stylebox_override("pressed", UI.sb(Pal.PAPER, Pal.ACCENT, 3))
 		var th := UI.thumb(img, Vector2(44, 44))
@@ -68,18 +70,43 @@ func _build() -> void:
 		var entry: Dictionary = e
 		b.pressed.connect(func():
 			Sfx.play("click")
-			selected = {} if is_sel else entry
-			_build())
+			_view(entry))
 		grid.add_child(b)
 	if entries.is_empty():
 		UI.put(self, UI.label("Aucun dessin ici pour l'instant.", 10, Pal.DIM), Vector2(12, 64))
+	else:
+		UI.put(self, UI.label("%d dessin%s · clique pour voir en grand" % [entries.size(), "s" if entries.size() > 1 else ""], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(228, 337), Vector2(400, 14))
 	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
-	var del := UI.hotkey(UI.button("Supprimer le dessin", _ask_delete), [KEY_DELETE])
-	del.disabled = selected.is_empty()
-	del.tooltip_text = "Clique d'abord sur un dessin"
-	UI.put(self, del, Vector2(468, 334), Vector2(160, 18))
-	if not selected.is_empty():
-		UI.put(self, UI.label("1 dessin sélectionné", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT), Vector2(260, 337), Vector2(200, 14))
+
+
+## Un dessin en grand, avec ses infos et « Supprimer ».
+func _view(e: Dictionary) -> void:
+	var img := Meta.gallery_image(e)
+	if img == null or viewer:
+		return
+	selected = e
+	viewer = Control.new()
+	viewer.set_anchors_preset(PRESET_FULL_RECT)
+	viewer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(viewer)
+	UI.fill_bg(viewer, Color(0, 0, 0, 0.7))
+	var p := UI.panel(Pal.BG, Pal.ACCENT, 2)
+	UI.put(viewer, p, Vector2(110, 14), Vector2(420, 330))
+	var cat := ""
+	for k in KINDS:
+		if k[0] == e.kind:
+			cat = k[1]
+	UI.put(p, UI.label(cat.to_upper(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(420, 12))
+	var fr := UI.panel(Pal.PAPER, Pal.BORDER, 2)
+	UI.put(p, fr, Vector2(70, 26), Vector2(280, 256))
+	var t := Analyzer.trim(img)
+	UI.put(fr, UI.thumb(t, Vector2(264, 240)), Vector2(8, 8), Vector2(264, 240))
+	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 286), Vector2(420, 12))
+	UI.put(p, UI.hotkey(UI.button("Fermer", func():
+		viewer.queue_free()
+		viewer = null
+		selected = {}), [KEY_ESCAPE]), Vector2(90, 304), Vector2(110, 18))
+	UI.put(p, UI.hotkey(UI.button("Supprimer", _ask_delete), [KEY_DELETE]), Vector2(220, 304), Vector2(110, 18))
 
 
 func _ask_delete() -> void:

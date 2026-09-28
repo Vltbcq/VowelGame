@@ -19,9 +19,9 @@ const TYPES := {
 	"eclaboussure": {"name": "Éclaboussure", "beh": "compass", "hp": 19.0, "dmg": 5.2, "spd": 72.0, "wave": 9, "weight": 5, "canvas": 24, "ink": 160, "loot": 2, "shoots": true,
 		"desc": "Trace des cercles au compas, de plus en plus serrés autour de toi, et tire en éventail."},
 	"colosse": {"name": "Colosse", "beh": "dvd", "hp": 96.0, "dmg": 10.4, "spd": 26.0, "wave": 11, "weight": 3, "canvas": 32, "ink": 320, "loot": 5,
-		"desc": "Gomme géante qui rebondit sur les bords de la page. Insensible au recul."},
+		"desc": "Gomme géante : s'arrête pour viser (elle clignote), puis FONCE sur toi en ligne droite. Insensible au recul."},
 	"pate": {"name": "Pâté", "beh": "mine", "hp": 13.0, "dmg": 15.6, "spd": 96.0, "wave": 13, "weight": 2, "canvas": 24, "ink": 140, "loot": 2,
-		"desc": "Tache piégée posée par groupes : elle gonfle et explose quand tu t'approches."},
+		"desc": "Tache piégée qui fonce sur toi, de plus en plus vite : arrivée au contact, elle gonfle et explose."},
 	# --- Le Tableau noir (carte 2)
 	"punaise": {"name": "Punaise", "beh": "pin", "map": 2, "hp": 6.0, "dmg": 4.5, "spd": 110.0, "wave": 1, "weight": 9, "canvas": 20, "ink": 120, "loot": 1,
 		"desc": "Vise, fonce sur toi puis reste plantée un instant, pointe en l'air."},
@@ -39,7 +39,7 @@ const TYPES := {
 		"desc": "TANK. Avance lentement et « calcule » : chaque résultat est une nouvelle punaise."},
 	# Boss
 	"rature": {"name": "Le Raturé", "beh": "b_rature", "boss": 2, "hp": 2400.0, "dmg": 10.4, "spd": 55.0, "wave": 5, "canvas": 64, "ink": 300, "loot": 30, "shoots": true,
-		"desc": "Boss (vague 5). Charge en raturant tout, puis explose en projectiles."},
+		"desc": "Boss (vague 5). Rature la page : charges en zigzag, hachures (passe entre les lignes), croix sur ta position, gribouillage furieux."},
 	"critique": {"name": "Le Critique", "beh": "b_critique", "boss": 2, "hp": 7000.0, "dmg": 13.0, "spd": 42.0, "wave": 10, "canvas": 80, "ink": 420, "loot": 60, "shoots": true,
 		"desc": "Boss (vague 10). Spirales de projectiles et appelle des renforts."},
 	"muse": {"name": "La Muse", "beh": "b_muse", "boss": 2, "hp": 5000.0, "dmg": 15.6, "spd": 60.0, "wave": 10, "canvas": 64, "ink": 340, "loot": 60, "shoots": true,

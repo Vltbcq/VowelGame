@@ -77,6 +77,45 @@ func _slots(id: String) -> Array:
 	return [[id, "Ennemi", DrawCfg.enemy(id)]]
 
 
+## Clés du carnet d'un objet (comme _slots, sans préparer les dessins : rapide).
+func _slot_keys(id: String) -> Array:
+	match tab:
+		"armes":
+			var def := WeaponDB.get_def(id)
+			var out := []
+			for r in range(int(def.get("min_rar", 0)), 4):
+				out.append(Run.weapon_key(id, r))
+			if def.kind == "ranged" and not def.get("nobullet", false):
+				out.append("balle_" + id)
+			return out
+		"amulettes":
+			return ["amulette_" + id]
+	return [id]
+
+
+## Complétion d'un onglet (ou de tout le Bestiaire) : [% dessiné, % débloqué].
+func _completion(only := "") -> Array:
+	var keep := tab
+	var slots_n := 0
+	var drawn := 0
+	var items_n := 0
+	var open := 0
+	for t in TABS:
+		if only != "" and t[0] != only:
+			continue
+		tab = t[0]
+		for id in _items():
+			items_n += 1
+			if not _locked(id):
+				open += 1
+			for k in _slot_keys(id):
+				slots_n += 1
+				if (Meta.data.get("bestiary", {}) as Dictionary).has(k):
+					drawn += 1
+	tab = keep
+	return [100.0 * drawn / maxi(1, slots_n), 100.0 * open / maxi(1, items_n)]
+
+
 func _default_or_blank(key: String, size: Vector2i) -> Image:
 	var b = Meta.bestiary_get(key)
 	if b != null:
@@ -105,7 +144,16 @@ func _build() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if tid == tab:
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
+		var tc := _completion(tid)
+		b.tooltip_text = "%s : %d%% dessiné · %d%% débloqué" % [t[1], roundi(tc[0]), roundi(tc[1])]
 		tabs.add_child(b)
+	# Complétion du Bestiaire (tout confondu) et de l'onglet ouvert
+	var all := _completion()
+	var cl := UI.label("COMPLÉTION  %d%% dessiné · %d%% débloqué" % [roundi(all[0]), roundi(all[1])], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
+	cl.mouse_filter = Control.MOUSE_FILTER_STOP
+	cl.tooltip_text = "Dessiné : cases du Bestiaire qui ont un dessin par défaut (chaque rareté d'arme compte)
+Débloqué : armes, amulettes et ennemis disponibles"
+	UI.put(self, cl, Vector2(270, 36), Vector2(358, 12))
 
 	var items := _items()
 	if sel == "" or not sel in items:
@@ -187,7 +235,7 @@ func _slot_small(parent: Control, slot: Array, pos: Vector2) -> void:
 	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, col, HORIZONTAL_ALIGNMENT_CENTER), pos, Vector2(64, 12))
 	var frame := UI.panel(Pal.PAPER, col if d != null else Pal.BORDER, 2)
 	UI.put(parent, frame, pos + Vector2(4, 12), Vector2(56, 56))
-	var img: Image = Gfx.baked_outline(Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN)
+	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(48, 48)), Vector2(4, 4), Vector2(48, 48))
 	var g := UI.button("Galerie", func(): _open_picker(key, cfg))
 	UI.put(parent, g, pos + Vector2(0, 72), Vector2(64, 16))
@@ -210,7 +258,7 @@ func _slot_ui(parent: Control, slot: Array, pos: Vector2) -> void:
 	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, Pal.DIM), pos)
 	var frame := UI.panel(Pal.PAPER, Pal.ACCENT if d != null else Pal.BORDER, 2)
 	UI.put(parent, frame, pos + Vector2(0, 12), Vector2(76, 76))
-	var img: Image = Gfx.baked_outline(Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN)
+	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))
 	var col := VBoxContainer.new()
 	col.add_theme_constant_override("separation", 3)

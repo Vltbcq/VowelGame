@@ -41,6 +41,8 @@ var cd2 := 0.0
 var cd3 := 0.0
 var dash_dir := Vector2.ZERO
 var spiral_a := 0.0
+var last_atk := ""          # Raturé : dernière attaque (jamais deux fois de suite)
+var hatch_a := 0.0          # Raturé : angle des hachures
 var pattern := 0
 var repeat := 0
 var center := Vector2.ZERO
@@ -108,7 +110,7 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	loot = def.loot * mods.loot * (0.5 if small else 1.0) * (3.0 if elite else 1.0)
 	body = Node2D.new()
 	add_child(body)
-	mat = Gfx.material(art.effect, art.get("outline", true))
+	mat = Gfx.material(art.effect, art.get("outline", false))
 	sprite = Gfx.sprite(arena.enemy_tex(id, elite), mat)
 	body.add_child(sprite)
 	base_scale = 0.6 if small else 1.0
@@ -199,9 +201,7 @@ func tick(delta: float) -> void:
 		"compass":
 			v = _compass(delta * mult, p, dirp)
 		"dvd":
-			if dash_dir == Vector2.ZERO:
-				dash_dir = Vector2([-1, 1].pick_random(), [-1, 1].pick_random()).normalized()
-			v = dash_dir * speed * 2.4
+			v = _colossus(delta * mult, dirp, dist)
 		"mine":
 			v = _mine(delta, dirp, dist)
 			if dead:
@@ -287,13 +287,12 @@ func tick(delta: float) -> void:
 func _on_wall(hit: Vector2) -> void:
 	match def.beh:
 		"dvd":
-			# Rebondit comme un logo de DVD et laisse une grosse trace de gomme
-			if hit.x > 0.0:
-				dash_dir.x = -dash_dir.x
-			if hit.y > 0.0:
-				dash_dir.y = -dash_dir.y
-			arena.add_hazard(position, radius + 6.0, 3.0, 0.5, 0.0, Pal.PAPER_DARK)
-			arena.shake(2.0)
+			# Colosse : s'écrase contre le bord, laisse une grosse trace de gomme et reprend son souffle
+			if state == "dash":
+				state = "rest"
+				st_t = 1.2
+				arena.add_hazard(position, radius + 6.0, 3.0, 0.5, 0.0, Pal.PAPER_DARK)
+				arena.shake(3.0)
 		"ruler":
 			if state == "dash":
 				state = "rest"
@@ -539,7 +538,37 @@ func _compass(delta: float, p: Player, dirp: Vector2) -> Vector2:
 	return ((target - position) * 4.0).limit_length(speed * 1.6)
 
 
-## Pâté : tache piégée qui gonfle et explose quand tu approches (et rampe si on l'ignore).
+## Colosse : avance lourdement vers toi, s'arrête pour viser (il clignote)... puis FONCE en ligne
+## droite là où tu étais. S'arrête au bord de la page ou au bout de sa course.
+func _colossus(delta: float, dirp: Vector2, dist: float) -> Vector2:
+	st_t -= delta
+	match state:
+		"aim":
+			flash = 0.6 if int(t * 14.0) % 2 == 0 else 0.0
+			dash_dir = dirp   # suit le joueur des yeux jusqu'au dernier moment
+			if st_t <= 0.0:
+				state = "dash"
+				st_t = 1.3
+				Sfx.play("swing")
+			return Vector2.ZERO
+		"dash":
+			if st_t <= 0.0:
+				state = "rest"
+				st_t = 1.2
+			return dash_dir * speed * 7.0
+		"rest":
+			if st_t <= 0.0:
+				state = "walk"
+				st_t = randf_range(0.8, 1.6)
+			return dirp * speed * 0.3
+	# marche vers toi, puis se prépare à charger
+	if st_t <= 0.0 and dist < 320.0:
+		state = "aim"
+		st_t = 0.7
+	return dirp * speed
+
+
+## Pâté : tache piégée qui fonce sur toi, gonfle quand elle arrive au contact et explose.
 func _mine(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if state == "arm":
 		st_t -= delta
@@ -555,9 +584,9 @@ func _mine(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		st_t = 0.9
 		Sfx.play("zap")
 		return Vector2.ZERO
-	if t > 12.0:
-		return dirp * speed * 0.4
-	return Vector2.ZERO
+	if t < 0.5:
+		return Vector2.ZERO   # petite pause à l'apparition
+	return dirp * speed * minf(1.4, 0.8 + t * 0.15)   # fonce, de plus en plus vite
 
 
 # ------------------------------------------------------------------ Allié (Retouche)
@@ -879,33 +908,129 @@ func _enraged() -> bool:
 	return hp < max_hp * 0.5
 
 
+## Le Raturé : il RATURE la page. Enchaîne 4 attaques, jamais deux fois la même à la suite :
+## - Zigzag : 3 petites charges (5 enragé), chacune annoncée à la règle, qui laissent un trait d'encre.
+## - Hachures : des lignes parallèles barrent la page (on se glisse ENTRE elles) ; enragé : en croisillon.
+## - Croix : il barre ta position d'un X (3 de suite), le centre explose.
+## - Gribouillage : il griffonne sur place, crachant de l'encre au hasard, et libère des Gribouillis.
 func _boss_rature(delta: float, dirp: Vector2, dist: float) -> Vector2:
-	if state == "walk":
-		st_t -= delta
-		if st_t <= 0.0:
-			state = "aim"
-			st_t = 0.7
-			arena.add_ruler(position, _wall_point(position, dirp), 0.7)
-			dash_dir = dirp
-		return dirp * speed
-	if state == "aim":
-		st_t -= delta
-		flash = 0.5 if int(t * 14.0) % 2 == 0 else 0.0
-		if st_t <= 0.0:
-			state = "dash"
-			st_t = 0.6
-		return Vector2.ZERO
-	# dash : rature tout sur son passage
+	var rage := _enraged()
 	st_t -= delta
-	cd3 -= delta
-	if cd3 <= 0.0:
-		cd3 = 0.05
-		arena.add_hazard(position, 7.0, 2.5, 1.0, dmg * 0.4, ink_col)
-	if st_t <= 0.0:
-		_ring(16 if _enraged() else 12, randf() * TAU)
-		state = "walk"
-		st_t = 1.6 if _enraged() else 2.6
-	return dash_dir * speed * 4.5
+	match state:
+		"walk":
+			if st_t <= 0.0:
+				var picks := ["zigzag", "hatch", "cross", "scribble"].filter(func(a): return a != last_atk)
+				last_atk = picks.pick_random()
+				flash = 0.8
+				match last_atk:
+					"zigzag":
+						state = "zz_aim"
+						cd2 = 5 if rage else 3
+						_zz_aim(dirp)
+					"hatch":
+						state = "hatch"
+						st_t = 2.2
+						_hatch(randf() * PI, 0.0)
+						if rage:
+							cd3 = 0.9   # 2e passe perpendiculaire
+					"cross":
+						state = "cross"
+						cd2 = 3
+						cd3 = 0.0
+						st_t = 2.0
+					"scribble":
+						state = "scribble"
+						st_t = 2.2
+						cd3 = 0.0
+						arena.float_text(position + Vector2(0, -40), "GRIBOUILLAGE !", Pal.BAD)
+				return Vector2.ZERO
+			return dirp * speed * (1.0 if dist > 90.0 else 0.4)
+		"zz_aim":
+			flash = 0.5 if int(t * 16.0) % 2 == 0 else 0.0
+			if st_t <= 0.0:
+				state = "zz_dash"
+				st_t = 0.32
+				Sfx.play("swing")
+			return Vector2.ZERO
+		"zz_dash":
+			cd -= delta
+			if cd <= 0.0:
+				cd = 0.04
+				arena.add_hazard(position, 7.0, 2.2, 1.0, dmg * 0.4, ink_col)
+			if st_t <= 0.0:
+				cd2 -= 1
+				if cd2 > 0:
+					state = "zz_aim"
+					_zz_aim(dirp)
+				else:
+					_rest(rage)
+			return dash_dir * speed * 5.0
+		"hatch":
+			if cd3 > 0.0:
+				cd3 -= delta
+				if cd3 <= 0.0:
+					_hatch(hatch_a + PI / 2.0, 24.0)   # croisillon, décalé d'une demi-maille
+			if st_t <= 0.0:
+				_rest(rage)
+			return dirp * speed * 0.2
+		"cross":
+			cd3 -= delta
+			if cd3 <= 0.0 and cd2 > 0:
+				cd2 -= 1
+				cd3 = 0.45 if rage else 0.6
+				var c := arena.player.position + arena.player_vel() * 0.25
+				var r := 46.0
+				var a0 := randf() * PI
+				for k in 2:
+					var d := Vector2.from_angle(a0 + k * PI / 2.0)
+					arena.add_stroke(c + d * r, c - d * r, 0.85, dmg * 0.4, ink_col)
+				arena.add_stroke(c, c, 0.85, dmg * 0.4, ink_col, 26.0)
+				Sfx.play("zap")
+			if st_t <= 0.0:
+				_rest(rage)
+			return Vector2.ZERO
+		"scribble":
+			cd3 -= delta
+			if cd3 <= 0.0:
+				cd3 = 0.06 if rage else 0.09
+				body.rotation = randf_range(-0.4, 0.4)
+				_shoot(Vector2.from_angle(randf() * TAU), randf_range(0.7, 1.3))
+			if st_t <= 0.0:
+				_summon("gribouille", 3 if rage else 2)
+				_rest(rage)
+			# tremble sur place en griffonnant
+			return Vector2.from_angle(t * 40.0) * 30.0
+	_rest(rage)
+	return Vector2.ZERO
+
+
+func _rest(rage: bool) -> void:
+	state = "walk"
+	st_t = 1.0 if rage else 1.7
+	flash = 0.0
+
+
+## Zigzag : vise le joueur (en anticipant un peu) et l'annonce à la règle.
+func _zz_aim(dirp: Vector2) -> void:
+	var aim := (arena.player.position + arena.player_vel() * 0.3 - position).normalized()
+	dash_dir = aim if aim != Vector2.ZERO else dirp
+	st_t = 0.4
+	var reach := speed * 5.0 * 0.32
+	arena.add_ruler(position, position + dash_dir * reach, 0.4)
+
+
+## Hachures : lignes parallèles sur toute la page, espacées de 48 px (on passe entre).
+func _hatch(angle: float, shift: float) -> void:
+	hatch_a = angle
+	var dir := Vector2.from_angle(angle)
+	var nrm := dir.orthogonal()
+	var c := arena.player.position
+	for k in range(-6, 7):
+		var o := c + nrm * (k * 48.0 + shift)
+		if o.x < 0.0 or o.y < 0.0 or o.x > Arena.W or o.y > Arena.H:
+			continue
+		arena.add_stroke(_wall_point(o, dir), _wall_point(o, -dir), 1.0, dmg * 0.4, ink_col)
+	Sfx.play("zap")
 
 
 func _boss_critique(delta: float, dirp: Vector2) -> Vector2:

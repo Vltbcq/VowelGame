@@ -81,7 +81,7 @@ En combat, l'arme vise toujours avec le côté DROIT de ton dessin (pointe / can
 func _entry(type: String, rar: int, rot: int, flip: bool, idx: int) -> Dictionary:
 	var art: Dictionary = Run.weapon_art[Run.art_key(type, rar)]
 	var e := {"type": type, "src": Analyzer.trim(art.image), "rot": rot, "flip": flip,
-		"outline": art.get("outline", true), "idx": idx, "tl": Vector2i(-100, -100)}
+		"outline": art.get("outline", false), "idx": idx, "tl": Vector2i(-100, -100)}
 	_rebuild(e)
 	return e
 

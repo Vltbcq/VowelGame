@@ -23,7 +23,7 @@ Pour dessiner : clic gauche pour peindre et clic droit pour gommer. Raccourcis B
 | Choix du dessin | **Entrée** utiliser, **M** modifier, **N** nouveau, **C** bord, **Échap** retour |
 | Dessin | **B E L R O F** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
 | Pose / rangement | **R** tourner, **M** miroir, **Entrée** valider |
-| Galerie | **Suppr** supprimer le dessin (avec confirmation, **Échap** = garder) |
+| Galerie | clic = voir le dessin en grand ; **Suppr** supprimer (avec confirmation, **Échap** = garder) |
 | Conseils | **Entrée**, **Espace** ou **Échap** = compris |
 
 Test automatique (simule dessins, 9 vagues avec boss, boutique, menus) :
@@ -71,7 +71,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
    - Vague 10 : boss *Le Critique*
    - Vague 15 : mini-boss *La Muse*
    - Vague 20 : boss final *La Toile Blanche*
-5. **Les PV ne remontent pas entre les vagues.** La boutique propose parfois une potion (Fiole d'encre 30%, Grand flacon 70%), mais pas à chaque fois.
+5. **Les PV ne remontent pas entre les vagues.** La boutique propose parfois une potion (Fiole d'encre 30%, Grand flacon 70%, Élixir de sève : régénération ×4, au moins +8, pendant les 10 premières secondes de la vague suivante), mais pas à chaque fois. Parfois aussi une **roulette** : mise ton or sur Rouge ou Noir (×2) ou Vert (×15), 37 cases dont 1 verte, une mise par roulette.
 6. Entre les vagues, la **boutique** propose des armes et des amulettes (à dessiner si c'est la première fois, puis à poser, avec rotation R et miroir M pour les amulettes), une relance et la vente d'armes. **Plus l'offre est rare, plus tu as d'encre pour la dessiner** (armes ×1 / ×1,2 / ×1,5 / ×2, soit au plus 10 / 12 / 15 / 20 % de la surface de la toile ; amulettes ×1 à ×2). Les ennemis lâchent de l'or avec parcimonie (l'XP, elle, ne baisse pas).
 7. **Montée de niveau** : après la vague, pour chaque niveau gagné tu choisis 1 bonus parmi 3 (rareté tirée comme en boutique : plus tu avances et plus ton niveau est haut, plus le rare sort), puis tu dessines une petite **marque d'encre** (plus le bonus est rare, plus elle peut être grande : 10 à 34 d'encre) (tatouage, cicatrice...) que tu poses sur ton perso. Elle ne compte pas dans sa taille : il ne devient ni plus gros ni plus lent. Sa couleur donne un peu de résistance. Bouton « Passer » pour ne pas dessiner.
 8. En fin de partie, tu gagnes des **pigments**. L'**Atelier** (mur de planches, établi et tableau en liège) :
@@ -90,7 +90,7 @@ Pendant le dessin d'une arme, de ses balles ou d'une amulette, l'aperçu **« su
 
 Le pot de peinture (Remplir, touche F) est disponible dès le départ. En jeu, la caméra zoome ×1,5 par défaut : molette ou + / - pour régler (sauvegardé).
 
-Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties suivantes.
+Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties suivantes. La galerie s'ouvre sur l'onglet **Tout** (ou par catégorie) ; clique un dessin pour le voir en grand. Les nouveaux dessins sont **sans bord** par défaut (bouton « Bord » pour l'ajouter).
 
 **Pourboire** (stat) : or gagné automatiquement à chaque fin de vague (amulettes Pièce et Mécène, bonus de niveau).
 
@@ -102,7 +102,7 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 
 ## Objets à débloquer (succès du Bestiaire)
 
-La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 10 armes classiques restent libres) et **62 amulettes sur 125**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
+La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 10 armes classiques restent libres) et **62 amulettes sur 123**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
 
 ## Cartes
 
@@ -128,10 +128,10 @@ Plus tu mets d'encre dans un ennemi, plus il a de PV (×0,6 à ×1,4) et plus il
 | Bélier | Trace une **ligne à la règle** puis fonce dessus jusqu'au bord de la page |
 | Scinde | Se place **en miroir** de toi et renvoie des reflets ; se divise en deux (miroirs horizontal/vertical) |
 | Éclaboussure | Trace des **cercles au compas** de plus en plus serrés autour de toi, tire en éventail |
-| Colosse | **Gomme géante** qui rebondit sur les bords comme un logo de DVD |
-| Pâté | **Taches piégées** posées en ligne : elles gonflent et explosent quand tu approches |
+| Colosse | **Gomme géante** : s'arrête pour viser (elle clignote), puis **fonce sur toi** en ligne droite |
+| Pâté | **Taches piégées** qui foncent sur toi de plus en plus vite, gonflent au contact et explosent |
 
-Boss : le Raturé rature le sol pendant ses charges ; le Critique lance des pâtés en cloche ; **la Toile Blanche gomme des morceaux de ton perso** (−12 % PV max par coup, jusqu'à la fin de la vague, puis tout revient).
+Boss : le Raturé rature la page (zigzags, hachures à esquiver entre les lignes, croix sur ta position, gribouillage) ; le Critique lance des pâtés en cloche ; **la Toile Blanche gomme des morceaux de ton perso** (−12 % PV max par coup, jusqu'à la fin de la vague, puis tout revient).
 
 **Élites** (Aquarelle et au-delà) : à partir de la vague 4, une fois par vague, tu redessines un ennemi en version élite (ton dessin + des ajouts). Aura, PV ×3, butin ×3.
 
@@ -159,18 +159,18 @@ Chaque **rareté** d'un type d'arme a **son propre dessin**, avec sa propre quan
 
 Avant **chaque** dessin (perso, armes, balles, amulettes, marques, ennemis), un écran propose d'abord un dessin existant : le dernier utilisé pour cet objet dans le grand cadre, et ta galerie à droite. Cliquer un dessin de la galerie le **met dans le cadre** : « Utiliser ce dessin », « Modifier » (repart de lui) ou « Nouveau ». Bouton **« Bord : oui / non »** avec aperçu.
 
-Le **Bestiaire** (menu principal) liste toutes les armes, amulettes et ennemis avec leurs stats, et permet de choisir leur **dessin par défaut** (pour les armes : un par rareté, plus les balles) (depuis la galerie, en le dessinant, ou le retirer). En partie, ce dessin est **le dessin par défaut** : il n'est proposé que la **première fois** que tu obtiens l'objet dans la partie (« Utiliser ce dessin », « Modifier » ou « Nouveau »), et ce que tu dessines en partie **ne remplace pas** le dessin du Bestiaire (un objet sans dessin par défaut prend le premier que tu fais).
+Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % débloqué) et liste toutes les armes, amulettes et ennemis avec leurs stats, et permet de choisir leur **dessin par défaut** (pour les armes : un par rareté, plus les balles) (depuis la galerie, en le dessinant, ou le retirer). En partie, ce dessin est **le dessin par défaut** : il n'est proposé que la **première fois** que tu obtiens l'objet dans la partie (« Utiliser ce dessin », « Modifier » ou « Nouveau »), et ce que tu dessines en partie **ne remplace pas** le dessin du Bestiaire (un objet sans dessin par défaut prend le premier que tu fais).
 
 ## Synergies, fusion, pactes
 
-- **Synergies de couleur** (3 armes d'un même élément dominant) : Feu = brûlure contagieuse, Glace = les gelés éclatent en éclats, Foudre = chaînes à 4 cibles, Poison = nuage toxique, Arcane = marque doublée, Lumière = les éclats soignent.
+- **Synergies de couleur** (3 armes d'un même élément dominant) : Feu = brûlure contagieuse, Glace = les gelés éclatent en éclats, Foudre = chaînes à 4 cibles, Poison = nuage toxique, Arcane = marque doublée, Lumière = toutes tes explosions sont 33 % plus grandes.
 - **Fusion** : 2 exemplaires du même type et de même rareté → 1 de rareté supérieure, avec de l'encre en plus pour agrandir le dessin.
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
-## Amulettes (125)
+## Amulettes (123)
 
-- 30 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
+- 28 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
 - Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
 - Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
 - Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).
@@ -236,7 +236,7 @@ Encres animées (−15% d'encre) : **Pulse** (+vitesse d'attaque), **Scintille**
 - **Esquisse** : un perso minuscule (< 120 px) gagne +40% de dégâts.
 - **Chef-d'œuvre** multiplie ×1.5 tout ce que donne ton dessin (légendaire, donc une seule fois par partie).
 - **Palette vivante** + un perso/arme multicolore = une pluie d'orbes élémentaires garantis. **Tampon** + un gros dessin plein = une énorme zone.
-- **La Joconde** : chaque vague parfaite ajoute +12 % de dégâts, pour toute la partie.
+- **La Joconde** : chaque vague finie ajoute +15 % de dégâts, pour toute la partie.
 - **Palette** : +8% de dégâts par couleur sur ton perso.
 - Dessiner des ennemis énormes rapporte plus d'or, mais ils sont plus durs à tuer. Les dessiner dans ta couleur de résistance réduit leurs dégâts, mais ils résistent à tes armes de cette couleur.
 - **Double trait** : tes armes de mêlée lancent aussi leur propre dessin.
@@ -261,7 +261,7 @@ Sauvegarde : `%APPDATA%/VowelGame/`.
 
 - **Styles d'artiste** (comme les persos de Brotato), à débloquer : *Cubiste* (rectangles seulement, +armure), *Pointilliste* (pinceau 1 px, chaque morceau séparé donne de la chance), *Minimaliste* (−50% d'encre, ×2 dégâts).
 - **Fusion d'armes** : deux armes identiques se collent côte à côte pour faire une arme plus grande (l'équivalent des tiers de Brotato).
-- **Tache indélébile** (objet maudit à la Isaac) : +30% de dégâts, mais une grosse tache noire s'ajoute au hasard sur ton perso, qui devient plus lourd et plus lent.
+- **Tache indélébile** (objet maudit à la Isaac) : +20 % de dégâts, +2 armure, +5 PV max, −20 % vitesse, et une grosse tache noire s'ajoute au hasard sur ton perso.
 - **Boss vaincus = alliés** : un boss que tu as dessiné et battu peut revenir comme invocation dans une prochaine partie.
 - **Sets de couleur** : 3 armes de la même couleur débloquent un bonus (feu qui se propage, glace qui fait éclater les ennemis gelés).
 - **Contraintes d'atelier** : défis optionnels (« dessine ton arme avec 40 pixels max ») qui rapportent des pigments bonus.
