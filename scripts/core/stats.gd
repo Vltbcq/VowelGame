@@ -22,7 +22,7 @@ const STAT_LABELS := [
 	["max_hp", "PV max", ""], ["regen", "Régénération", ""], ["armor", "Armure", ""],
 	["dodge", "Esquive", "%"], ["move", "Vitesse", ""], ["dmg", "Dégâts", "%"],
 	["atk_speed", "Vit. d'attaque", "%"], ["crit", "Critique", "%"], ["range", "Portée", "%"],
-	["lifesteal", "Vol de vie", "%"], ["luck", "Chance", ""], ["harvest", "Récolte", ""],
+	["lifesteal", "Vol de vie", "%"], ["luck", "Chance", ""], ["harvest", "Pourboire", ""],
 	["thorns", "Épines", ""], ["el_power", "Puissance élém.", "%"], ["pickup", "Ramassage", ""],
 ]
 

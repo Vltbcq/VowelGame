@@ -16,7 +16,7 @@ const LIST := [
 	{"id": "oeil", "ink": 16, "name": "Œil", "rar": 0, "stat": "crit", "v": 4.0, "desc": "+{v}% critique · {m} PV max", "malus": ["max_hp", -2.0]},
 	{"id": "crochet", "ink": 25, "name": "Crochet", "rar": 0, "stat": "range", "v": 12.0, "desc": "+{v}% portée · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
 	{"id": "aimant", "ink": 35, "name": "Aimant", "rar": 0, "stat": "pickup", "v": 40.0, "desc": "+{v} ramassage · {m}% dégâts", "malus": ["dmg", -3.0]},
-	{"id": "piece", "ink": 14, "name": "Pièce", "rar": 0, "stat": "harvest", "v": 5.0, "desc": "+{v} or par fin de vague · {m} chance", "malus": ["luck", -4.0]},
+	{"id": "piece", "ink": 14, "name": "Pièce", "rar": 0, "stat": "harvest", "v": 5.0, "desc": "+{v} pourboire (or à chaque fin de vague) · {m} chance", "malus": ["luck", -4.0]},
 	{"id": "tampon", "ink": 40, "name": "Tampon", "rar": 0, "stat": "armor", "v": 4.0, "desc": "+{v} armure · {m}% vitesse", "malus": ["speed", -8.0]},
 	{"id": "taille_crayon", "ink": 18, "name": "Taille-crayon", "rar": 0, "stat": "crit", "v": 7.0, "desc": "+{v}% critique · {m}% portée", "malus": ["range", -8.0]},
 	{"id": "buvard", "ink": 30, "name": "Buvard", "rar": 0, "stat": "pickup", "v": 60.0, "desc": "+{v} ramassage · {m} armure", "malus": ["armor", -1.0]},
@@ -38,7 +38,7 @@ const LIST := [
 	{"id": "mine_plomb", "ink": 26, "name": "Mine de plomb", "rar": 1, "stat": "crit_mult", "v": 0.4, "desc": "Critiques +{v} (×2 → ×2,4) · {m} chance", "malus": ["luck", -5.0]},
 	{"id": "sanguine", "ink": 36, "name": "Sanguine", "rar": 1, "flag": true, "desc": "12% de chances qu'un ennemi tué te soigne 1 PV · {m} PV max", "malus": ["max_hp", -4.0]},
 	{"id": "craquelure", "ink": 40, "name": "Craquelure", "rar": 1, "flag": true, "desc": "Tes coups critiques explosent autour de l'ennemi · {m}% critique", "malus": ["crit", -4.0]},
-	{"id": "mecene", "ink": 32, "name": "Mécène", "rar": 1, "stat": "harvest", "v": 9.0, "desc": "+{v} or par fin de vague · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "mecene", "ink": 32, "name": "Mécène", "rar": 1, "stat": "harvest", "v": 9.0, "desc": "+{v} pourboire (or à chaque fin de vague) · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "carnet", "ink": 44, "name": "Carnet de croquis", "rar": 1, "flag": true, "desc": "+25% d'expérience · {m} armure", "malus": ["armor", -3.0]},
 	# Épiques (cassables)
 	{"id": "palette", "ink": 60, "name": "Palette", "rar": 2, "flag": true, "desc": "+8% dégâts par couleur de ton perso · {m} armure", "malus": ["armor", -4.0]},

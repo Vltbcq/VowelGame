@@ -11,7 +11,7 @@ const STATS := [
 	["max_hp", "PV max", 5.0], ["regen", "Régénération", 1.0], ["armor", "Armure", 1.0],
 	["dodge", "Esquive %", 5.0], ["speed", "Vitesse %", 10.0], ["dmg", "Dégâts %", 10.0],
 	["atk_speed", "Vit. d'attaque %", 10.0], ["crit", "Critique %", 5.0], ["range", "Portée %", 10.0],
-	["lifesteal", "Vol de vie %", 5.0], ["luck", "Chance", 10.0], ["harvest", "Récolte", 5.0],
+	["lifesteal", "Vol de vie %", 5.0], ["luck", "Chance", 10.0], ["harvest", "Pourboire", 5.0],
 	["pickup", "Ramassage", 20.0], ["thorns", "Épines", 2.0], ["el_power", "Puissance élém. %", 10.0],
 ]
 

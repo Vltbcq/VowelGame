@@ -15,7 +15,7 @@ const UPGRADES := [
 	["max_hp", 3.0, "+{v} PV max"], ["regen", 1.5, "+{v} régénération"], ["armor", 1.0, "+{v} armure"],
 	["dodge", 3.0, "+{v}% esquive"], ["speed", 5.0, "+{v}% vitesse"], ["dmg", 5.0, "+{v}% dégâts"],
 	["atk_speed", 5.0, "+{v}% vit. d'attaque"], ["crit", 3.0, "+{v}% critique"], ["range", 8.0, "+{v}% portée"],
-	["lifesteal", 2.0, "+{v}% vol de vie"], ["luck", 5.0, "+{v} chance"], ["harvest", 3.0, "+{v} récolte"],
+	["lifesteal", 2.0, "+{v}% vol de vie"], ["luck", 5.0, "+{v} chance"], ["harvest", 3.0, "+{v} pourboire"],
 	["el_power", 10.0, "+{v}% puissance élém."], ["pickup", 20.0, "+{v} ramassage"], ["thorns", 2.0, "+{v} épines"],
 ]
 const UPGRADE_MULT := [1.0, 1.5, 2.2, 3.0]

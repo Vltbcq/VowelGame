@@ -90,6 +90,8 @@ Le pot de peinture (Remplir, touche F) est disponible dès le départ. En jeu, l
 
 Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties suivantes.
 
+**Pourboire** (stat) : or gagné automatiquement à chaque fin de vague (amulettes Pièce et Mécène, bonus de niveau).
+
 ## Effets (« juice »)
 
 Fin de vague : toutes les gouttes restées au sol s'envolent vers le perso (les plus proches d'abord) et sont comptées en arrivant. Chaque goutte donne de l'XP et un peu d'or (environ 62 % de sa valeur).
@@ -163,7 +165,7 @@ Le **Bestiaire** (menu principal) liste toutes les armes, amulettes et ennemis a
 ## Amulettes (55)
 
 - Communes, nouvelles : Taille-crayon, Buvard, Gouache, Fixatif, Chevalet.
-- Rares, nouvelles : Calque (+1 perforation), Estompe (chaque coup ralentit), Mine de plomb (critiques plus forts), Sanguine (soin sur élimination), Craquelure (les critiques explosent), Mécène (or en fin de vague).
+- Rares, nouvelles : Calque (+1 perforation), Estompe (chaque coup ralentit), Mine de plomb (critiques plus forts), Sanguine (soin sur élimination), Craquelure (les critiques explosent), Mécène (pourboire : or à chaque fin de vague).
 - Épiques, nouvelles : Cadre doré (dégâts selon l'or en poche), Collage (dégâts par type d'arme différent), Croquis rapide (+60 % de vitesse d'attaque les 10 premières secondes), Tache indélébile (+40 % de dégâts mais une tache noire sur le perso), Perspective (portée, plus de dégâts de loin, moins de près).
 - Légendaires (uniques) : Chef-d'œuvre, Double trait, Arc-en-ciel, Encrier, Sablier brisé, et les nouvelles La Joconde (+12 % de dégâts par vague finie sans perdre de PV), Double exposition (25 % des attaques se relancent), Musée ambulant (7 emplacements d'arme), Trompe-l'œil (30 % des tirs ennemis déviés), Restauration (soigne 30 % en début de vague, -15 % d'or), Renaissance (revient une fois à 50 % des PV).
 
