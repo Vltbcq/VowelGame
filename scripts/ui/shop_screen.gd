@@ -217,11 +217,15 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
 	frame.tooltip_text = Pal.RARITY_NAMES_F[o.rar] if o.type != "heal" else "Consommable"
 	if o.get("new", false) and not o.sold:
-		# Jamais vue : petite pastille « ! » dans le coin du cadre
-		var nb := UI.panel(Pal.ACCENT, GOLD_DARK, 1)
-		nb.tooltip_text = "Nouveau : jamais vu en boutique"
-		UI.put(self, nb, pos + Vector2(fw - 10, -4), Vector2(14, 14))
-		UI.put(nb, UI.label("!", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(14, 12))
+		var ukey := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
+		if ItemUnlockDB.CONDS.has(ukey):
+			_unlock_badge(frame, pos, fw)
+		else:
+			# Jamais vue : petite pastille « ! » dans le coin du cadre
+			var nb := UI.panel(Pal.ACCENT, GOLD_DARK, 1)
+			nb.tooltip_text = "Nouveau : jamais vu en boutique"
+			UI.put(self, nb, pos + Vector2(fw - 10, -4), Vector2(14, 14))
+			UI.put(nb, UI.label("!", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(14, 12))
 	if o.type == "weapon" and o.rar > 0:
 		frame.tooltip_text += "\nDégâts ×%s · vitesse d'attaque +%d%% · critique +%d%%\nAllonge +%d%% (mêlée) · perforation +%d (distance) · effets élémentaires +%d%%" % [
 			str(Stats.RAR_DMG[o.rar]), Stats.RAR_ATK[o.rar], Stats.RAR_CRIT[o.rar],
@@ -259,6 +263,31 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	elif full:
 		b.tooltip_text = "Tes PV sont déjà au max."
 	UI.put(ct, b, Vector2(fw - 50, 77), Vector2(52, 15))
+
+
+## Objet débloqué par un succès, vu pour la première fois : gros « ! » qui pulse,
+## halo doré qui clignote autour du cadre et ruban « DÉBLOQUÉ ».
+func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
+	var halo := UI.panel(Color(1, 0.85, 0.3, 0.0), Color("ffe066"), 3)
+	halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.put(self, halo, pos - Vector2(4, 4), Vector2(fw + 8, 72))
+	move_child(halo, frame.get_index())   # derrière le tableau
+	var ribbon := UI.panel(Color("e8356b"), Color("ffe066"), 1)
+	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.put(self, ribbon, pos + Vector2(6, 52), Vector2(fw - 12, 14))
+	UI.put(ribbon, UI.label("DÉBLOQUÉ", 10, Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(fw - 12, 12))
+	var nb := UI.panel(Color("e8356b"), Color("ffe066"), 2)
+	nb.tooltip_text = "Nouveau ! Débloqué grâce à un succès, jamais vu en boutique"
+	UI.put(self, nb, pos + Vector2(fw - 16, -9), Vector2(24, 24))
+	UI.put(nb, UI.label("!", 20, Color("ffe066"), HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 0), Vector2(24, 24))
+	nb.pivot_offset = Vector2(12, 12)
+	nb.rotation = 0.2
+	var tw := nb.create_tween().set_loops()
+	tw.tween_property(nb, "scale", Vector2(1.25, 1.25), 0.35).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(nb, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_SINE)
+	var th := halo.create_tween().set_loops()
+	th.tween_property(halo, "modulate:a", 0.25, 0.5)
+	th.tween_property(halo, "modulate:a", 1.0, 0.5)
 
 
 # ------------------------------------------------------------------ Styles « musée »
