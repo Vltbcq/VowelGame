@@ -72,6 +72,17 @@ var allies: Array = []    # Retouche : ennemis redessinés dans ton camp
 var wells: Array = []     # Point final {pos, t, dur, r, dmg, wst}
 var staple_last: Enemy    # Agrafeuse : dernier ennemi agrafé
 var stop_t := 0.0         # Horloge : temps arrêté
+# Amulettes
+var wave_len := 0.0       # durée de la vague (Cadran solaire)
+var crowd := 0            # ennemis proches du joueur (Papier de verre)
+var fly_n := 0            # Effet papillon : cumuls
+var fly_t := 0.0
+var squid_cd := 0.0       # Encre de seiche : recharge
+var lure_cd := 15.0       # Lanterne magique
+var lure_t := 0.0
+var lure_pos := Vector2.ZERO
+var kal_i := 0            # Kaléidoscope : couleur suivante
+var star_kills := 0       # Nuit étoilée
 var clock_cd := 12.0
 var air: _Marks
 
@@ -134,6 +145,7 @@ func _ready() -> void:
 		Sfx.play("boss")
 	else:
 		time_left = minf(20.0 + (Run.eff_wave() - 1) * 2.5, 60.0) * pow(1.25, Run.amulet_count("sablier_brise"))
+		wave_len = time_left
 		hud.announce("VAGUE %d" % Run.wave, Pal.ACCENT)
 		Sfx.play("wave")
 
@@ -187,6 +199,7 @@ func _process(delta: float) -> void:
 
 	_rebuild_grid()
 	stop_t -= delta
+	_tick_amulets(delta)
 	if Run.amulet_count("horloge") > 0:
 		clock_cd -= delta
 		if clock_cd <= 0.0:
@@ -406,6 +419,11 @@ func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, te
 	p.radius = b.radius
 	p.dmg = b.damage
 	p.pierce = b.pierce + Run.amulet_count("calque")
+	p.bounces = Run.amulet_count("elastique")
+	p.homing_soft = Run.amulet_count("boussole") > 0 and wst.get("kind", "") == "ranged"
+	p.tex = tex
+	p.fx = effect
+	p.outline_on = outline
 	p.life = life
 	p.wst = wst
 	p.knock = 25.0
@@ -459,9 +477,12 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	var scale: String = wst.get("scale", "")
 	if scale != "":
 		base = Stats.scaled_damage(base, scale)
+	# Pierre à aiguiser : +1 dégât par rang de rareté de l'arme
+	base += float(wst.get("rar", 0)) * Run.amulet_count("pierre_aiguiser")
 	var dmg: float = base * (1.0 + s.dmg / 100.0)
 	if stop_t > 0.0:
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
+	dmg *= _amulet_dmg_mult(e, wst)
 	match String(wst.get("style", "")):
 		"staple":
 			e.pin_t = 1.0
@@ -486,6 +507,14 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 			dmg *= 0.75
 	var crit_chance: float = s.crit + float(wst.get("crit", 0.0))
 	var crit: bool = randf() * 100.0 < crit_chance
+	if crit and Run.amulet_count("papillon") > 0:
+		fly_n = mini(10, fly_n + 1)
+		fly_t = 3.0
+	if Run.amulet_count("autographe") > 0:
+		if e.is_boss and crit:
+			dmg *= 2.0
+		elif not e.is_boss:
+			dmg *= 0.92
 	if crit:
 		# Cutter : ses critiques grandissent avec le taux de critique
 		dmg *= maxf(s.crit_mult, 2.0 + crit_chance / 35.0) if scale == "crit" else s.crit_mult
@@ -514,6 +543,14 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 
 
 func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
+	# Crayon de couleur (élément de ton perso) et Kaléidoscope (couleur suivante du cycle)
+	var dom := int(Run.char_a.get("dominant", 0))
+	if dom > 0 and randf() < 0.1 * Run.amulet_count("crayon_couleur"):
+		_apply_el(e, dom, dmg)
+	if Run.amulet_count("kaleidoscope") > 0:
+		kal_i += 1
+		if randf() < 0.2:
+			_apply_el(e, 1 + kal_i % (Pal.COUNT - 1), dmg)
 	var frac: Array = wst.get("frac", [])
 	if frac.is_empty():
 		return
@@ -529,6 +566,14 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
 			chance *= 0.3   # un ennemi résiste à son propre élément
 		if randf() >= chance:
 			continue
+		_apply_el(e, el, dmg)
+
+
+## Effet élémentaire sur un ennemi (brûlure, gel, chaîne, poison, marque, éclat).
+func _apply_el(e: Enemy, el: int, dmg: float) -> void:
+	if e.dead:
+		return
+	if true:
 		match el:
 			Pal.FEU:
 				e.burn(maxf(1.0, dmg * 0.25))
@@ -591,6 +636,9 @@ func kill_enemy(e: Enemy) -> void:
 		pk.xp = v
 		# Arrondi au hasard : 0.6 or = 60% de chances d'avoir 1 pièce (jamais bloqué à 0)
 		var g: float = v * Run.GOLD_MULT * pow(0.85, Run.amulet_count("restauration"))
+		g *= 1.0 + 0.15 * Run.amulet_count("aimant_pepites")
+		if e.elite:
+			g *= 1.0 + Run.amulet_count("cachet_cire")
 		pk.value = floori(g) + (1 if randf() < g - floorf(g) else 0)
 		pk.color = Pal.ACCENT
 		pk.position = e.position + Vector2(randf_range(-6, 6), randf_range(-6, 6))
@@ -624,6 +672,25 @@ func kill_enemy(e: Enemy) -> void:
 		var apos: Vector2 = e.position
 		var ael: bool = e.elite
 		_after(0.05, func(): spawn_ally(aid, apos, ael))   # (l'ennemi mort est déjà effacé)
+	# Pinceau de Midas : +1 or par ennemi tué
+	Run.gold += Run.amulet_count("midas")
+	# Bulle de soin : goutte qui soigne
+	if randf() < 0.08 * Run.amulet_count("bulle_soin"):
+		var hp := Pickup.new()
+		hp.heal = 3.0
+		hp.xp = 0
+		hp.value = 0
+		hp.color = Pal.GOOD
+		hp.position = e.position
+		hp.vel = Vector2.from_angle(randf() * TAU) * 40.0
+		loot_layer.add_child(hp)
+		pickups.append(hp)
+	# Nuit étoilée : un ennemi tué sur 10 fait tomber une étoile
+	if Run.amulet_count("nuit_etoilee") > 0:
+		star_kills += 1
+		if star_kills % 10 == 0:
+			var spos: Vector2 = e.position
+			_after(0.35, func(): _star(spos))
 	# Sanguine : soin sur élimination
 	if randf() < 0.12 * Run.amulet_count("sanguine"):
 		player.heal(1.0)
@@ -650,12 +717,16 @@ func kill_enemy(e: Enemy) -> void:
 
 
 func collect(p: Pickup) -> void:
+	if p.heal > 0.0:
+		player.heal(p.heal)
 	Run.gold += p.value
 	Sfx.play("pickup", 0.2)
 	if p.value > 0:
 		burst(p.position, Pal.ACCENT, 2, 40.0)
 	Run.hp = player.hp
 	var lv := Run.add_xp(p.xp)
+	if lv > 0 and Run.amulet_count("pansement") > 0:
+		player.heal(5.0 * lv * Run.amulet_count("pansement"))
 	if lv > 0:
 		player.st = Run.stats
 		player.hp = Run.hp
@@ -968,6 +1039,102 @@ func _board_event() -> void:
 
 
 # ------------------------------------------------------------------ Armes épiques / légendaires
+
+# ------------------------------------------------------------------ Amulettes
+
+## Minuteries des amulettes (Papillon, Seiche, Lanterne) et foule autour du joueur.
+func _tick_amulets(delta: float) -> void:
+	fly_t -= delta
+	if fly_t <= 0.0:
+		fly_n = 0
+	squid_cd -= delta
+	lure_t -= delta
+	if Run.amulet_count("papier_verre") > 0:
+		crowd = near(player.position, 70.0).size()
+	if Run.amulet_count("lanterne") > 0:
+		lure_cd -= delta
+		if lure_cd <= 0.0:
+			lure_cd = 15.0
+			lure_t = 3.0
+			lure_pos = player.position
+			var s := Sprite2D.new()
+			s.texture = player.ptex
+			s.position = player.position + player.sprite.position + player.sprite.texture.get_size() / 2.0
+			s.modulate = Color(1, 1, 1, 0.55)
+			s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			fx.add_child(s)
+			var tw := s.create_tween()
+			tw.tween_interval(2.6)
+			tw.tween_property(s, "modulate:a", 0.0, 0.4)
+			tw.tween_callback(s.queue_free)
+			float_text(player.position + Vector2(0, -26), "LEURRE !", Pal.ACCENT)
+
+
+## Où les ennemis visent : le joueur, ou le leurre de la Lanterne magique.
+func target_pos() -> Vector2:
+	return lure_pos if lure_t > 0.0 else player.position
+
+
+## Multiplicateur de dégâts des amulettes conditionnelles.
+func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
+	var m := 1.0
+	var kind: String = wst.get("kind", "")
+	var sp := Run.amulet_count("spatule")
+	var vi := Run.amulet_count("viseur")
+	if kind == "melee":
+		m *= (1.0 + 0.12 * sp) * pow(0.92, vi)
+	elif kind == "ranged":
+		m *= (1.0 + 0.12 * vi) * pow(0.92, sp)
+	var ca := Run.amulet_count("cadran_solaire")
+	if ca > 0:
+		var late := elapsed > (wave_len * 0.5 if wave_len > 0.0 else 30.0)
+		m *= (1.0 + 0.2 * ca) if late else pow(0.95, ca)
+	var pv := Run.amulet_count("papier_verre")
+	if pv > 0:
+		m *= 1.0 + minf(0.3, 0.03 * crowd) * pv
+	if Run.amulet_count("derniere_touche") > 0 and player.hp < player.max_hp * 0.25:
+		m *= 2.0
+	if player.shadow_ready:
+		player.shadow_ready = false
+		m *= 2.0   # Ombre portée
+	return m
+
+
+## Nuit étoilée : une étoile tombe et explose.
+func _star(pos: Vector2) -> void:
+	if ended:
+		return
+	explosion(pos, 60.0, Color(Pal.ACCENT, 0.9))
+	burst(pos, Pal.ACCENT, 16, 120.0)
+	var d: float = (12.0 + Run.wave * 4.0) * (1.0 + Run.stats.dmg / 100.0)
+	for o in near(pos, 60.0):
+		o.hurt(d, false, (o.position - pos).normalized() * 80.0)
+
+
+## Mise en abyme : le projectile qui touche se divise en 2 petits projectiles.
+func split_bullet(p: Projectile) -> void:
+	if bullets.size() > 400:
+		return
+	for k in [-0.6, 0.6]:
+		var c := spawn_bullet(p.position, p.vel.rotated(k) * 0.9, {"damage": p.dmg * 0.4, "radius": maxf(2.0, p.radius * 0.6), "pierce": 0},
+			p.wst, p.tex, p.fx, 0.5, p.outline_on)
+		c.child = true
+		c.bounces = 0
+		c.hit_ids = p.hit_ids.duplicate()
+		c.scale = Vector2(0.6, 0.6)
+
+
+## Encre de seiche : nuage qui aveugle les ennemis proches.
+func squid_cloud(pos: Vector2) -> void:
+	if squid_cd > 0.0 or Run.amulet_count("encre_seiche") == 0:
+		return
+	squid_cd = 15.0
+	explosion(pos, 90.0, Color(Pal.INK, 0.8))
+	burst(pos, Pal.INK, 30, 120.0)
+	for o in near(pos, 90.0):
+		o.blind_t = 2.0
+	float_text(pos + Vector2(0, -26), "ENCRE DE SEICHE !", Pal.TEXT)
+
 
 ## Agrafeuse : relie cet ennemi au précédent agrafé (s'il est encore là et pas trop loin).
 func _staple(e: Enemy) -> void:

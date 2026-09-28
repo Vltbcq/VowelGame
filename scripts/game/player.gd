@@ -20,6 +20,9 @@ var pimg: Image             # image du perso, modifiable (gomme)
 var ptex: ImageTexture
 var was_hurt := false       # a perdu des PV cette vague (La Joconde)
 var god := false            # OUTIL DE DEV : invincible
+var invis_t := 0.0          # Encre invisible : les ennemis te perdent de vue
+var shadow_ready := false   # Ombre portée : prochain coup ×2 après une esquive
+var paper := 0              # Bouclier de papier : coups ignorés restants dans la vague
 
 
 func setup(a: Arena) -> void:
@@ -28,6 +31,7 @@ func setup(a: Arena) -> void:
 	st = Run.stats
 	max_hp = st.max_hp
 	hp = clampf(Run.hp, 1.0, max_hp)   # les PV ne remontent pas entre les vagues
+	paper = Run.amulet_count("bouclier_papier")
 	var rest := Run.amulet_count("restauration")
 	if rest > 0:
 		hp = minf(max_hp, hp + max_hp * 0.3 * rest)
@@ -78,8 +82,10 @@ func tick(delta: float) -> void:
 	var d := input_dir()
 	moving = d.length() > 0.1
 	# Flaques d'encre : ralentissent, et les traits frais font mal
-	var hz := arena.hazard_effect(position, radius)
-	position += d * st.move * hz[0] * delta
+	# Correcteur : insensible aux flaques d'encre
+	var hz: Array = [1.0, 0.0] if Run.amulet_count("correcteur") > 0 else arena.hazard_effect(position, radius)
+	var boost := 1.2 if Run.amulet_count("derniere_touche") > 0 and hp < max_hp * 0.25 else 1.0
+	position += d * st.move * hz[0] * boost * delta
 	if hz[1] > 0.0:
 		take_hit(hz[1], 0, null)
 	position.x = clampf(position.x, radius, Arena.W - radius)
@@ -97,6 +103,7 @@ func tick(delta: float) -> void:
 	if st.regen > 0.0:
 		heal(st.regen * 0.2 * delta, false)
 	inv -= delta
+	invis_t -= delta
 	if flash > 0.0:
 		flash = maxf(0.0, flash - delta * 6.0)
 		mat.set_shader_parameter("flash", flash)
@@ -113,9 +120,18 @@ func tick(delta: float) -> void:
 func take_hit(dmg: float, element: int, src: Node) -> void:
 	if god or inv > 0.0 or arena.ended:
 		return
+	if paper > 0:
+		# Bouclier de papier : ce coup-là est ignoré
+		paper -= 1
+		inv = 0.5
+		arena.float_text(position + Vector2(0, -14), "BOUCLIER !", Pal.TEXT)
+		arena.burst(position, Color.WHITE, 12, 90.0)
+		return
 	if randf() * 100.0 < st.dodge:
 		arena.float_text(position + Vector2(0, -14), "ESQUIVE", Pal.DIM)
 		inv = 0.25
+		if Run.amulet_count("ombre_portee") > 0:
+			shadow_ready = true
 		return
 	var d := dmg
 	if st.armor >= 0.0:
@@ -127,6 +143,9 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	d = maxf(1.0, roundf(d))
 	hp -= d
 	was_hurt = true
+	if Run.amulet_count("encre_invisible") > 0:
+		invis_t = 1.0
+	arena.squid_cloud(position)
 	arena.player_hurt_fx(position)
 	inv = 0.5
 	flash = 1.0

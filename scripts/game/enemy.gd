@@ -63,6 +63,7 @@ var ink_dmg := 0.0
 var ally := false            # Retouche : redessiné dans le camp du joueur
 var ally_t := 0.0
 var ally_cd := 0.0
+var blind_t := 0.0           # Encre de seiche : aveuglé
 
 # Statuts
 var slow_t := 0.0
@@ -161,9 +162,14 @@ func tick(delta: float) -> void:
 	if dead:
 		return
 	var p := arena.player
-	var to_p := p.position - position
+	var to_p := arena.target_pos() - position   # le joueur, ou le leurre de la Lanterne
 	var dist := maxf(0.01, to_p.length())
 	var dirp := to_p / dist
+	blind_t -= delta
+	if not is_boss and (blind_t > 0.0 or p.invis_t > 0.0):
+		# Aveuglé (Seiche) ou joueur invisible (Encre invisible) : il erre
+		dirp = Vector2.from_angle(phase + t * 0.8)
+		dist = 999.0
 	var v := Vector2.ZERO
 	var mult := 0.55 if slow_t > 0.0 else 1.0
 	if arena.rush_t > 0.0 and not is_boss:

@@ -19,6 +19,12 @@ var burst_r := 0.0       # Autoportrait : explose au premier contact (ou en fin 
 var upright := false     # reste droit (le clone ne tourne pas sur lui-même)
 var hang := 0.0          # Craie : reste suspendu au tableau, puis part vers le joueur
 var hang_speed := 140.0
+var bounces := 0        # Élastique : rebonds restants sur les bords
+var child := false       # Mise en abyme : projectile issu d'une division
+var homing_soft := false # Boussole : un peu chercheur
+var tex: Texture2D
+var fx := ""
+var outline_on := true
 var boomerang := false   # Avion en papier : part, puis revient vers le joueur
 var out_t := 0.0
 var returning := false
@@ -54,11 +60,11 @@ func tick(delta: float, arena: Arena) -> bool:
 			rotation = vel.angle()
 			if to.length() < 12.0:
 				return false
-	if homing:
+	if homing or homing_soft:
 		var tg := arena.nearest(position, 220.0)
 		if tg:
 			var want := (tg.position - position).angle()
-			var ang := rotate_toward(vel.angle(), want, 5.0 * delta)
+			var ang := rotate_toward(vel.angle(), want, (5.0 if homing else 1.6) * delta)
 			vel = Vector2.from_angle(ang) * vel.length()
 			rotation = 0.0 if upright else ang
 	position += vel * delta
@@ -80,6 +86,16 @@ func tick(delta: float, arena: Arena) -> bool:
 			for e in arena.near(position, burst_r):
 				arena.hit_enemy(e, dmg, wst, (e.position - position).normalized(), knock * 3.0)
 			return false
+	# Élastique : rebondit sur les bords de la page
+	if bounces > 0 and not hostile and (position.x < 0 or position.y < 0 or position.x > Arena.W or position.y > Arena.H):
+		if position.x < 0 or position.x > Arena.W:
+			vel.x = -vel.x
+		if position.y < 0 or position.y > Arena.H:
+			vel.y = -vel.y
+		position = position.clamp(Vector2.ZERO, Vector2(Arena.W, Arena.H))
+		rotation = vel.angle()
+		bounces -= 1
+		life = maxf(life, 0.6)
 	if life <= 0.0 or position.x < -30 or position.y < -30 or position.x > Arena.W + 30 or position.y > Arena.H + 30:
 		return false
 	if hostile:
@@ -94,6 +110,8 @@ func tick(delta: float, arena: Arena) -> bool:
 			continue
 		hit_ids[id] = true
 		arena.hit_enemy(e, dmg, wst, vel.normalized(), knock)
+		if not child and Run.amulet_count("mise_abyme") > 0:
+			arena.split_bullet(self)
 		pierce -= 1
 		if pierce < 0:
 			return false

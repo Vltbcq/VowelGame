@@ -164,12 +164,13 @@ Le **Bestiaire** (menu principal) liste toutes les armes, amulettes et ennemis a
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
-## Amulettes (55)
+## Amulettes (101)
 
-- Communes, nouvelles : Taille-crayon, Buvard, Gouache, Fixatif, Chevalet.
-- Rares, nouvelles : Calque (+1 perforation), Estompe (chaque coup ralentit), Mine de plomb (critiques plus forts), Sanguine (soin sur élimination), Craquelure (les critiques explosent), Mécène (pourboire : or à chaque fin de vague).
-- Épiques, nouvelles : Cadre doré (dégâts selon l'or en poche), Collage (dégâts par type d'arme différent), Croquis rapide (+60 % de vitesse d'attaque les 10 premières secondes), Tache indélébile (+40 % de dégâts mais une tache noire sur le perso), Perspective (portée, plus de dégâts de loin, moins de près).
-- Légendaires (uniques) : Chef-d'œuvre, Double trait, Arc-en-ciel, Encrier, Sablier brisé, et les nouvelles La Joconde (+12 % de dégâts par vague finie sans perdre de PV), Double exposition (25 % des attaques se relancent), Musée ambulant (7 emplacements d'arme), Trompe-l'œil (30 % des tirs ennemis déviés), Restauration (soigne 30 % en début de vague, -15 % d'or), Renaissance (revient une fois à 50 % des PV), Horloge (toutes les 12 s, le temps s'arrête 2 s : ennemis et tirs figés, tes armes ×2).
+- 30 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
+- Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
+- Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
+- Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).
+- Légendaires, nouvelles : Mise en abyme (projectiles qui se divisent), Pinceau de Midas (+1 or par ennemi tué, −20 % PV max), Palimpseste (bonus de niveau doublés, un choix de moins), Fresque (+0,5 % par dessin de ta galerie, max +60 %), Autographe (critiques ×2 sur les boss), Nuit étoilée (étoile toutes les 10 éliminations), Dernière touche (sous 25 % de PV : ×2 dégâts, +20 % vitesse), Horloge (temps arrêté 2 s toutes les 12 s).
 
 ## Tutoriel
 

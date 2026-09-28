@@ -500,7 +500,7 @@ func xp_needed() -> int:
 
 ## Retourne le nombre de niveaux gagnés. Chaque niveau : +1 PV max et un peu d'encre.
 func add_xp(n: int) -> int:
-	xp_rest += n * XP_MULT * (1.0 + 0.25 * amulet_count("carnet"))
+	xp_rest += n * XP_MULT * (1.0 + 0.25 * amulet_count("carnet") + 0.1 * amulet_count("gommette"))
 	var whole := floori(xp_rest)
 	xp_rest -= whole
 	xp += whole
@@ -520,7 +520,7 @@ func roll_upgrades() -> Array:
 	var pool := UPGRADES.duplicate()
 	pool.shuffle()
 	var out := []
-	var n := mini(pool.size() - 1, 3 + amulet_count("encrier"))
+	var n := maxi(1, mini(pool.size() - 1, 3 + amulet_count("encrier") - amulet_count("palimpseste")))
 	for i in n:
 		var u: Array = pool[i]
 		var rar := roll_rarity()
@@ -578,7 +578,8 @@ func pigments_earned(win: bool) -> int:
 ## Tout devient plus cher au fil de la partie (×1 en vague 1, ×4.7 en vague 20).
 func price_mult() -> float:
 	var w := eff_wave() - 1.0
-	return 1.0 + 0.12 * w + 0.004 * w * w
+	# Étiquette de prix : -8 % par exemplaire (5 au plus)
+	return (1.0 + 0.12 * w + 0.004 * w * w) * pow(0.92, amulet_count("etiquette_prix"))
 
 
 ## Chances (en %) de [rare, épique, légendaire] pour une offre ou un bonus, selon la vague qui
@@ -623,7 +624,10 @@ func roll_shop() -> void:
 				"price": roundi(WeaponDB.PRICE[rar] * price_mult()), "sold": false})
 		else:
 			# Légendaires = uniques : jamais une déjà possédée, ni deux fois la même en vitrine.
-			var pool := AmuletDB.of_rarity(rar).filter(func(d): return rar < 3 or (amulet_count(d.id) == 0 and not offered.has(d.id)))
+			# Limite d'achat : légendaires uniques, Étiquette de prix 5 max...
+			var pool := AmuletDB.of_rarity(rar).filter(func(d):
+				var lim := int(d.get("limit", 1 if rar == 3 else 0))
+				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id))))
 			if pool.is_empty():
 				rar = 2
 				pool = AmuletDB.of_rarity(2)

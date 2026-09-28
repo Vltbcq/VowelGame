@@ -23,6 +23,21 @@ const LIST := [
 	{"id": "gouache", "ink": 40, "name": "Gouache", "rar": 0, "stat": "max_hp", "v": 7.0, "desc": "+{v} PV max · {m}% esquive", "malus": ["dodge", -4.0]},
 	{"id": "fixatif", "ink": 28, "name": "Fixatif", "rar": 0, "stat": "regen", "v": 2.0, "desc": "+{v} régénération · {m}% dégâts", "malus": ["dmg", -4.0]},
 	{"id": "chevalet", "ink": 44, "name": "Chevalet", "rar": 0, "stat": "dmg", "v": 9.0, "desc": "+{v}% dégâts · {m}% vitesse", "malus": ["speed", -7.0]},
+	{"id": "pastel", "ink": 20, "name": "Pastel", "rar": 0, "stat": "dodge", "v": 6.0, "desc": "+{v}% esquive · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "craie_grasse", "ink": 18, "name": "Craie grasse", "rar": 0, "stat": "regen", "v": 2.0, "desc": "+{v} régénération · {m} chance", "malus": ["luck", -4.0]},
+	{"id": "papier_kraft", "ink": 24, "name": "Papier kraft", "rar": 0, "stat": "armor", "v": 2.0, "desc": "+{v} armure · {m}% critique", "malus": ["crit", -4.0]},
+	{"id": "colle", "ink": 20, "name": "Colle", "rar": 0, "stat": "lifesteal", "v": 3.0, "desc": "+{v}% vol de vie · {m}% vitesse", "malus": ["speed", -5.0]},
+	{"id": "spatule", "ink": 24, "name": "Spatule", "rar": 0, "flag": true, "desc": "+12% dégâts de MÊLÉE · -8% dégâts à distance"},
+	{"id": "viseur", "ink": 24, "name": "Viseur", "rar": 0, "flag": true, "desc": "+12% dégâts À DISTANCE · -8% dégâts de mêlée"},
+	{"id": "tube_peinture", "ink": 30, "name": "Tube de peinture", "rar": 0, "stat": "max_hp", "v": 6.0, "desc": "+{v} PV max · {m}% critique", "malus": ["crit", -3.0]},
+	{"id": "chiffon", "ink": 22, "name": "Chiffon", "rar": 0, "stat": "dodge", "v": 5.0, "desc": "+{v}% esquive · {m} ramassage", "malus": ["pickup", -30.0]},
+	{"id": "metre_ruban", "ink": 22, "name": "Mètre ruban", "rar": 0, "stat": "range", "v": 12.0, "desc": "+{v}% portée · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "encre_sympathique", "ink": 20, "name": "Encre sympathique", "rar": 0, "stat": "luck", "v": 8.0, "desc": "+{v} chance · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "godet", "ink": 24, "name": "Godet", "rar": 0, "stat": "el_power", "v": 15.0, "desc": "+{v}% puissance élémentaire · {m}% vit. d'attaque", "malus": ["atk_speed", -5.0]},
+	{"id": "etiquette_prix", "ink": 16, "name": "Étiquette de prix", "rar": 0, "flag": true, "limit": 5, "desc": "Les œuvres de la boutique coûtent 8% moins cher (5 max) · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "timbre", "ink": 16, "name": "Timbre", "rar": 0, "stat": "thorns", "v": 2.0, "desc": "+{v} épines · {m}% vitesse", "malus": ["speed", -4.0]},
+	{"id": "gommette", "ink": 14, "name": "Gommette", "rar": 0, "flag": true, "desc": "+10% d'expérience · {m} armure", "malus": ["armor", -2.0]},
+	{"id": "porte_mine", "ink": 18, "name": "Porte-mine", "rar": 0, "stat": "crit", "v": 5.0, "desc": "+{v}% critique · {m} régénération", "malus": ["regen", -1.0]},
 	{"id": "fusain", "ink": 22, "name": "Fusain", "rar": 0, "stat": "atk_speed", "v": 12.0, "desc": "+{v}% vit. d'attaque · {m} PV max", "malus": ["max_hp", -3.0]},
 	# Rares
 	{"id": "sangsue", "ink": 30, "name": "Sangsue", "rar": 1, "stat": "lifesteal", "v": 4.0, "desc": "+{v}% vol de vie · {m} régénération", "malus": ["regen", -1.0]},
@@ -39,6 +54,18 @@ const LIST := [
 	{"id": "sanguine", "ink": 36, "name": "Sanguine", "rar": 1, "flag": true, "desc": "12% de chances qu'un ennemi tué te soigne 1 PV · {m} PV max", "malus": ["max_hp", -4.0]},
 	{"id": "craquelure", "ink": 40, "name": "Craquelure", "rar": 1, "flag": true, "desc": "Tes coups critiques explosent autour de l'ennemi · {m}% critique", "malus": ["crit", -4.0]},
 	{"id": "mecene", "ink": 32, "name": "Mécène", "rar": 1, "stat": "harvest", "v": 9.0, "desc": "+{v} pourboire (or à chaque fin de vague) · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "aimant_pepites", "ink": 30, "name": "Aimant à pépites", "rar": 1, "flag": true, "desc": "+15% d'or ramassé · {m} PV max", "malus": ["max_hp", -4.0]},
+	{"id": "crayon_couleur", "ink": 28, "name": "Crayon de couleur", "rar": 1, "flag": true, "desc": "10% de chances par coup d'appliquer l'élément de ton perso · {m}% dégâts", "malus": ["dmg", -4.0]},
+	{"id": "ombre_portee", "ink": 34, "name": "Ombre portée", "rar": 1, "flag": true, "desc": "Après une esquive, ton prochain coup fait ×2 · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "pansement", "ink": 26, "name": "Pansement", "rar": 1, "flag": true, "desc": "Soigne 5 PV à chaque montée de niveau · {m}% vitesse", "malus": ["speed", -3.0]},
+	{"id": "cadran_solaire", "ink": 36, "name": "Cadran solaire", "rar": 1, "flag": true, "desc": "+20% dégâts pendant la 2e moitié de chaque vague, -5% la 1re moitié"},
+	{"id": "taille_douce", "ink": 34, "name": "Taille-douce", "rar": 1, "flag": true, "desc": "+1% critique par tranche de 3 armure · {m}% vitesse", "malus": ["speed", -5.0]},
+	{"id": "encre_invisible", "ink": 30, "name": "Encre invisible", "rar": 1, "flag": true, "desc": "Après un coup reçu, les ennemis te perdent de vue 1 s · {m}% dégâts", "malus": ["dmg", -4.0]},
+	{"id": "papier_verre", "ink": 32, "name": "Papier de verre", "rar": 1, "flag": true, "desc": "+3% dégâts par ennemi proche (max +30%) · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "bulle_soin", "ink": 30, "name": "Bulle de soin", "rar": 1, "flag": true, "desc": "Les ennemis tués ont 8% de chances de lâcher une goutte de soin · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "elastique", "ink": 26, "name": "Élastique", "rar": 1, "flag": true, "desc": "Tes projectiles rebondissent 1 fois sur les bords · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "correcteur", "ink": 28, "name": "Correcteur", "rar": 1, "flag": true, "desc": "Insensible aux flaques d'encre ennemies · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "cachet_cire", "ink": 32, "name": "Cachet de cire", "rar": 1, "flag": true, "desc": "Les élites lâchent ×2 d'or · {m} chance", "malus": ["luck", -4.0]},
 	{"id": "carnet", "ink": 44, "name": "Carnet de croquis", "rar": 1, "flag": true, "desc": "+25% d'expérience · {m} armure", "malus": ["armor", -3.0]},
 	# Épiques (cassables)
 	{"id": "palette", "ink": 60, "name": "Palette", "rar": 2, "flag": true, "desc": "+8% dégâts par couleur de ton perso · {m} armure", "malus": ["armor", -4.0]},
@@ -54,6 +81,17 @@ const LIST := [
 	{"id": "croquis_rapide", "ink": 40, "name": "Croquis rapide", "rar": 2, "flag": true, "desc": "+60% vit. d'attaque pendant les 10 premières secondes de chaque vague · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "tache", "ink": 30, "name": "Tache indélébile", "rar": 2, "stat": "dmg", "v": 40.0, "flag": true, "desc": "+{v}% dégâts, mais une grosse tache noire s'ajoute à ton perso (plus gros, plus lent)"},
 	{"id": "perspective", "ink": 48, "name": "Perspective", "rar": 2, "flag": true, "desc": "+30% portée. Ennemis loin de toi : +25% dégâts, proches : -25%"},
+	{"id": "kaleidoscope", "ink": 50, "name": "Kaléidoscope", "rar": 2, "flag": true, "desc": "Tes coups font défiler les couleurs : 20% de chances d'appliquer l'élément suivant du cycle · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "lanterne", "ink": 54, "name": "Lanterne magique", "rar": 2, "flag": true, "desc": "Toutes les 15 s, un LEURRE de ton perso attire les ennemis 3 s · {m} PV max", "malus": ["max_hp", -4.0]},
+	{"id": "ressort", "ink": 40, "name": "Ressort", "rar": 2, "flag": true, "desc": "Armes de mêlée : +30% portée et recul ×2 · {m}% vit. d'attaque", "malus": ["atk_speed", -8.0]},
+	{"id": "metronome", "ink": 46, "name": "Métronome", "rar": 2, "flag": true, "desc": "Une attaque sur 5 de chaque arme fait ×2,5 · {m}% vit. d'attaque", "malus": ["atk_speed", -8.0]},
+	{"id": "pierre_aiguiser", "ink": 44, "name": "Pierre à aiguiser", "rar": 2, "flag": true, "desc": "+1 dégât par coup par rang de rareté de l'arme (légendaire +3) · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "boussole", "ink": 40, "name": "Boussole", "rar": 2, "flag": true, "desc": "Tous tes projectiles deviennent un peu chercheurs · {m}% portée", "malus": ["range", -10.0]},
+	{"id": "papillon", "ink": 42, "name": "Effet papillon", "rar": 2, "flag": true, "desc": "Chaque critique : +3% vit. d'attaque pendant 3 s (jusqu'à ×10) · {m}% critique", "malus": ["crit", -4.0]},
+	{"id": "encre_seiche", "ink": 48, "name": "Encre de seiche", "rar": 2, "flag": true, "desc": "Touché : un nuage d'encre aveugle les ennemis proches 2 s (recharge 15 s) · {m} armure", "malus": ["armor", -1.0]},
+	{"id": "echelle", "ink": 44, "name": "Échelle", "rar": 2, "flag": true, "desc": "+2% dégâts par niveau atteint · {m} PV max", "malus": ["max_hp", -4.0]},
+	{"id": "accordeon", "ink": 46, "name": "Accordéon", "rar": 2, "flag": true, "desc": "+0,5% vit. d'attaque par % de vitesse de déplacement · {m} armure", "malus": ["armor", -3.0]},
+	{"id": "bouclier_papier", "ink": 40, "name": "Bouclier de papier", "rar": 2, "flag": true, "desc": "Le 1er coup reçu de chaque vague est ignoré · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "sceau", "ink": 58, "name": "Sceau d'encre", "rar": 2, "stat": "dmg", "v": 25.0, "desc": "+{v}% dégâts · {m} régénération", "malus": ["regen", -3.0]},
 	# Légendaires
 	{"id": "chef_oeuvre", "ink": 100, "name": "Chef-d'œuvre", "rar": 3, "flag": true, "desc": "Les stats du dessin de ton perso ×1.5 · {m}% vitesse", "malus": ["speed", -10.0]},
@@ -66,6 +104,13 @@ const LIST := [
 	{"id": "trompe_oeil", "ink": 66, "name": "Trompe-l'œil", "rar": 3, "flag": true, "desc": "30% des tirs ennemis sont déviés · {m} armure", "malus": ["armor", -4.0]},
 	{"id": "restauration", "ink": 76, "name": "Restauration", "rar": 3, "flag": true, "desc": "Soigne 30% de tes PV au début de chaque vague, mais -15% d'or ramassé"},
 	{"id": "renaissance", "ink": 84, "name": "Renaissance", "rar": 3, "flag": true, "desc": "Une fois par partie, à 0 PV tu reviens avec 50% de tes PV · {m}% vitesse", "malus": ["speed", -10.0]},
+	{"id": "mise_abyme", "ink": 80, "name": "Mise en abyme", "rar": 3, "flag": true, "desc": "Tes projectiles qui touchent se DIVISENT en 2 petits projectiles · {m}% critique", "malus": ["crit", -6.0]},
+	{"id": "midas", "ink": 74, "name": "Pinceau de Midas", "rar": 3, "flag": true, "desc": "Chaque ennemi tué donne +1 or, mais -20% PV max"},
+	{"id": "palimpseste", "ink": 70, "name": "Palimpseste", "rar": 3, "flag": true, "desc": "Les bonus de niveau que tu choisis comptent DOUBLE, mais un choix de moins à chaque niveau"},
+	{"id": "fresque", "ink": 90, "name": "Fresque", "rar": 3, "flag": true, "desc": "+0,5% dégâts par dessin dans ta galerie (max +60%) · {m}% vitesse", "malus": ["speed", -5.0]},
+	{"id": "autographe", "ink": 66, "name": "Autographe", "rar": 3, "flag": true, "desc": "Tes critiques font ×2 sur les boss, mais -8% dégâts contre les autres"},
+	{"id": "nuit_etoilee", "ink": 84, "name": "Nuit étoilée", "rar": 3, "flag": true, "desc": "Un ennemi tué sur 10 fait tomber une étoile qui explose en zone · {m} PV max", "malus": ["max_hp", -5.0]},
+	{"id": "derniere_touche", "ink": 72, "name": "Dernière touche", "rar": 3, "flag": true, "desc": "Sous 25% de PV : tes armes font ×2 et tu vas 20% plus vite, mais -10% PV max"},
 	{"id": "horloge", "ink": 76, "name": "Horloge", "rar": 3, "flag": true, "desc": "Toutes les 12 s, le TEMPS S'ARRÊTE 2 s : ennemis et tirs figés, tes armes font ×2 · {m} PV max", "malus": ["max_hp", -6.0]},
 	{"id": "sablier_brise", "ink": 70, "name": "Sablier brisé", "rar": 3, "stat": "atk_speed", "v": 45.0, "flag": true, "desc": "+{v}% vit. d'attaque, mais les vagues durent 25% plus longtemps"},
 ]
@@ -125,4 +170,10 @@ static func describe(def: Dictionary, mag := 1.0) -> String:
 		s = s.replace("{v}", str(int(v)) if is_equal_approx(v, roundf(v)) else str(v))
 	if int(def.rar) == 3:
 		s += " · UNIQUE"
+	# Valeur ACTUELLE des amulettes dont l'effet varie (pendant une partie)
+	if Run.active:
+		var live := Stats.amulet_live(String(def.id))
+		if live != "":
+			s = "Actuellement : %s
+%s" % [live, s]
 	return s

@@ -102,8 +102,10 @@ static func player(run: Node) -> Dictionary:
 		for e in range(1, Pal.COUNT):
 			s.res[e] += af[e] * 20.0
 	# Bonus choisis en montant de niveau
+	# Palimpseste : les bonus de niveau comptent double
+	var bm := 2.0 if run.amulet_count("palimpseste") > 0 else 1.0
 	for k in run.bonus:
-		s[k] += run.bonus[k]
+		s[k] += run.bonus[k] * bm
 	# Marques d'encre : leur couleur donne un peu de résistance (elles ne comptent pas dans la taille)
 	for m in run.marks:
 		var mf: Array = m.a.frac
@@ -140,6 +142,15 @@ static func player(run: Node) -> Dictionary:
 		for w in run.weapons:
 			kinds[w.type] = true
 		s.dmg += 8.0 * kinds.size() * n
+	n = run.amulet_count("echelle")
+	s.dmg += 2.0 * run.level * n
+	n = run.amulet_count("fresque")
+	s.dmg += minf(60.0, 0.5 * (Meta.data.get("gallery", []) as Array).size()) * n
+	n = run.amulet_count("accordeon")
+	s.atk_speed += 0.5 * maxf(0.0, s.speed) * n
+	n = run.amulet_count("taille_douce")
+	s.crit += floorf(maxf(0.0, s.armor) / 3.0) * n
+	s.max_hp *= pow(0.8, run.amulet_count("midas")) * pow(0.9, run.amulet_count("derniere_touche"))
 	# Finalisation
 	s.max_hp = maxf(1.0, roundf(s.max_hp))
 	s.move = s.speed_base * maxf(0.25, 1.0 + s.speed / 100.0)
@@ -192,6 +203,43 @@ static func scaled_damage(base: float, scale: String) -> float:
 static func lifesteal_of(scale: String) -> float:
 	var ls: float = maxf(0.0, Run.stats.get("lifesteal", 0.0))
 	return ls * 3.0 + 5.0 if scale == "lifesteal" else ls
+
+
+## Valeur actuelle d'une amulette dont l'effet dépend de la partie ("" sinon).
+static func amulet_live(id: String) -> String:
+	var s: Dictionary = Run.stats
+	var a: Dictionary = Run.char_a
+	match id:
+		"palette":
+			return "%d couleur(s) = +%d%% dégâts" % [int(a.get("elements", 0)), 8 * int(a.get("elements", 0))]
+		"esquisse":
+			return "%d px, %s" % [int(a.get("pixels", 0)), "actif" if int(a.get("pixels", 0)) < 120 else "inactif (120 px ou plus)"]
+		"poids":
+			return "+%d armure" % floori(float(a.get("pixels", 0)) / 60.0)
+		"signature":
+			return "+%d%% dégâts" % (3 * Run.signature)
+		"cadre_dore":
+			return "+%d%% dégâts" % mini(40, floori(Run.gold / 5.0))
+		"collage":
+			var kinds := {}
+			for w in Run.weapons:
+				kinds[w.type] = true
+			return "%d type(s) = +%d%% dégâts" % [kinds.size(), 8 * kinds.size()]
+		"joconde":
+			return "+%d%% dégâts" % (12 * Run.joconde)
+		"fresque":
+			var g := (Meta.data.get("gallery", []) as Array).size()
+			return "%d dessins = +%d%% dégâts" % [g, roundi(minf(60.0, 0.5 * g))]
+		"taille_douce":
+			return "+%d%% critique" % floori(maxf(0.0, s.get("armor", 0.0)) / 3.0)
+		"echelle":
+			return "+%d%% dégâts" % (2 * Run.level)
+		"accordeon":
+			return "+%d%% vit. d'attaque" % roundi(0.5 * maxf(0.0, s.get("speed", 0.0)))
+		"etiquette_prix":
+			var c := Run.amulet_count("etiquette_prix")
+			return "-%d%% sur les prix (%d/5)" % [roundi((1.0 - pow(0.92, c)) * 100.0), c]
+	return ""
 
 
 ## Silhouette : ×0,5 pour un tout petit perso, ×1,1 vers 250 px, ×2,1 vers 600 px (max ×3,5).

@@ -41,7 +41,9 @@ var beam_target: Enemy
 var beam_t := 0.0
 var beam_acc := 0.0
 var beam_wst := {}
-var special_t := 0.0         # Miroir déformant / Grande Signature : minuterie
+var special_t := 0.0
+var atk_n := 0               # Métronome : attaques données
+var metro := 1.0             # ×2,5 sur l'attaque en cours         # Miroir déformant / Grande Signature : minuterie
 
 
 func setup(p: Player, weapon: Dictionary) -> void:
@@ -134,11 +136,15 @@ func _atk_mult() -> float:
 	var m: float = 1.0 + player.st.atk_speed / 100.0
 	if player.arena.elapsed < 10.0:
 		m += 0.6 * Run.amulet_count("croquis_rapide")
+	m += 0.03 * player.arena.fly_n * Run.amulet_count("papillon")   # Effet papillon
 	return maxf(0.2, m)
 
 
 func _range_mult() -> float:
-	return 1.0 + player.st.range / 100.0
+	var r: float = 1.0 + player.st.range / 100.0
+	if st.kind == "melee":
+		r += 0.3 * Run.amulet_count("ressort")   # Ressort
+	return r
 
 
 func tick(delta: float) -> void:
@@ -185,6 +191,11 @@ func tick(delta: float) -> void:
 
 	if cd <= 0.0 and target:
 		cd = st.cooldown
+		# Métronome : une attaque sur 5 fait ×2,5
+		atk_n += 1
+		metro = 2.5 if Run.amulet_count("metronome") > 0 and atk_n % 5 == 0 else 1.0
+		if metro > 1.0:
+			arena.float_text(player.position + position + Vector2(0, -14), "×2,5", Pal.ACCENT)
 		# Double exposition : l'attaque se relance aussitôt
 		if Run.amulet_count("double_expo") > 0 and randf() < 0.25:
 			cd = 0.06
@@ -285,6 +296,8 @@ func _melee_step(delta: float) -> void:
 				heat += 1
 			elif st.style == "gust":
 				kb *= 5.0   # Éventail : repousse très fort
+			d *= metro
+			kb *= 1.0 + Run.amulet_count("ressort")
 			player.arena.hit_enemy(e, d, st, Vector2.from_angle(rotation), kb)
 		if st.style == "trail":
 			_paint(tip)
@@ -425,6 +438,7 @@ func _fire(target: Enemy) -> void:
 					life = clampf(muzzle.distance_to(target.position) / b.speed, 0.15, life)
 				var p := arena.spawn_bullet(muzzle + off, Vector2.from_angle(a) * b.speed, b, st, bullet_tex[i],
 					art.beffect, life, art.get("boutline", true))
+				p.dmg *= metro
 				if st.style == "homing":
 					p.homing = true
 				elif st.style == "boomerang":

@@ -8,6 +8,7 @@ var color := Pal.INK
 var vel := Vector2.ZERO
 var t := 0.0
 var magnet := false
+var heal := 0.0      # Bulle de soin : goutte qui soigne
 var vac := -1.0      # fin de vague : aspirée vers le joueur (< 0 = non ; sinon temps écoulé)
 var vac_delay := 0.0
 
