@@ -187,6 +187,13 @@ static func scaled_damage(base: float, scale: String) -> float:
 	return base
 
 
+## Vol de vie (en %) d'un coup de cette arme. Pipette : ×3 + 5 %. Au-delà de 100 %,
+## un coup soigne plusieurs PV.
+static func lifesteal_of(scale: String) -> float:
+	var ls: float = maxf(0.0, Run.stats.get("lifesteal", 0.0))
+	return ls * 3.0 + 5.0 if scale == "lifesteal" else ls
+
+
 ## Silhouette : ×0,5 pour un tout petit perso, ×1,1 vers 250 px, ×2,1 vers 600 px (max ×3,5).
 static func pixel_mult() -> float:
 	return clampf(0.4 + float(Run.char_a.get("pixels", 0)) / 350.0, 0.5, 3.5)
@@ -217,6 +224,8 @@ static func scale_text(scale: String) -> String:
 			return "Ratio : %d couleur(s) sur ton perso = ×%.2f" % [int(Run.char_a.get("elements", 0)), 1.0 + 0.35 * int(Run.char_a.get("elements", 0))]
 		"pixels":
 			return "Ratio : %d pixels = ×%.2f" % [int(Run.char_a.get("pixels", 0)), pixel_mult()]
+		"lifesteal":
+			return "Ratio : vol de vie %d%% = %d%% sur ses coups" % [int(s.get("lifesteal", 0)), roundi(lifesteal_of("lifesteal"))]
 	return ""
 
 

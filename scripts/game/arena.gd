@@ -462,8 +462,11 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 			if o != e:
 				o.hurt(dmg * 0.4 * craq, false, (o.position - e.position).normalized() * 40.0)
 	Sfx.play("hit")
-	if randf() * 100.0 < s.lifesteal:
-		player.heal(1.0)
+	# Vol de vie (Pipette : ×3 + 5 %) ; au-delà de 100 %, plusieurs PV par coup
+	var ls := Stats.lifesteal_of(scale) / 100.0
+	var heal := floorf(ls) + (1.0 if randf() < ls - floorf(ls) else 0.0)
+	if heal > 0.0:
+		player.heal(heal)
 	_procs(e, dmg, wst)
 
 
