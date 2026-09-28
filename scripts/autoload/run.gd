@@ -82,6 +82,7 @@ var regen_boost := 0.0      # Élixir de sève : secondes de régénération boo
 var star_buff := 0.0        # Grattage (étoile) : +X % dégâts à la vague suivante (en attente)
 var wave_dmg := 0.0         # ... actif pendant la vague en cours
 var patron := ""            # Mécène : contrat signé pour la vague suivante ("more" / "elites")
+var event_used := false     # un événement a déjà été joué dans cette boutique
 var elite_kills := 0        # élites effacées dans la partie
 var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
@@ -438,7 +439,7 @@ func to_save(stage: String) -> Dictionary:
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
 		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
-		"star_buff": star_buff, "patron": patron}
+		"star_buff": star_buff, "patron": patron, "event_used": event_used}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -508,6 +509,7 @@ func from_save(d: Dictionary) -> bool:
 	regen_boost = float(d.get("regen_boost", 0.0))
 	star_buff = float(d.get("star_buff", 0.0))
 	patron = String(d.get("patron", ""))
+	event_used = bool(d.get("event_used", false))
 	boss_ids = d.get("boss_ids", {})
 	recompute()
 	hp = clampf(float(d.hp), 1.0, stats.max_hp)
@@ -643,10 +645,15 @@ func roll_rarity() -> int:
 
 func new_shop() -> void:
 	rerolls = 0
+	event_used = false
 	roll_shop()
 
 
 func roll_shop() -> void:
+	# Un événement déjà joué dans cette boutique : plus d'autre événement, même en relançant
+	for o in shop_offers:
+		if o.type in EVENTS and o.sold:
+			event_used = true
 	shop_offers = []
 	var n := 4 + Meta.level("shop_slot")
 	var offered := {}
@@ -687,7 +694,7 @@ func roll_shop() -> void:
 		shop_offers.append({"type": "heal", "id": hid, "rar": 0,
 			"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
 	# Case « événement », à part (dès la 2e boutique) : peut tomber EN PLUS d'une potion
-	if wave >= 2 and randf() < EVENT_CHANCE:
+	if wave >= 2 and not event_used and randf() < EVENT_CHANCE:
 		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())
 		shop_offers.append(make_event(evs.pick_random()))
 

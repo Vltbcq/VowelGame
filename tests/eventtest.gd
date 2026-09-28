@@ -56,6 +56,21 @@ func _ready() -> void:
 	print("     potion ET événement dans la même boutique : %.1f%%" % (100.0 * both / 2000))
 	_check(ok, "chaque événement dans ~7 % des boutiques")
 	_check(both > 2000 * 0.12, "potion et événement peuvent tomber ensemble")
+	# Un événement joué : plus d'événement dans cette boutique, même en relançant
+	Run.new_shop()
+	Run.shop_offers.append(Run.make_event("patron"))
+	Run.shop_offers[-1].sold = true
+	var again := 0
+	for k in 200:
+		Run.roll_shop()
+		again += Run.shop_offers.filter(func(o): return o.type in Run.EVENTS).size()
+	_check(again == 0, "événement joué : plus d'autre événement en relançant (%d)" % again)
+	Run.new_shop()
+	var back := 0
+	for k in 200:
+		Run.new_shop()
+		back += Run.shop_offers.filter(func(o): return o.type in Run.EVENTS).size()
+	_check(back > 30, "boutique suivante : les événements reviennent")
 	# Enchères : toujours épique ou légendaire
 	var low := 0
 	for k in 300:
