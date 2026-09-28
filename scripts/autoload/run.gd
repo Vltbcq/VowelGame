@@ -65,6 +65,8 @@ var rerolls := 0
 var joconde := 0            # vagues parfaites avec La Joconde (+12% dégâts chacune)
 var revived := false        # Renaissance déjà utilisée
 var levelup_choices: Array = []   # les 3 bonus proposés au niveau en attente (sauvegardés)
+var elite_kills := 0        # élites effacées dans la partie
+var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
 
 func start(d: int, map_id := 1) -> void:
@@ -99,6 +101,8 @@ func start(d: int, map_id := 1) -> void:
 	joconde = 0
 	revived = false
 	levelup_choices = []
+	elite_kills = 0
+	boss_ids = {}
 
 
 func diff() -> Dictionary:
@@ -395,7 +399,9 @@ func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
 	for w in weapons:
 		legend = legend or w.rar == 3
 	return {"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
-		"legend": legend, "clean": clean, "win": win, "diff": difficulty}
+		"legend": legend, "clean": clean, "win": win, "diff": difficulty, "map": map,
+		"stats": stats, "gold": gold, "colors": int(char_a.get("elements", 0)), "pixels": int(char_a.get("pixels", 0)),
+		"weapons": weapons.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
 
 
 # ------------------------------------------------------------------ Sauvegarde de la partie en cours
@@ -409,7 +415,8 @@ func to_save(stage: String) -> Dictionary:
 		"boss_plan": boss_plan.duplicate(), "gold": gold, "xp": xp, "xp_rest": xp_rest, "level": level,
 		"kills": kills, "bosses": bosses, "signature": signature, "bonus": bonus.duplicate(),
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
-		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true)}
+		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
+		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate()}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -474,6 +481,8 @@ func from_save(d: Dictionary) -> bool:
 	joconde = int(d.get("joconde", 0))
 	revived = bool(d.get("revived", false))
 	levelup_choices = d.get("levelup_choices", [])
+	elite_kills = int(d.get("elite_kills", 0))
+	boss_ids = d.get("boss_ids", {})
 	recompute()
 	hp = clampf(float(d.hp), 1.0, stats.max_hp)
 	return true
@@ -619,18 +628,20 @@ func roll_shop() -> void:
 		var rar := roll_rarity()
 		if randf() < 0.4:
 			# Les armes spéciales n'apparaissent qu'à partir de leur rareté minimum.
-			var type: String = WeaponDB.allowed_for(rar).pick_random()
+			var type: String = WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t))).pick_random()
 			shop_offers.append({"type": "weapon", "wtype": type, "rar": rar,
 				"price": roundi(WeaponDB.PRICE[rar] * price_mult()), "sold": false})
 		else:
 			# Légendaires = uniques : jamais une déjà possédée, ni deux fois la même en vitrine.
 			# Limite d'achat : légendaires uniques, Étiquette de prix 5 max...
 			var pool := AmuletDB.of_rarity(rar).filter(func(d):
+				if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
+					return false   # verrouillée (succès du Bestiaire)
 				var lim := int(d.get("limit", 1 if rar == 3 else 0))
 				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id))))
 			if pool.is_empty():
 				rar = 2
-				pool = AmuletDB.of_rarity(2)
+				pool = AmuletDB.of_rarity(2).filter(func(d): return Meta.item_open(ItemUnlockDB.key_amulet(d.id)))
 			var def: Dictionary = pool.pick_random()
 			offered[def.id] = true
 			shop_offers.append({"type": "amulet", "id": def.id, "rar": rar,

@@ -640,6 +640,10 @@ func kill_enemy(e: Enemy) -> void:
 		return
 	e.dead = true
 	Run.kills += 1
+	if e.elite:
+		Run.elite_kills += 1
+	if e.is_boss:
+		Run.boss_ids[e.id] = true
 	Sfx.play("kill")
 	var col: Color = Pal.main_color(e.element) if e.element > 0 else Pal.SHADES[0][1]
 	_splat(e.position, e.radius, col)

@@ -131,7 +131,7 @@ func _build() -> void:
 		if tab == "amulettes":
 			b.add_theme_color_override("font_color", Pal.RARITY[AmuletDB.get_def(iid).rar])
 		var d = null if locked else Meta.bestiary_get(_slots(iid)[0][0])
-		if locked:
+		if locked or not Meta.item_open(_item_key(iid)):
 			b.add_theme_color_override("font_color", Pal.DISABLED)
 		var th := UI.thumb(Analyzer.trim(d.image) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(18, 18))
 		th.position = Vector2(4, 3)
@@ -219,8 +219,29 @@ func _slot_ui(parent: Control, slot: Array, pos: Vector2) -> void:
 			_build()))
 
 
+## Clé de succès d'objet de cet élément ("" pour les ennemis).
+func _item_key(id: String) -> String:
+	match tab:
+		"armes":
+			return ItemUnlockDB.key_weapon(id)
+		"amulettes":
+			return ItemUnlockDB.key_amulet(id)
+	return ""
+
+
 func _stats_text(id: String) -> String:
 	var L := []
+	# Succès qui débloque cet objet (uniquement affiché ici, dans le Bestiaire)
+	var ik := _item_key(id)
+	if ItemUnlockDB.CONDS.has(ik):
+		var cond := ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
+		if Meta.item_open(ik):
+			L.append("✓ Débloqué · " + cond)
+		elif ik in Meta.data.get("pending_unlocks", []):
+			L.append("⌛ Obtenu : disponible à la fin de la partie · " + cond)
+		else:
+			L.append("VERROUILLÉ · Succès : " + cond)
+		L.append("")
 	match tab:
 		"armes":
 			var def := WeaponDB.get_def(id)

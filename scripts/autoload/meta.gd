@@ -299,6 +299,16 @@ func effects() -> Array:
 
 # ------------------------------------------------------------------ Succès
 
+## Arme / amulette disponible ? (pas de condition, ou succès obtenu et partie terminée)
+func item_open(key: String) -> bool:
+	return not ItemUnlockDB.CONDS.has(key) or bool(data.get("item_unlocks", {}).get(key, false))
+
+
+## Succès d'objet obtenu (même si l'objet n'arrive qu'à la fin de la partie).
+func item_earned(key: String) -> bool:
+	return item_open(key) and ItemUnlockDB.CONDS.has(key) or key in data.get("pending_unlocks", [])
+
+
 func achieved(id: String) -> bool:
 	return bool(data.get("achievements", {}).get(id, false))
 
@@ -313,6 +323,11 @@ func pending(id: String) -> bool:
 func apply_pending_unlocks() -> Array:
 	var out: Array = (data.get("pending_unlocks", []) as Array).duplicate()
 	for id in out:
+		if String(id).begins_with("w:") or String(id).begins_with("a:"):
+			if not data.has("item_unlocks"):
+				data.item_unlocks = {}
+			data.item_unlocks[id] = true
+			continue
 		var a := AchievementDB.get_def(id)
 		if not a.is_empty() and level(a.unlock) == 0:
 			data.unlocks[a.unlock] = 1
@@ -334,6 +349,14 @@ func _retro_achievements() -> void:
 		"total_kills": int(data.get("total_kills", 0))}
 	if wins > 0:
 		data.unlocks["map2"] = 1   # déjà gagné une partie : Le Tableau noir est ouvert
+	if not data.has("item_unlocks"):
+		data.item_unlocks = {}
+	var ictx := {"cleared": ctx.cleared, "win": wins > 0, "diff": ctx.diff, "gallery": ctx.gallery,
+		"total_kills": ctx.total_kills, "runs": int(data.get("runs", 0)), "bosses": data.get("bosses_beaten", {}),
+		"total_elites": int(data.get("total_elites", 0))}
+	for key in ItemUnlockDB.CONDS:
+		if ItemUnlockDB.met(ItemUnlockDB.CONDS[key], ictx):
+			data.item_unlocks[key] = true
 	for a in AchievementDB.LIST:
 		if achieved(a.id):
 			continue
@@ -352,8 +375,30 @@ func check_achievements(ctx: Dictionary) -> void:
 		data.pending_unlocks = []
 	ctx = ctx.duplicate()
 	ctx.total_kills = int(data.get("total_kills", 0)) + int(ctx.get("kills", 0))
+	ctx.total_elites = int(data.get("total_elites", 0)) + int(ctx.get("elites", 0))
+	var bosses: Dictionary = (data.get("bosses_beaten", {}) as Dictionary).duplicate()
+	bosses.merge(ctx.get("bosses", {}))
+	ctx.bosses = bosses
+	ctx.runs = int(data.get("runs", 0)) + (1 if Run.active else 0)
 	ctx.gallery = (data.gallery as Array).size()
 	var changed := false
+	# Succès d'objets (armes / amulettes) : conditions visibles dans le Bestiaire
+	if not data.has("item_unlocks"):
+		data.item_unlocks = {}
+	var fresh := []
+	for key in ItemUnlockDB.CONDS:
+		if item_open(key) or key in data.pending_unlocks or not ItemUnlockDB.met(ItemUnlockDB.CONDS[key], ctx):
+			continue
+		changed = true
+		fresh.append(key)
+		if Run.active:
+			data.pending_unlocks.append(key)
+		else:
+			data.item_unlocks[key] = true
+	# Une seule notification, même si plusieurs objets tombent d'un coup
+	if not fresh.is_empty():
+		var head := "DÉBLOQUÉ À LA FIN DE LA PARTIE" if Run.active else "DÉBLOQUÉ"
+		UI.toast(head + "\n" + (ItemUnlockDB.label(fresh[0]) if fresh.size() == 1 else "%d nouveaux objets" % fresh.size()))
 	for a in AchievementDB.LIST:
 		if achieved(a.id) or not AchievementDB.met(a, ctx):
 			continue
@@ -484,6 +529,10 @@ func map_unlocked(id: int) -> bool:
 ## Retourne true si cette partie vient de débloquer une nouvelle carte.
 func record_run(wave_reached: int, win: bool, difficulty: int, earned: int, kills := 0, map_id := 1) -> bool:
 	var new_map := false
+	data.total_elites = int(data.get("total_elites", 0)) + Run.elite_kills
+	var bb: Dictionary = data.get("bosses_beaten", {})
+	bb.merge(Run.boss_ids)
+	data.bosses_beaten = bb
 	if win and map_id == 1 and not map_unlocked(2):
 		data.unlocks["map2"] = 1
 		new_map = true

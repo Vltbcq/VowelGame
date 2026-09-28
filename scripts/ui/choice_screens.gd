@@ -167,24 +167,34 @@ static func unlock_recap(unlocked: Array) -> Control:
 
 ## Panneau « Nouveautés débloquées » : un succès par ligne et ce qu'il débloque.
 static func _recap_panel(root: Control, unlocked: Array, pos: Vector2) -> void:
+	# Épuré : une ligne par nouveauté (catégorie + nom). Au-delà de 9 lignes, la liste défile.
+	var rows := unlocked.size()
+	var list_h := minf(rows * 18.0, 162.0)
 	var p := UI.panel(Pal.PANEL, Pal.ACCENT, 2)
-	var h := 40.0 + unlocked.size() * 30.0
-	UI.put(root, p, pos, Vector2(300, minf(h, 200.0)))
-	UI.put(p, UI.label("NOUVEAUTÉS DÉBLOQUÉES", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(300, 12))
-	var y := 28.0
-	for id in unlocked:
-		if y > 180.0:
-			break
-		if String(id).begins_with("map:"):
-			UI.put(p, UI.label("★ Nouvelle salle : " + String(MapDB.get_def(int(String(id).substr(4))).name), 10, Pal.ACCENT), Vector2(12, y), Vector2(276, 12))
-			UI.put(p, UI.label("Choisis-la au lancement d'une partie", 10, Pal.DIM), Vector2(24, y + 12), Vector2(264, 12))
-			y += 30.0
-			continue
-		var a := AchievementDB.get_def(id)
-		var u := UnlockDB.get_def(a.unlock)
-		UI.put(p, UI.label("★ " + String(u.name), 10, Pal.GOOD), Vector2(12, y), Vector2(276, 12))
-		UI.put(p, UI.label("Succès « %s »" % a.name, 10, Pal.DIM), Vector2(24, y + 12), Vector2(264, 12))
-		y += 30.0
+	UI.put(root, p, pos, Vector2(300, 36.0 + list_h))
+	UI.put(p, UI.label("DÉBLOQUÉ (%d)" % rows if rows > 9 else "DÉBLOQUÉ", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(300, 12))
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.put(p, sc, Vector2(14, 26), Vector2(282, list_h + 4))
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 6)
+	vb.custom_minimum_size = Vector2(262, 0)
+	sc.add_child(vb)
+	for i in rows:
+		var id := String(unlocked[i])
+		var txt := ""
+		var col := Pal.GOOD
+		if id.begins_with("map:"):
+			txt = "Salle : " + String(MapDB.get_def(int(id.substr(4))).name)
+			col = Pal.ACCENT
+		elif id.begins_with("w:") or id.begins_with("a:"):
+			txt = ItemUnlockDB.label(id)
+		else:
+			var a := AchievementDB.get_def(id)
+			txt = "Atelier : " + String(UnlockDB.get_def(a.unlock).name)
+		var l := UI.label("★ " + txt, 10, col)
+		l.custom_minimum_size = Vector2(262, 12)
+		vb.add_child(l)
 
 
 class _Screen extends Control:
