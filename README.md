@@ -102,7 +102,7 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 
 ## Objets à débloquer (succès du Bestiaire)
 
-La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 10 armes classiques restent libres) et **62 amulettes sur 125**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
+La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 10 armes classiques restent libres) et **62 amulettes sur 125**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
 
 ## Cartes
 

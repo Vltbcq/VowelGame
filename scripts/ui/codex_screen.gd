@@ -44,7 +44,9 @@ func _items() -> Array:
 
 ## Ennemi / boss d'une carte pas encore débloquée : on ne sait pas ce que c'est.
 func _locked(id: String) -> bool:
-	return tab == "ennemis" and not Meta.map_unlocked(int(EnemyDB.get_def(id).get("map", 1)))
+	if tab != "ennemis":
+		return not Meta.item_open(_item_key(id))   # arme / amulette pas encore débloquée : « ??? »
+	return not Meta.map_unlocked(int(EnemyDB.get_def(id).get("map", 1)))
 
 
 func _name(id: String) -> String:
@@ -131,7 +133,7 @@ func _build() -> void:
 		if tab == "amulettes":
 			b.add_theme_color_override("font_color", Pal.RARITY[AmuletDB.get_def(iid).rar])
 		var d = null if locked else Meta.bestiary_get(_slots(iid)[0][0])
-		if locked or not Meta.item_open(_item_key(iid)):
+		if locked:
 			b.add_theme_color_override("font_color", Pal.DISABLED)
 		var th := UI.thumb(Analyzer.trim(d.image) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(18, 18))
 		th.position = Vector2(4, 3)
@@ -150,11 +152,15 @@ func _build() -> void:
 		var fr := UI.panel(Pal.PAPER, Pal.BORDER, 2)
 		UI.put(p, fr, Vector2(10, 36), Vector2(76, 76))
 		UI.put(fr, UI.thumb(Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))
-		var lk := UI.label("VERROUILLÉ
-
-Cette créature vit dans une salle que tu n'as pas encore ouverte.
-
-%s" % String(MapDB.get_def(int(EnemyDB.get_def(sel).get("map", 1))).get("unlock", "")), 10, Pal.DIM)
+		var why := ""
+		if tab == "ennemis":
+			why = "Cette créature vit dans une salle que tu n'as pas encore ouverte.\n\n%s" % String(MapDB.get_def(int(EnemyDB.get_def(sel).get("map", 1))).get("unlock", ""))
+		else:
+			var ik := _item_key(sel)
+			why = ("Cette arme" if tab == "armes" else "Cette amulette") + " n'apparaît pas encore en boutique.\n\nSuccès : " + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
+			if ik in Meta.data.get("pending_unlocks", []):
+				why += "\n\n⌛ Obtenu : disponible à la fin de la partie."
+		var lk := UI.label("VERROUILLÉ\n\n" + why, 10, Pal.DIM)
 		lk.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(p, lk, Vector2(96, 36), Vector2(250, 120))
 		UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))

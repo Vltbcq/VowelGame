@@ -304,9 +304,15 @@ func item_open(key: String) -> bool:
 	return not ItemUnlockDB.CONDS.has(key) or bool(data.get("item_unlocks", {}).get(key, false))
 
 
-## Succès d'objet obtenu (même si l'objet n'arrive qu'à la fin de la partie).
-func item_earned(key: String) -> bool:
-	return item_open(key) and ItemUnlockDB.CONDS.has(key) or key in data.get("pending_unlocks", [])
+## Arme / amulette déjà croisée en boutique (sinon : « ! » sur son tableau).
+func item_seen(key: String) -> bool:
+	return bool(data.get("seen_items", {}).get(key, false))
+
+
+func mark_seen(key: String) -> void:
+	if not data.has("seen_items"):
+		data.seen_items = {}
+	data.seen_items[key] = true
 
 
 func achieved(id: String) -> bool:

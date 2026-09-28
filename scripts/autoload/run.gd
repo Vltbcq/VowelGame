@@ -646,6 +646,14 @@ func roll_shop() -> void:
 			offered[def.id] = true
 			shop_offers.append({"type": "amulet", "id": def.id, "rar": rar,
 				"price": roundi(AmuletDB.PRICE[rar] * price_mult()), "sold": false})
+	# Première rencontre : « ! » sur le tableau (retenu pour la suite, même après une relance)
+	var fresh := []
+	for o in shop_offers:
+		var key := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
+		o["new"] = not Meta.item_seen(key)
+		fresh.append(key)
+	for key in fresh:
+		Meta.mark_seen(key)
 	# Soin : pas à chaque fois !
 	if randf() < 0.5:
 		var hid := "grande_potion" if randf() < 0.3 else "potion"

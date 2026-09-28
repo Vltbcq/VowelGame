@@ -216,6 +216,12 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
 	frame.tooltip_text = Pal.RARITY_NAMES_F[o.rar] if o.type != "heal" else "Consommable"
+	if o.get("new", false) and not o.sold:
+		# Jamais vue : petite pastille « ! » dans le coin du cadre
+		var nb := UI.panel(Pal.ACCENT, GOLD_DARK, 1)
+		nb.tooltip_text = "Nouveau : jamais vu en boutique"
+		UI.put(self, nb, pos + Vector2(fw - 10, -4), Vector2(14, 14))
+		UI.put(nb, UI.label("!", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(14, 12))
 	if o.type == "weapon" and o.rar > 0:
 		frame.tooltip_text += "\nDégâts ×%s · vitesse d'attaque +%d%% · critique +%d%%\nAllonge +%d%% (mêlée) · perforation +%d (distance) · effets élémentaires +%d%%" % [
 			str(Stats.RAR_DMG[o.rar]), Stats.RAR_ATK[o.rar], Stats.RAR_CRIT[o.rar],

@@ -76,6 +76,51 @@ func _ready() -> void:
 	if args.size() > 0:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(args[0])
+	scr.queue_free()
+
+	# « ! » : jamais vu -> nouveau une seule fois
+	Meta.data.seen_items = {}
+	Run.wave = 3
+	Run.roll_shop()
+	var first_new := true
+	for o in Run.shop_offers:
+		if o.type != "heal":
+			first_new = first_new and o.get("new", false)
+	_check(first_new, "première boutique : tout est nouveau")
+	var again := 0
+	var seen_before := (Meta.data.seen_items as Dictionary).duplicate()
+	for n in 30:
+		Run.roll_shop()
+		var here := {}
+		for o in Run.shop_offers:
+			if o.type == "heal":
+				continue
+			var key := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
+			if o.new and seen_before.has(key):
+				again += 1
+			here[key] = true
+		seen_before.merge(here)
+	_check(again == 0, "un objet déjà vu n'a plus de « ! » (%d fautifs)" % again)
+	Meta.data.seen_items = {}
+	Run.roll_shop()
+	Run.set_character(Image.create(32, 32, false, Image.FORMAT_RGBA8), "")
+	var shop := ShopScreen.new()
+	shop.size = Vector2(640, 360)
+	add_child(shop)
+	for f in 3:
+		await get_tree().process_frame
+	if args.size() > 1:
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(args[1])
+	shop.queue_free()
+	var cx := CodexScreen.new("armes", "retouche")
+	cx.size = Vector2(640, 360)
+	add_child(cx)
+	for f in 3:
+		await get_tree().process_frame
+	if args.size() > 2:
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(args[2])
 	Run.active = false
 	print("ITEMLOCK : %d échec(s)" % fails)
 	get_tree().quit(1 if fails else 0)
