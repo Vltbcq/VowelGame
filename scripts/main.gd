@@ -381,6 +381,13 @@ func _buy(i: int) -> void:
 		Run.gold += o.price
 		return
 	o.sold = true
+	if o.has("replace"):
+		# Restaurateur : l'amulette donnée disparaît
+		for k in Run.amulets.size():
+			var am: Dictionary = Run.amulets[k]
+			if am.id == o.replace.id and Vector2i(am.pos) == Vector2i(o.replace.pos):
+				Run.amulets.remove_at(k)
+				break
 	Run.recompute()
 
 

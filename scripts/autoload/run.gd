@@ -35,7 +35,13 @@ const HEALS := {
 }
 ## Roulette de la boutique : 37 cases (0 = vert, puis rouge / noir en alternance)
 const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 35 contre 1 + la mise
-const ROULETTE_CHANCE := 0.08   # dans la case « événement » de la boutique (sinon une potion)
+## Case « événement » de la boutique : une potion, ou (8 % chacun) un de ces événements
+const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
+const EVENT_CHANCE := 0.08
+const SCRATCH_PRICE := 8
+const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
+## Mécène : [id, or reçu, texte du contrat]
+const PATRON_DEALS := [["more", 40, "+30% d'ennemis à la vague suivante"], ["elites", 50, "3 élites en plus à la vague suivante"]]
 
 var active := false
 var map := 1                 # carte de la partie (MapDB)
@@ -71,6 +77,9 @@ var joconde := 0            # vagues finies avec La Joconde (+15% dégâts chacu
 var revived := false        # Renaissance déjà utilisée
 var levelup_choices: Array = []   # les 3 bonus proposés au niveau en attente (sauvegardés)
 var regen_boost := 0.0      # Élixir de sève : secondes de régénération boostée au début de la vague suivante
+var star_buff := 0.0        # Grattage (étoile) : +X % dégâts à la vague suivante (en attente)
+var wave_dmg := 0.0         # ... actif pendant la vague en cours
+var patron := ""            # Mécène : contrat signé pour la vague suivante ("more" / "elites")
 var elite_kills := 0        # élites effacées dans la partie
 var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
@@ -110,6 +119,9 @@ func start(d: int, map_id := 1) -> void:
 	elite_kills = 0
 	boss_ids = {}
 	regen_boost = 0.0
+	star_buff = 0.0
+	wave_dmg = 0.0
+	patron = ""
 
 
 func diff() -> Dictionary:
@@ -423,7 +435,8 @@ func to_save(stage: String) -> Dictionary:
 		"kills": kills, "bosses": bosses, "signature": signature, "bonus": bonus.duplicate(),
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
-		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost}
+		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
+		"star_buff": star_buff, "patron": patron}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -491,6 +504,8 @@ func from_save(d: Dictionary) -> bool:
 	levelup_choices = d.get("levelup_choices", [])
 	elite_kills = int(d.get("elite_kills", 0))
 	regen_boost = float(d.get("regen_boost", 0.0))
+	star_buff = float(d.get("star_buff", 0.0))
+	patron = String(d.get("patron", ""))
 	boss_ids = d.get("boss_ids", {})
 	recompute()
 	hp = clampf(float(d.hp), 1.0, stats.max_hp)
@@ -665,13 +680,61 @@ func roll_shop() -> void:
 		Meta.mark_seen(key)
 	# Case « événement » (une fois sur deux) : une potion... ou, rarement (8 %), la roulette
 	if randf() < 0.5:
-		if wave >= 2 and randf() < ROULETTE_CHANCE:
-			shop_offers.append({"type": "roulette", "id": "roulette", "rar": 0, "price": 0, "sold": false})
+		var ev := ""
+		var r := randf()
+		if wave >= 2 and r < EVENT_CHANCE * EVENTS.size():
+			ev = EVENTS[int(r / EVENT_CHANCE)]
+			if ev == "restorer" and restorable().is_empty():
+				ev = ""   # pas d'amulette à restaurer : une potion à la place
+		if ev != "":
+			shop_offers.append(make_event(ev))
 		else:
 			var roll := randf()
 			var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
 			shop_offers.append({"type": "heal", "id": hid, "rar": 0,
 				"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
+
+
+## Offre « événement » de la boutique.
+func make_event(ev: String) -> Dictionary:
+	var o := {"type": ev, "id": ev, "rar": 0, "price": 0, "sold": false}
+	match ev:
+		"scratch":
+			o.price = SCRATCH_PRICE
+		"auction":
+			# Épique (10 % légendaire) : arme ou amulette, jamais verrouillée ni légendaire en double
+			var rar := 3 if randf() < 0.1 else 2
+			var am := amulet_candidates(rar)
+			var wp: Array = WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t)))
+			if randf() < 0.5 and not wp.is_empty() or am.is_empty():
+				o.item = {"type": "weapon", "wtype": wp.pick_random(), "rar": rar}
+				o.value = roundi(WeaponDB.PRICE[rar] * price_mult())
+			else:
+				o.item = {"type": "amulet", "id": (am.pick_random() as Dictionary).id, "rar": rar}
+				o.value = roundi(AmuletDB.PRICE[rar] * price_mult())
+			o.rar = rar
+			o.bid = maxi(1, roundi(o.value * 0.6))   # mise de départ (de l'acheteur)
+			o.cap = roundi(o.value * randf_range(0.7, 1.4))   # plafond secret de l'acheteur
+	return o
+
+
+## Amulettes proposables à cette rareté (débloquées, limites d'achat, légendaires uniques).
+func amulet_candidates(rar: int) -> Array:
+	return AmuletDB.of_rarity(rar).filter(func(d):
+		if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
+			return false
+		var lim := int(d.get("limit", 1 if rar == 3 else 0))
+		return lim == 0 or amulet_count(d.id) < lim)
+
+
+## Restaurateur : indices des amulettes possédées qu'il peut améliorer (pas les légendaires).
+func restorable() -> Array:
+	var out := []
+	for i in amulets.size():
+		var d := AmuletDB.get_def(amulets[i].id)
+		if not d.is_empty() and int(d.rar) < 3 and not amulet_candidates(int(d.rar) + 1).is_empty():
+			out.append(i)
+	return out
 
 
 ## Le prix de base monte avec les vagues, et chaque relance coûte plus cher

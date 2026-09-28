@@ -135,6 +135,7 @@ static func player(run: Node) -> Dictionary:
 	s.max_hp += 5.0 * n
 	s.radius += 2.0 * n
 	s.dmg += 15.0 * run.joconde
+	s.dmg += run.wave_dmg   # Grattage (étoile) : vague en cours
 	n = run.amulet_count("cadre_dore")
 	if n > 0:
 		s.dmg += minf(40.0, floorf(run.gold / 5.0)) * n

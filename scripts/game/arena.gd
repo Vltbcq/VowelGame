@@ -75,6 +75,8 @@ var staple_last: Enemy    # Agrafeuse : dernier ennemi agrafé
 var stop_t := 0.0         # Horloge : temps arrêté
 # Amulettes
 var wave_len := 0.0       # durée de la vague (Cadran solaire)
+var patron_mult := 1.0    # Mécène : ennemis en plus
+var patron_elites: Array = []   # Mécène : moments (fraction de vague) où une élite arrive
 var crowd := 0            # ennemis proches du joueur (Papier de verre)
 var fly_n := 0            # Effet papillon : cumuls
 var fly_t := 0.0
@@ -131,6 +133,21 @@ func _ready() -> void:
 		player.sap_t = Run.regen_boost   # Élixir de sève (acheté à la boutique précédente)
 		Run.regen_boost = 0.0
 		_after(0.6, func(): float_text(player.position + Vector2(0, -24), "SÈVE : RÉGÉN ×4", Pal.GOOD))
+	if Run.star_buff > 0.0:
+		Run.wave_dmg = Run.star_buff   # Grattage (étoile) : pour cette vague
+		Run.star_buff = 0.0
+		Run.recompute()
+		player.st = Run.stats
+		_after(0.9, func(): float_text(player.position + Vector2(0, -34), "ÉTOILE : +%d%% DÉGÂTS" % roundi(Run.wave_dmg), Pal.ACCENT))
+	match Run.patron:
+		"more":
+			patron_mult = 1.3
+		"elites":
+			patron_elites = [0.25, 0.5, 0.75]
+	if Run.patron != "":
+		var txt := "MÉCÈNE : +30% D'ENNEMIS" if Run.patron == "more" else "MÉCÈNE : 3 ÉLITES EN PLUS"
+		_after(1.2, func(): float_text(player.position + Vector2(0, -44), txt, Pal.BAD))
+		Run.patron = ""
 
 	cam = Camera2D.new()
 	var z: float = Meta.setting("zoom")
@@ -317,7 +334,16 @@ func _spawn(delta: float) -> void:
 	if boss_id != "" and not boss_spawned and elapsed > 1.5:
 		boss_spawned = true
 		telegraphs.append({"pos": _spawn_pos(160.0), "id": boss_id, "t": 1.5})
-	var rate: float = (1.1 + 0.26 * Run.eff_wave()) * Run.diff().spawn
+	var rate: float = (1.1 + 0.26 * Run.eff_wave()) * Run.diff().spawn * patron_mult
+	# Mécène : élites promises
+	if not patron_elites.is_empty() and elapsed >= float(patron_elites[0]) * (wave_len if wave_len > 0.0 else 40.0):
+		patron_elites.pop_front()
+		var eid := _pick_type()
+		if eid != "":
+			if not Run.elite_art.has(eid):
+				var ea: Dictionary = Run.enemy_art[eid]
+				Run.set_elite_art(eid, (ea.image as Image).duplicate(), ea.effect, ea.get("outline", false))
+			telegraphs.append({"pos": _spawn_pos(120.0), "id": eid, "t": 0.8, "elite": true})
 	if boss_id != "":
 		rate *= 0.45
 	spawn_acc += delta * rate
@@ -342,7 +368,7 @@ func _spawn(delta: float) -> void:
 				telegraphs.append({"pos": (c + dir * (i - group / 2.0) * 26.0).clamp(Vector2(16, 16), Vector2(W - 16, H - 16)), "id": id, "t": 0.8})
 			continue
 		for i in group:
-			var el: bool = Run.elite_art.has(id) and randf() < 0.05 + 0.02 * Run.difficulty
+			var el: bool = Run.difficulty >= 2 and Run.elite_art.has(id) and randf() < 0.05 + 0.02 * Run.difficulty   # (le Mécène amène les siennes)
 			telegraphs.append({"pos": c + Vector2(randf_range(-16, 16), randf_range(-16, 16)), "id": id, "t": 0.8, "elite": el})
 
 
@@ -804,6 +830,9 @@ func _end_wave() -> void:
 	if ended:
 		return
 	ended = true
+	if Run.wave_dmg > 0.0:
+		Run.wave_dmg = 0.0   # l'étoile du grattage ne dure qu'une vague
+		Run.recompute()
 	# Les gouttes restantes s'envolent vers le joueur (voir _tick_vacuum)
 	vacuum = not pickups.is_empty()
 	var far := 1.0

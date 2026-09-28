@@ -23,6 +23,8 @@ const FRAME := [[Color("8a5a2b"), Color("5a3818")], [Color("2f6fe0"), Color("173
 	[Color("7a3fa6"), Color("3e1d5a")], [Color("e0a830"), Color("8c6414")]]
 const FRAME_HEAL := [Color("5d9a6a"), Color("2e5a38")]
 const FRAME_ROULETTE := [Color("b8322a"), Color("1d1a1a")]
+const FRAME_EVENT := [Color("2a8a8a"), Color("134444")]
+const EVENT_TYPES := ["roulette", "scratch", "auction", "restorer", "patron"]
 const WHEEL_RED := Color("c8322a")
 const WHEEL_BLACK := Color("221e1e")
 const WHEEL_GREEN := Color("2f9a4a")
@@ -221,6 +223,31 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×36."
 			frame_cols = FRAME_ROULETTE
 			icon = _wheel_icon()
+		"scratch":
+			oname = "Ticket à gratter"
+			kind = "Jeu de hasard"
+			desc = "3 symboles pareils : or, étoile (+15% dégâts) ou diamant (amulette rare) !"
+			frame_cols = FRAME_EVENT
+			icon = _event_icon("scratch")
+		"auction":
+			var it: Dictionary = o.item
+			oname = "Vente aux enchères"
+			kind = "%s · %s" % [_item_name(it), Pal.RARITY_NAMES_F[it.rar].to_lower()]
+			desc = "Enchéris contre un collectionneur. Départ : ● %d" % int(o.bid)
+			frame_cols = FRAME[it.rar]
+			icon = _item_icon(it)
+		"restorer":
+			oname = "Le Restaurateur"
+			kind = "Visiteur"
+			desc = "Améliore une de tes amulettes : rareté au-dessus, au hasard."
+			frame_cols = FRAME_EVENT
+			icon = _event_icon("restorer")
+		"patron":
+			oname = "Le Mécène"
+			kind = "Visiteur"
+			desc = "De l'or tout de suite... contre une vague plus dure."
+			frame_cols = FRAME_EVENT
+			icon = _event_icon("patron")
 
 	# Le tableau : cadre + toile
 	var frame := _frame_panel(frame_cols, 5)
@@ -228,7 +255,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	spots.append(Rect2(pos, Vector2(fw, 64)))
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
-	frame.tooltip_text = Pal.RARITY_NAMES_F[o.rar] if not o.type in ["heal", "roulette"] else kind
+	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type == "heal" else Pal.RARITY_NAMES_F[o.rar]
 	if o.get("new", false) and not o.sold:
 		var ukey := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
 		if ItemUnlockDB.CONDS.has(ukey):
@@ -263,14 +290,20 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
 		UI.put(ct, dot, Vector2(fw - 14, 77), Vector2(14, 14))
-		UI.put(ct, UI.label("JOUÉ" if o.type == "roulette" else "VENDU", 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
+		var sold_txt: String = {"roulette": "JOUÉ", "scratch": "JOUÉ", "auction": "ADJUGÉ", "restorer": "PARTI", "patron": "PARTI"}.get(o.type, "VENDU")
+		UI.put(ct, UI.label(sold_txt, 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
 		frame.modulate = Color(1, 1, 1, 0.55)
 		return
-	var b := UI.button("Miser" if o.type == "roulette" else "● %d" % o.price, func(): _buy(i))
+	var btxt: String = {"roulette": "Miser", "auction": "Enchérir", "restorer": "Choisir", "patron": "Écouter"}.get(o.type, "● %d" % o.price)
+	var b := UI.button(btxt, func(): _buy(i))
 	if i < 9:
 		UI.hotkey(b, [KEY_1 + i])
 	_style_price(b)
 	b.disabled = Run.gold < o.price or full or (o.type == "roulette" and Run.gold < 1)
+	if o.type == "auction":
+		b.disabled = Run.gold <= int(o.bid)
+	elif o.type == "restorer":
+		b.disabled = Run.restorable().is_empty()
 	if full and o.get("id", "") == "seve":
 		b.tooltip_text = "Tu as déjà un Élixir de sève pour la vague suivante."
 	elif full and o.type == "weapon":
@@ -423,6 +456,19 @@ func _buy(i: int) -> void:
 	if o.type == "roulette":
 		_open_roulette(i)
 		return
+	match o.type:
+		"scratch":
+			_open_scratch(i)
+			return
+		"auction":
+			_open_auction(i)
+			return
+		"restorer":
+			_open_restorer(i)
+			return
+		"patron":
+			_open_patron(i)
+			return
 	if o.type != "heal":
 		done.emit({"a": "buy", "i": i})
 		return
@@ -630,3 +676,430 @@ class _Wheel extends Control:
 		await tw.finished
 		angle = fposmod(angle, TAU)
 		spinning = false
+
+
+# ------------------------------------------------------------------ Événements (grattage, enchère, restaurateur, mécène)
+
+var ev_layer: Control
+
+
+## Fenêtre d'événement : voile + cadre ; retourne le panneau intérieur (388 × h).
+func _ev_window(title: String, cols: Array, h := 300.0) -> Panel:
+	ev_layer = Control.new()
+	ev_layer.set_anchors_preset(PRESET_FULL_RECT)
+	ev_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(ev_layer)
+	UI.fill_bg(ev_layer, Color(0, 0, 0, 0.65))
+	var y := (360.0 - h - 12.0) / 2.0
+	var p := _frame_panel(cols, 5)
+	UI.put(ev_layer, p, Vector2(120, y), Vector2(400, h + 12.0))
+	var inner := UI.panel(WOOD_PANEL, GOLD_DARK, 1)
+	UI.put(p, inner, Vector2(6, 6), Vector2(388, h))
+	UI.put(inner, UI.label(title, 20, GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(388, 24))
+	return inner
+
+
+func _ev_close() -> void:
+	if ev_layer:
+		ev_layer.queue_free()
+		ev_layer = null
+	_build()
+
+
+func _ev_button(parent: Control, text: String, pos: Vector2, sz: Vector2, cb: Callable) -> Button:
+	var b := UI.button(text, cb)
+	_style_museum(b)
+	UI.put(parent, b, pos, sz)
+	return b
+
+
+## Objet gagné (diamant, enchère, restaurateur) : ajouté à la boutique et acheté tout de suite
+## (dessin / placement habituels). extra : champs en plus (prix, remplacement...).
+func _grant(item: Dictionary, price: int, extra := {}) -> void:
+	var o := {"type": item.type, "rar": int(item.rar), "price": price, "sold": false, "gift": true}
+	if item.type == "weapon":
+		o.wtype = item.wtype
+	else:
+		o.id = item.id
+	o.merge(extra)
+	Run.shop_offers.append(o)
+	if ev_layer:
+		ev_layer.queue_free()
+		ev_layer = null
+	done.emit({"a": "buy", "i": Run.shop_offers.size() - 1})
+
+
+func _item_name(it: Dictionary) -> String:
+	return String(WeaponDB.get_def(it.wtype).name) if it.type == "weapon" else String(AmuletDB.get_def(it.id).name)
+
+
+func _item_icon(it: Dictionary) -> Image:
+	if it.type == "weapon":
+		if Run.has_art(it.wtype, it.rar):
+			return Analyzer.trim(Run.closest_art(it.wtype, it.rar).image)
+		var dw: Image = _default_img(Run.weapon_key(it.wtype, it.rar))
+		return dw if dw else Gfx.icon(Gfx.ICON_UNKNOWN)
+	if Run.amulet_art.has(it.id):
+		return Run.amulet_art[it.id].image
+	var da: Image = _default_img("amulette_" + it.id)
+	return da if da else Gfx.icon(Gfx.ICON_UNKNOWN)
+
+
+## Petites icônes dessinées au pixel pour les tableaux d'événements.
+func _event_icon(kind: String) -> Image:
+	var n := 32
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	var ink := Pal.INK
+	match kind:
+		"scratch":
+			img.fill_rect(Rect2i(3, 8, 26, 16), Color("efe6cf"))
+			for k in 3:
+				img.fill_rect(Rect2i(6 + k * 8, 12, 6, 8), Color("9a9a9a") if k < 2 else GOLD)
+			for x in range(3, 29):
+				img.set_pixel(x, 8, ink)
+				img.set_pixel(x, 23, ink)
+			for y in range(8, 24):
+				img.set_pixel(3, y, ink)
+				img.set_pixel(28, y, ink)
+		"restorer":
+			# pinceau en diagonale + goutte dorée
+			for k in 18:
+				img.fill_rect(Rect2i(6 + k, 24 - k, 2, 2), Color("8a5a2b"))
+			img.fill_rect(Rect2i(22, 5, 5, 5), Color("d9d0bf"))
+			img.fill_rect(Rect2i(25, 3, 4, 4), GOLD)
+			img.fill_rect(Rect2i(6, 25, 4, 4), GOLD)
+		"patron":
+			# chapeau haut-de-forme + pièce
+			img.fill_rect(Rect2i(9, 6, 14, 14), ink)
+			img.fill_rect(Rect2i(5, 19, 22, 3), ink)
+			img.fill_rect(Rect2i(9, 15, 14, 2), Color("b8322a"))
+			for y in range(23, 31):
+				for x in range(20, 30):
+					if Vector2(x - 24.5, y - 26.5).length() < 4.2:
+						img.set_pixel(x, y, GOLD)
+	return img
+
+
+# --- Ticket à gratter
+
+const SCRATCH_SYMS := ["or", "etoile", "diamant"]
+
+
+func _open_scratch(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if Run.gold < o.price or ev_layer:
+		return
+	Run.gold -= o.price
+	o.sold = true
+	# Tirage : 1 chance sur 3 de gagner (or 60 %, étoile 30 %, diamant 10 %)
+	var syms := []
+	if randf() < 1.0 / 3.0:
+		var r := randf()
+		var sym: String = "or" if r < 0.6 else ("etoile" if r < 0.9 else "diamant")
+		syms = [sym, sym, sym]
+	else:
+		while syms.is_empty() or (syms[0] == syms[1] and syms[1] == syms[2]):
+			syms = [SCRATCH_SYMS.pick_random(), SCRATCH_SYMS.pick_random(), SCRATCH_SYMS.pick_random()]
+	var inner := _ev_window("TICKET À GRATTER", FRAME_EVENT, 250.0)
+	var info := UI.label("Gratte les 3 cases avec la souris !", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, info, Vector2(0, 34), Vector2(388, 12))
+	var card := _ScratchCard.new()
+	card.syms = syms
+	UI.put(inner, card, Vector2(44, 56), Vector2(300, 120))
+	var all_b := _ev_button(inner, "Tout gratter", Vector2(84, 190), Vector2(100, 18), func(): card.reveal_all())
+	var close := _ev_button(inner, "Fermer", Vector2(204, 190), Vector2(100, 18), func(): _ev_close())
+	close.disabled = true
+	card.revealed.connect(_scratch_done.bind(syms, info, close, all_b))
+
+
+func _scratch_done(syms: Array, info: Label, close: Button, all_b: Button) -> void:
+	all_b.disabled = true
+	close.disabled = false
+	var win: bool = syms[0] == syms[1] and syms[1] == syms[2]
+	if not win:
+		info.text = "Perdu... Pas de chance !"
+		info.add_theme_color_override("font_color", Color("f06a5d"))
+		Sfx.play("hurt")
+		return
+	Sfx.play("level")
+	info.add_theme_color_override("font_color", Pal.GOOD)
+	var sym := String(syms[0])
+	if sym == "or":
+		Run.gold += 25
+		info.text = "3 PIÈCES ! +25 or"
+	elif sym == "etoile":
+		Run.star_buff += 15.0
+		info.text = "3 ÉTOILES ! +15% dégâts à la vague suivante"
+	else:
+		var pool := Run.amulet_candidates(1)
+		if pool.is_empty():
+			Run.gold += 40
+			info.text = "3 DIAMANTS ! +40 or"
+			return
+		info.text = "3 DIAMANTS ! Une amulette rare gratuite"
+		close.text = "Prendre"
+		var am: Dictionary = pool.pick_random()
+		for c in close.pressed.get_connections():
+			close.pressed.disconnect(c.callable)
+		close.pressed.connect(func(): _grant({"type": "amulet", "id": am.id, "rar": 1}, 0))
+
+
+class _ScratchCard extends Control:
+	signal revealed
+	var syms: Array = []
+	var coats: Array = []      # Image de la couche à gratter, par case
+	var texs: Array = []
+	var done := false
+	const CELL := Vector2i(84, 100)
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		for k in 3:
+			var im := Image.create_empty(CELL.x, CELL.y, false, Image.FORMAT_RGBA8)
+			im.fill(Color("a8a8a8"))
+			for y in CELL.y:
+				for x in CELL.x:
+					if (x + y) % 7 == 0:
+						im.set_pixel(x, y, Color("939393"))
+			coats.append(im)
+			texs.append(ImageTexture.create_from_image(im))
+
+	func _cell_rect(k: int) -> Rect2:
+		return Rect2(Vector2(k * 104, 10), Vector2(CELL))
+
+	func _gui_input(ev: InputEvent) -> void:
+		if done:
+			return
+		var pressed: bool = (ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT) \
+			or (ev is InputEventMouseMotion and (ev.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0)
+		if not pressed:
+			return
+		for k in 3:
+			var r := _cell_rect(k)
+			if r.grow(6).has_point(ev.position):
+				_scratch(k, ev.position - r.position)
+		accept_event()
+
+	func _scratch(k: int, at: Vector2) -> void:
+		var im: Image = coats[k]
+		var rad := 7
+		for dy in range(-rad, rad + 1):
+			for dx in range(-rad, rad + 1):
+				var x := int(at.x) + dx
+				var y := int(at.y) + dy
+				if dx * dx + dy * dy <= rad * rad and x >= 0 and y >= 0 and x < CELL.x and y < CELL.y:
+					im.set_pixel(x, y, Color(0, 0, 0, 0))
+		(texs[k] as ImageTexture).update(im)
+		queue_redraw()
+		if randi() % 3 == 0:
+			Sfx.play("paint")
+		_check()
+
+	func _cleared(k: int) -> float:
+		var im: Image = coats[k]
+		var n := 0
+		for y in range(0, CELL.y, 4):
+			for x in range(0, CELL.x, 4):
+				if im.get_pixel(x, y).a < 0.5:
+					n += 1
+		return n / float((CELL.x / 4) * (CELL.y / 4))
+
+	func _check() -> void:
+		for k in 3:
+			if _cleared(k) < 0.55:
+				return
+		reveal_all()
+
+	func reveal_all() -> void:
+		if done:
+			return
+		done = true
+		for k in 3:
+			(coats[k] as Image).fill(Color(0, 0, 0, 0))
+			(texs[k] as ImageTexture).update(coats[k])
+		queue_redraw()
+		revealed.emit()
+
+	func _draw() -> void:
+		for k in 3:
+			var r := _cell_rect(k)
+			draw_rect(r.grow(3), ShopScreen.GOLD_DARK)
+			draw_rect(r, Color("efe6cf"))
+			_symbol(String(syms[k]), r.get_center())
+			draw_texture(texs[k], r.position)
+
+	func _symbol(sym: String, c: Vector2) -> void:
+		match sym:
+			"or":
+				draw_circle(c, 26.0, ShopScreen.GOLD_DARK)
+				draw_circle(c, 21.0, ShopScreen.GOLD)
+				draw_rect(Rect2(c - Vector2(3, 12), Vector2(6, 24)), ShopScreen.GOLD_DARK)
+			"etoile":
+				var pts := PackedVector2Array()
+				for q in 10:
+					pts.append(c + Vector2.from_angle(-PI / 2.0 + q * PI / 5.0) * (28.0 if q % 2 == 0 else 12.0))
+				draw_colored_polygon(pts, Color("f2c230"))
+			"diamant":
+				draw_colored_polygon(PackedVector2Array([c + Vector2(0, -26), c + Vector2(22, -6), c + Vector2(0, 28), c + Vector2(-22, -6)]), Color("59c7e0"))
+				draw_colored_polygon(PackedVector2Array([c + Vector2(0, -26), c + Vector2(22, -6), c + Vector2(-22, -6)]), Color("a8ecf7"))
+
+
+# --- Vente aux enchères
+
+func _open_auction(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if ev_layer:
+		return
+	var it: Dictionary = o.item
+	var inner := _ev_window("VENTE AUX ENCHÈRES", FRAME[it.rar], 300.0)
+	var fr := _frame_panel(FRAME[it.rar], 4)
+	UI.put(inner, fr, Vector2(24, 40), Vector2(96, 80))
+	UI.put(fr, UI.thumb(_item_icon(it), Vector2(80, 64)), Vector2(8, 8), Vector2(80, 64))
+	UI.put(inner, UI.label(_item_name(it), 20, Pal.RARITY[it.rar]), Vector2(132, 40), Vector2(240, 24))
+	var desc: String = WeaponDB.get_def(it.wtype).desc if it.type == "weapon" else " ".join(Array(AmuletDB.describe(AmuletDB.get_def(it.id)).split("
+")).filter(func(l): return l != "" and not l.begins_with("Actuellement")))
+	var dl := UI.label("%s · %s\n%s" % ["Arme" if it.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[it.rar].to_lower(), desc], 10, CARTEL)
+	dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dl.clip_text = true
+	UI.put(inner, dl, Vector2(132, 66), Vector2(240, 50))
+	UI.put(inner, UI.label("Prix habituel en galerie : ● %d" % int(o.value), 10, CARTEL_DIM), Vector2(132, 120), Vector2(240, 12))
+	var bid_l := UI.label("", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, bid_l, Vector2(0, 146), Vector2(388, 24))
+	var log_l := UI.label("", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, log_l, Vector2(0, 174), Vector2(388, 12))
+	var blocked := ""
+	if it.type == "weapon" and Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(it.wtype, it.rar) < 0:
+		blocked = "Plus de place pour une arme : revends-en une d'abord."
+	var btns := []
+	var st := {"bid": int(o.bid), "mine": false, "busy": false}
+	var refresh := func():
+		bid_l.text = "ENCHÈRE : ● %d  (%s)" % [st.bid, "toi" if st.mine else "le collectionneur"]
+		for b in btns:
+			var add: int = b.get_meta("add", 0)
+			if add > 0:
+				b.disabled = st.busy or st.mine or blocked != "" or Run.gold < st.bid + add
+	for k in 3:
+		var add: int = [5, 10, 20][k]
+		var b := _ev_button(inner, "+%d" % add, Vector2(44 + k * 80, 200), Vector2(70, 20), func():
+			st.bid += add
+			st.mine = true
+			st.busy = true
+			log_l.text = "Tu proposes ● %d..." % st.bid
+			Sfx.play("click")
+			refresh.call()
+			await get_tree().create_timer(0.7).timeout
+			if not is_instance_valid(bid_l):
+				return
+			# Le collectionneur suit tant que son plafond secret le permet
+			var cap: int = int(o.cap)
+			if cap >= st.bid + 3 and randf() < 0.85:
+				st.bid = mini(cap, st.bid + randi_range(3, 12))
+				st.mine = false
+				log_l.text = "Le collectionneur surenchérit : ● %d" % st.bid
+				Sfx.play("enemy_shot")
+			else:
+				log_l.text = "Le collectionneur abandonne... ADJUGÉ !"
+				log_l.add_theme_color_override("font_color", Pal.GOOD)
+				Sfx.play("level")
+				o.sold = true
+				await get_tree().create_timer(0.9).timeout
+				_grant(it, st.bid)
+				return
+			st.busy = false
+			refresh.call())
+		b.set_meta("add", add)
+		btns.append(b)
+	var quit := _ev_button(inner, "Se retirer", Vector2(284, 200), Vector2(84, 20), func():
+		o.sold = true
+		_ev_close())
+	quit.tooltip_text = "Tu ne paies rien, mais l'œuvre part chez le collectionneur."
+	btns.append(quit)
+	if blocked != "":
+		log_l.text = blocked
+		log_l.add_theme_color_override("font_color", Color("f06a5d"))
+	else:
+		log_l.text = "Surenchéris ou retire-toi. Il a un plafond secret..."
+	var back := _ev_button(inner, "Plus tard", Vector2(144, 240), Vector2(100, 18), func(): _ev_close())
+	back.tooltip_text = "Fermer sans enchérir (la vente reste ouverte)"
+	UI.hotkey(back, [KEY_ESCAPE])
+	refresh.call()
+
+
+# --- Le Restaurateur
+
+func _open_restorer(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if ev_layer:
+		return
+	var inner := _ev_window("LE RESTAURATEUR", FRAME_EVENT, 250.0)
+	var tl := UI.label("« Confiez-moi une amulette : je la rends plus précieuse...\nmais je ne promets pas laquelle. »", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, tl, Vector2(0, 34), Vector2(388, 26))
+	var grid := GridContainer.new()
+	grid.columns = 6
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	UI.put(inner, grid, Vector2(20, 68), Vector2(348, 140))
+	for k in Run.restorable():
+		var am: Dictionary = Run.amulets[k]
+		var d := AmuletDB.get_def(am.id)
+		var cost := roundi(Run.RESTORE_PRICE[int(d.rar)] * Run.price_mult())
+		var b := Button.new()
+		b.focus_mode = Control.FOCUS_NONE
+		b.custom_minimum_size = Vector2(52, 62)
+		b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.RARITY[int(d.rar)], 2))
+		b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 2))
+		b.add_theme_stylebox_override("disabled", UI.sb(Color("8a8070"), Color("5a5040"), 1))
+		b.disabled = Run.gold < cost
+		b.tooltip_text = "%s (%s) → une amulette %s au hasard\nPrix : ● %d" % [d.name, Pal.RARITY_NAMES_F[int(d.rar)].to_lower(), Pal.RARITY_NAMES_F[int(d.rar) + 1].to_lower(), cost]
+		var th := UI.thumb(am.image, Vector2(36, 36))
+		th.position = Vector2(8, 4)
+		b.add_child(th)
+		var pl := UI.label("● %d" % cost, 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER)
+		pl.position = Vector2(0, 44)
+		pl.size = Vector2(52, 12)
+		b.add_child(pl)
+		var entry := am
+		var rar := int(d.rar)
+		b.pressed.connect(func():
+			var pool := Run.amulet_candidates(rar + 1)
+			if pool.is_empty():
+				return
+			var nd: Dictionary = pool.pick_random()
+			o.sold = true
+			Sfx.play("level")
+			_grant({"type": "amulet", "id": nd.id, "rar": rar + 1}, cost, {"replace": {"id": entry.id, "pos": entry.pos}}))
+		grid.add_child(b)
+	UI.put(inner, UI.label("Clique l'amulette à lui confier : elle sera remplacée.", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(388, 12))
+	UI.hotkey(_ev_button(inner, "Non merci", Vector2(144, 226), Vector2(100, 18), func(): _ev_close()), [KEY_ESCAPE])
+
+
+# --- Le Mécène
+
+func _open_patron(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if ev_layer:
+		return
+	var inner := _ev_window("LE MÉCÈNE", FRAME_EVENT, 220.0)
+	var tl := UI.label("« J'aime l'art qui souffre. Je finance...\nsi vous me donnez du spectacle. »", 10, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, tl, Vector2(0, 34), Vector2(388, 26))
+	for k in Run.PATRON_DEALS.size():
+		var deal: Array = Run.PATRON_DEALS[k]
+		var y := 72.0 + k * 58.0
+		var box := UI.panel(CARTEL, Color("b9a883"), 1)
+		UI.put(inner, box, Vector2(24, y), Vector2(340, 50))
+		UI.put(box, UI.label("CONTRAT %s" % ["I", "II"][k], 10, CARTEL_DIM), Vector2(8, 4), Vector2(200, 12))
+		UI.put(box, UI.label("+● %d tout de suite" % int(deal[1]), 10, Color("1e7a3a")), Vector2(8, 18), Vector2(220, 12))
+		UI.put(box, UI.label(String(deal[2]), 10, Color("a02a22")), Vector2(8, 32), Vector2(240, 12))
+		var did: String = deal[0]
+		var amount: int = deal[1]
+		var sb := UI.button("Signer", func():
+			Run.gold += amount
+			Run.patron = did
+			o.sold = true
+			Sfx.play("buy")
+			_ev_close())
+		_style_price(sb)
+		UI.put(box, sb, Vector2(262, 16), Vector2(70, 18))
+	UI.hotkey(_ev_button(inner, "Refuser", Vector2(144, 196), Vector2(100, 18), func():
+		o.sold = true
+		_ev_close()), [KEY_ESCAPE])
