@@ -66,6 +66,7 @@ const LIST := [
 	{"id": "trompe_oeil", "ink": 66, "name": "Trompe-l'œil", "rar": 3, "flag": true, "desc": "30% des tirs ennemis sont déviés · {m} armure", "malus": ["armor", -4.0]},
 	{"id": "restauration", "ink": 76, "name": "Restauration", "rar": 3, "flag": true, "desc": "Soigne 30% de tes PV au début de chaque vague, mais -15% d'or ramassé"},
 	{"id": "renaissance", "ink": 84, "name": "Renaissance", "rar": 3, "flag": true, "desc": "Une fois par partie, à 0 PV tu reviens avec 50% de tes PV · {m}% vitesse", "malus": ["speed", -10.0]},
+	{"id": "horloge", "ink": 76, "name": "Horloge", "rar": 3, "flag": true, "desc": "Toutes les 12 s, le TEMPS S'ARRÊTE 2 s : ennemis et tirs figés, tes armes font ×2 · {m} PV max", "malus": ["max_hp", -6.0]},
 	{"id": "sablier_brise", "ink": 70, "name": "Sablier brisé", "rar": 3, "stat": "atk_speed", "v": 45.0, "flag": true, "desc": "+{v}% vit. d'attaque, mais les vagues durent 25% plus longtemps"},
 ]
 

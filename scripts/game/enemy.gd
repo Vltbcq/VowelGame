@@ -50,6 +50,19 @@ var mirror_mode := 0
 var partner: Enemy           # Trombones : l'autre bout du fil
 var crumple := 0             # Brouillon : nombre de fois froissé
 var hit_ids := {}
+# Effets des armes épiques / légendaires
+var pin_t := 0.0             # Agrafeuse : épinglé au sol
+var wet_t := 0.0             # Brumisateur : mouillé
+var gust_t := 0.0            # Éventail : projeté (choc contre un bord)
+var gust_dmg := 0.0
+var staple: Enemy            # Agrafeuse : l'autre ennemi agrafé
+var staple_t := 0.0
+var staple_guard := false
+var ink_t := 0.0             # Encre de Chine : marqué
+var ink_dmg := 0.0
+var ally := false            # Retouche : redessiné dans le camp du joueur
+var ally_t := 0.0
+var ally_cd := 0.0
 
 # Statuts
 var slow_t := 0.0
@@ -113,6 +126,15 @@ func _draw() -> void:
 		var pulse := 0.5 + 0.5 * sin(t * 6.0)
 		draw_arc(Vector2.ZERO, radius + 5.0 + pulse * 2.0, 0.0, TAU, 28, Color(Pal.ACCENT, 0.35 + pulse * 0.4), 2.0)
 		draw_arc(Vector2.ZERO, radius + 9.0 + pulse * 3.0, 0.0, TAU, 28, Color(ink_col, 0.25), 1.0)
+	if ink_t > 0.0:
+		# Encre de Chine : taches noires sur l'ennemi marqué
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		draw_circle(Vector2(-radius * 0.4, -radius * 0.3), 2.5, Pal.INK)
+		draw_circle(Vector2(radius * 0.35, radius * 0.1), 2.0, Pal.INK)
+		draw_circle(Vector2(0, radius * 0.5), 1.5, Pal.INK)
+	if ally:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(Pal.GOOD, 0.8), 2.0)
 	if def.get("beh", "") == "gum":
 		# Zone où tes projectiles sont effacés
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -124,7 +146,17 @@ func _draw() -> void:
 func tick(delta: float) -> void:
 	if dead:
 		return
+	if ally:
+		_ally_tick(delta)
+		return
 	t += delta
+	pin_t -= delta
+	wet_t -= delta
+	gust_t -= delta
+	staple_t -= delta
+	if ink_t > 0.0:
+		ink_t -= delta
+		queue_redraw()
 	_status(delta)
 	if dead:
 		return
@@ -136,6 +168,10 @@ func tick(delta: float) -> void:
 	var mult := 0.55 if slow_t > 0.0 else 1.0
 	if arena.rush_t > 0.0 and not is_boss:
 		mult *= 1.7   # Sonnerie : tout le monde se précipite
+	if wet_t > 0.0:
+		mult *= 0.7
+	if pin_t > 0.0 and not is_boss:
+		mult = 0.0
 	if freeze_t > 0.0:
 		mult = 0.0
 	hop_h = 0.0
@@ -211,6 +247,12 @@ func tick(delta: float) -> void:
 	position.y = clampf(position.y, radius, Arena.H - radius)
 	if hit_wall != Vector2.ZERO:
 		_on_wall(hit_wall)
+		if gust_t > 0.0:
+			# Éventail : écrasé contre le bord de la page
+			gust_t = 0.0
+			arena.burst(position, Color.WHITE, 10, 100.0)
+			arena.shake(2.5)
+			hurt(gust_dmg, true, Vector2.ZERO)
 
 	if absf(v.x) > 1.0 and state != "arm":
 		body.scale.x = base_scale * (-1.0 if v.x < 0.0 else 1.0)
@@ -300,6 +342,13 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 		amount *= 1.5 if arena.syn.has(Pal.ARCANE) else 1.25
 	if state == "jam":
 		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
+	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
+		amount *= 1.25   # Brumisateur : mouillé
+	# Agrafeuse : l'ennemi agrafé à celui-ci prend 50 % des dégâts
+	if staple_t > 0.0 and is_instance_valid(staple) and not staple.dead and not staple_guard:
+		staple.staple_guard = true
+		staple.hurt(amount * 0.5, false, Vector2.ZERO, el)
+		staple.staple_guard = false
 	hp -= amount
 	flash = 1.0
 	squash = 1.0 if not is_boss else 0.4
@@ -495,6 +544,34 @@ func _mine(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if t > 12.0:
 		return dirp * speed * 0.4
 	return Vector2.ZERO
+
+
+# ------------------------------------------------------------------ Allié (Retouche)
+
+## Redessiné dans le camp du joueur : fonce sur l'ennemi le plus proche et le frappe au contact.
+func _ally_tick(delta: float) -> void:
+	t += delta
+	ally_t -= delta
+	ally_cd -= delta
+	if ally_t <= 0.0:
+		arena.remove_ally(self)
+		return
+	var tg: Enemy = arena.nearest(position, 400.0)
+	var v := Vector2.ZERO
+	if tg:
+		var to := tg.position - position
+		v = to.normalized() * speed * 1.3
+		if to.length() < radius + tg.radius + 2.0 and ally_cd <= 0.0:
+			ally_cd = 0.5
+			tg.hurt(maxf(4.0, dmg * 2.5), false, to.normalized() * 60.0)
+	position += v * delta
+	position.x = clampf(position.x, radius, Arena.W - radius)
+	position.y = clampf(position.y, radius, Arena.H - radius)
+	if absf(v.x) > 1.0:
+		body.scale.x = base_scale * (-1.0 if v.x < 0.0 else 1.0)
+	body.position.y = -absf(sin(t * 9.0)) * 1.5
+	mat.set_shader_parameter("flash", 0.25 + 0.15 * sin(t * 8.0))
+	queue_redraw()
 
 
 # ------------------------------------------------------------------ Le Tableau noir

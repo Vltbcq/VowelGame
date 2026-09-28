@@ -67,6 +67,12 @@ var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, d
 var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit}
 var dark_t := 0.0         # Nuit d'encre
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
+# Armes épiques / légendaires et Horloge
+var allies: Array = []    # Retouche : ennemis redessinés dans ton camp
+var wells: Array = []     # Point final {pos, t, dur, r, dmg, wst}
+var staple_last: Enemy    # Agrafeuse : dernier ennemi agrafé
+var stop_t := 0.0         # Horloge : temps arrêté
+var clock_cd := 12.0
 var air: _Marks
 
 
@@ -180,7 +186,17 @@ func _process(delta: float) -> void:
 		return
 
 	_rebuild_grid()
-	_spawn(delta)
+	stop_t -= delta
+	if Run.amulet_count("horloge") > 0:
+		clock_cd -= delta
+		if clock_cd <= 0.0:
+			clock_cd = 12.0
+			stop_t = 2.0
+			hud.announce("TEMPS ARRÊTÉ", Color(0.7, 0.85, 1.0))
+			Sfx.play("zap")
+	var frozen := stop_t > 0.0
+	if not frozen:
+		_spawn(delta)
 	for tg in telegraphs.duplicate():
 		tg.t -= delta
 		if tg.t <= 0.0:
@@ -192,14 +208,21 @@ func _process(delta: float) -> void:
 	for e in enemies.duplicate():
 		if ended:
 			break
-		if not e.dead:
+		if not e.dead and not frozen:
 			e.tick(delta)
-	_tick_effects(delta)
-	_tick_board(delta)
+	for a in allies.duplicate():
+		a.tick(delta)
+	if not frozen:
+		_tick_effects(delta)
+		_tick_board(delta)
+	_tick_wells(delta)
 	air.queue_redraw()
 
 	var alive: Array[Projectile] = []
 	for b in bullets:
+		if frozen and b.hostile and not ended:
+			alive.append(b)   # tirs ennemis figés par l'Horloge
+			continue
 		if not ended and b.tick(delta, self):
 			alive.append(b)
 		else:
@@ -437,6 +460,21 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if scale != "":
 		base = Stats.scaled_damage(base, scale)
 	var dmg: float = base * (1.0 + s.dmg / 100.0)
+	if stop_t > 0.0:
+		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
+	match String(wst.get("style", "")):
+		"staple":
+			e.pin_t = 1.0
+			_staple(e)
+		"mist":
+			e.wet_t = 4.0
+		"gust":
+			e.gust_t = 0.8
+			e.gust_dmg = base * 2.5 * (1.0 + s.dmg / 100.0)
+		"inkmark":
+			e.ink_t = 4.0
+			e.ink_dmg = base * 0.8 * (1.0 + s.dmg / 100.0)
+			e.queue_redraw()
 	var vernis := Run.amulet_count("vernis")
 	if vernis > 0:
 		dmg *= pow(1.35, vernis) if (e.is_boss or e.elite) else pow(0.85, vernis)
@@ -455,6 +493,11 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if Run.amulet_count("estompe") > 0:
 		e.slow_t = maxf(e.slow_t, 0.8)
 	e.hurt(dmg, crit, dir * knock)
+	# Ciseaux : exécution sous 25 % des PV (pas les boss)
+	if wst.get("style", "") == "scissors" and not e.dead and not e.is_boss and e.hp < e.max_hp * 0.25:
+		_slash(e.position)
+		float_text(e.position + Vector2(0, -12), "TRANCHÉ !", Pal.TEXT)
+		e.hurt(e.hp + 1.0, true, Vector2.ZERO)
 	var craq := Run.amulet_count("craquelure")
 	if crit and craq > 0:
 		explosion(e.position, 26.0, Color(Pal.ACCENT, 0.6), true)
@@ -563,6 +606,24 @@ func kill_enemy(e: Enemy) -> void:
 	# Synergie Poison : un ennemi empoisonné laisse un nuage toxique
 	if syn.has(Pal.POISON) and e.poison > 0:
 		clouds.append({"pos": e.position, "r": 30.0, "t": 2.5, "acc": 0.0, "dps": 3.0 + Run.wave})
+	# Encre de Chine : un marqué qui meurt éclabousse ses voisins (qui sont marqués à leur tour)
+	if e.ink_t > 0.0:
+		var n := 0
+		burst(e.position, Pal.INK, 12, 110.0)
+		for o in near(e.position, 52.0):
+			if o == e or o.dead or n >= 12:
+				continue
+			n += 1
+			o.ink_t = 4.0
+			o.ink_dmg = e.ink_dmg
+			o.queue_redraw()
+			o.hurt(e.ink_dmg, false, (o.position - e.position).normalized() * 50.0)
+	# Retouche : 15 % de chances de redessiner l'ennemi tué dans ton camp
+	if Run.weapon_count("retouche") > 0 and not e.is_boss and not e.small and randf() < 0.15:
+		var aid: String = e.id
+		var apos: Vector2 = e.position
+		var ael: bool = e.elite
+		_after(0.05, func(): spawn_ally(aid, apos, ael))   # (l'ennemi mort est déjà effacé)
 	# Sanguine : soin sur élimination
 	if randf() < 0.12 * Run.amulet_count("sanguine"):
 		player.heal(1.0)
@@ -643,6 +704,11 @@ func _end_wave() -> void:
 	rulers.clear()
 	erasers.clear()
 	clouds.clear()
+	wells.clear()
+	stop_t = 0.0
+	for a in allies:
+		a.queue_free()
+	allies.clear()
 	Run.hp = player.hp
 	# La Joconde : une vague sans une égratignure = +12% dégâts pour la partie
 	if not player.was_hurt and Run.amulet_count("joconde") > 0:
@@ -899,6 +965,111 @@ func _board_event() -> void:
 		"star":
 			stars.append({"pos": _spawn_pos(100.0), "t": 7.0})
 			hud.announce("UN BON POINT À GAGNER !", Pal.ACCENT)
+
+
+# ------------------------------------------------------------------ Armes épiques / légendaires
+
+## Agrafeuse : relie cet ennemi au précédent agrafé (s'il est encore là et pas trop loin).
+func _staple(e: Enemy) -> void:
+	if is_instance_valid(staple_last) and staple_last != e and not staple_last.dead and staple_last.position.distance_to(e.position) < 160.0:
+		e.staple = staple_last
+		e.staple_t = 4.0
+		staple_last.staple = e
+		staple_last.staple_t = 4.0
+	staple_last = e
+
+
+## Ciseaux : un X blanc sur l'ennemi tranché.
+func _slash(pos: Vector2) -> void:
+	for k in [-1.0, 1.0]:
+		var l := Line2D.new()
+		l.width = 2.0
+		l.default_color = Color(1, 1, 1, 0.95)
+		l.add_point(pos + Vector2(-10, -10 * k))
+		l.add_point(pos + Vector2(10, 10 * k))
+		fx.add_child(l)
+		var tw := l.create_tween()
+		tw.tween_property(l, "modulate:a", 0.0, 0.25)
+		tw.tween_callback(l.queue_free)
+
+
+## Retouche : un ennemi redessiné dans ton camp pendant 10 s.
+func spawn_ally(id: String, pos: Vector2, elite := false) -> void:
+	if ended or not Run.enemy_art.has(id) or allies.size() >= 8:
+		return
+	var a := Enemy.new()
+	a.position = pos
+	world.add_child(a)
+	a.setup(self, id, false, elite)
+	a.ally = true
+	a.ally_t = 10.0
+	a.contact = false
+	allies.append(a)
+	burst(pos, Pal.GOOD, 14, 90.0)
+	float_text(pos + Vector2(0, -16), "REDESSINÉ !", Pal.GOOD)
+
+
+func remove_ally(a: Enemy) -> void:
+	allies.erase(a)
+	burst(a.position, Pal.GOOD, 8, 60.0)
+	a.queue_free()
+
+
+## Point final : un point noir qui aspire puis implose.
+func add_well(pos: Vector2, r: float, dmg: float, wst: Dictionary) -> void:
+	wells.append({"pos": pos, "t": 0.0, "dur": 1.2, "r": r, "dmg": dmg, "wst": wst})
+
+
+func _tick_wells(delta: float) -> void:
+	var keep := []
+	for w in wells:
+		w.t += delta
+		for e in near(w.pos, w.r):
+			if e.is_boss:
+				continue
+			var to: Vector2 = w.pos - e.position
+			var pull := 90.0 * (0.3 if e.def.get("heavy", false) else 1.0)
+			e.position += to.normalized() * minf(to.length(), pull * delta)
+		if w.t < w.dur:
+			keep.append(w)
+			continue
+		explosion(w.pos, w.r * 0.8, Color(Pal.INK, 0.9))
+		burst(w.pos, Pal.INK, 24, 140.0)
+		for e in near(w.pos, w.r * 0.8):
+			hit_enemy(e, w.dmg, w.wst, (e.position - w.pos).normalized(), 120.0)
+	wells = keep
+
+
+## Grande Signature : un trait cursif géant qui traverse l'écran.
+func signature(y: float, dmg: float, wst: Dictionary) -> void:
+	var pts := PackedVector2Array()
+	var phase := randf() * TAU
+	var x := -10.0
+	while x <= W + 10:
+		var loop := sin(x * 0.045 + phase) * 14.0 + sin(x * 0.11 + phase * 2.0) * 5.0
+		pts.append(Vector2(x, clampf(y + loop, 10.0, H - 10.0)))
+		x += 14.0
+	var l := Line2D.new()
+	l.points = pts
+	l.width = 7.0
+	l.default_color = Color(Pal.INK, 0.9)
+	l.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	l.end_cap_mode = Line2D.LINE_CAP_ROUND
+	l.joint_mode = Line2D.LINE_JOINT_ROUND
+	fx.add_child(l)
+	var tw := l.create_tween()
+	tw.tween_interval(0.35)
+	tw.tween_property(l, "modulate:a", 0.0, 0.5)
+	tw.tween_callback(l.queue_free)
+	shake(4.0)
+	Sfx.play("swing")
+	for e in enemies.duplicate():
+		if e.dead:
+			continue
+		for i in pts.size() - 1:
+			if Geometry2D.get_closest_point_to_segment(e.position, pts[i], pts[i + 1]).distance_to(e.position) < e.radius + 14.0:
+				hit_enemy(e, dmg, wst, Vector2.UP, 40.0)
+				break
 
 
 func add_square(pos: Vector2, half: float, dur: float, dmg: float, col: Color) -> void:
@@ -1249,6 +1420,17 @@ class _Marks extends Node2D:
 		for g in arena.telegraphs_fx:
 			draw_arc(g.pos, 10.0, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
 			draw_string(UI.font, g.pos + Vector2(-20, -14), "COPIE", HORIZONTAL_ALIGNMENT_CENTER, 40, 10, Color(1, 1, 1, 0.8))
+		# Agrafes (Agrafeuse)
+		for e in arena.enemies:
+			if e.staple_t > 0.0 and is_instance_valid(e.staple) and not e.staple.dead and e.get_instance_id() < e.staple.get_instance_id():
+				draw_line(e.position, e.staple.position, Color(0.75, 0.78, 0.85, 0.9), 1.0)
+		# Points finaux
+		for w in arena.wells:
+			var k: float = clampf(w.t / w.dur, 0.0, 1.0)
+			draw_circle(w.pos, 4.0 + w.r * 0.22 * k, Pal.INK)
+			for i in 3:
+				var a: float = arena.elapsed * 6.0 + i * TAU / 3.0
+				draw_arc(w.pos, w.r * (1.0 - k * 0.5), a, a + 1.2, 10, Color(Pal.INK, 0.35), 2.0)
 		# Fil des trombones
 		for e in arena.enemies:
 			if e.partner != null and is_instance_valid(e.partner) and not e.partner.dead and e.get_instance_id() < e.partner.get_instance_id():

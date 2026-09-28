@@ -101,6 +101,10 @@ func _text(pos: Vector2, text: String, col: Color, fs := 10, w := -1.0, align :=
 
 
 func _draw_hud() -> void:
+	# Horloge : le temps est arrêté
+	if arena.stop_t > 0.0:
+		draw_layer.draw_rect(Rect2(0, 0, 640, 360), Color(0.6, 0.75, 1.0, 0.13))
+		_text(Vector2(0, 322), "TEMPS ARRÊTÉ  %.1f" % arena.stop_t, Color(0.8, 0.9, 1.0), 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
 	# Interro du Professeur : la question, en grand, toujours visible
 	for qz in arena.quizzes:
 		var k: float = clampf(1.0 - qz.t / qz.dur, 0.0, 1.0)

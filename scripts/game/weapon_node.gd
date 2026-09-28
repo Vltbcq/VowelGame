@@ -35,6 +35,13 @@ var orbit_hits := {}
 var paint_last := Vector2.INF
 var trail: Line2D            # traînée du coup (coordonnées du monde)
 var trail_pts: Array = []
+var heat := 0                # Crayon HB : coups donnés pendant la vague
+var beam: Line2D             # Loupe : le rayon
+var beam_target: Enemy
+var beam_t := 0.0
+var beam_acc := 0.0
+var beam_wst := {}
+var special_t := 0.0         # Miroir déformant / Grande Signature : minuterie
 
 
 func setup(p: Player, weapon: Dictionary) -> void:
@@ -53,7 +60,7 @@ func setup(p: Player, weapon: Dictionary) -> void:
 	cd = randf() * st.cooldown
 	if st.kind == "ranged":
 		for b in st.bullets:
-			bullet_tex.append(Gfx.texture(b.image))
+			bullet_tex.append(Gfx.texture(WeaponDB.orb(Pal.SHADES[2][1]) if st.style == "mist" else b.image))
 	match st.style:
 		"stamp":
 			var sc: float = 2.0 * Stats.RAR_REACH[w.rar]
@@ -141,6 +148,9 @@ func tick(delta: float) -> void:
 	if st.style == "orbit":
 		_orbit_step(delta)
 		return
+	if st.style == "mirror" or st.style == "signature":
+		_special_step(delta)
+		return
 	var home := _home()
 	var rng: float
 	if st.kind == "melee":
@@ -169,6 +179,9 @@ func tick(delta: float) -> void:
 		_rest_pose()
 	recoil = lerpf(recoil, 0.0, 0.25)
 	sprite.position.x = -recoil
+	if st.style == "beam":
+		_beam_step(delta, target)
+		return
 
 	if cd <= 0.0 and target:
 		cd = st.cooldown
@@ -211,6 +224,8 @@ func _melee_step(delta: float) -> void:
 	match st.style:
 		"spin":
 			dur = 0.45
+		"gust":
+			dur = 0.4
 		"slam", "stamp":
 			dur = 0.5
 		"erase":
@@ -222,12 +237,12 @@ func _melee_step(delta: float) -> void:
 	var home := _home()
 	var hit_on := false
 	match st.style:
-		"thrust", "erase":
+		"thrust", "erase", "scissors", "pencil":
 			var ext := sin(t * PI)
 			position = home * (1.0 - ext) + (home + atk_dir * reach) * ext
 			rotation = atk_angle
-			hit_on = ext > 0.35 and st.style == "thrust"
-		"sweep", "trail":
+			hit_on = ext > 0.35 and st.style != "erase"
+		"sweep", "trail", "gust":
 			var a := atk_angle - 1.2 + 2.4 * t
 			var ext := sin(t * PI)
 			position = home * (1.0 - ext) + (home + Vector2.from_angle(a) * reach * 0.75) * ext
@@ -263,7 +278,14 @@ func _melee_step(delta: float) -> void:
 			if hit_ids.has(id):
 				continue
 			hit_ids[id] = true
-			player.arena.hit_enemy(e, st.damage, st, Vector2.from_angle(rotation), st.knock)
+			var d: float = st.damage
+			var kb: float = st.knock
+			if st.style == "pencil":
+				d *= 1.0 + minf(1.5, 0.03 * heat)   # Crayon HB : s'échauffe
+				heat += 1
+			elif st.style == "gust":
+				kb *= 5.0   # Éventail : repousse très fort
+			player.arena.hit_enemy(e, d, st, Vector2.from_angle(rotation), kb)
 		if st.style == "trail":
 			_paint(tip)
 	if atk_t >= 1.0:
@@ -381,6 +403,12 @@ func _fire(target: Enemy) -> void:
 	if st.style == "clone":
 		_fire_clone()
 		return
+	if st.style == "well":
+		var b: Dictionary = st.bullets[0]
+		arena.add_well(target.position, 70.0 * _range_mult(), b.damage * 3.0, st)
+		recoil = 3.0
+		Sfx.play("shoot")
+		return
 	var copies := 1 + Run.amulet_count("miroir")
 	var muzzle := player.position + position + Vector2.from_angle(aim) * length * 0.5
 	var base := aim + deg_to_rad(randf_range(-st.spread, st.spread))
@@ -399,11 +427,97 @@ func _fire(target: Enemy) -> void:
 					art.beffect, life, art.get("boutline", true))
 				if st.style == "homing":
 					p.homing = true
+				elif st.style == "boomerang":
+					p.boomerang = true
+					p.out_t = life * 0.5
+					p.life = 10.0
+					p.pierce = 999
+				elif st.style == "mist":
+					p.life = life * 0.45
 				elif st.style == "lob":
 					p.lob_r = 16.0 + b.radius * 2.5
 	recoil = 4.0
 	arena.burst(muzzle, Color(1, 0.95, 0.8), 3, 70.0, Vector2.from_angle(aim), 0.5)   # éclat au canon
 	Sfx.play("shoot")
+
+
+## Loupe : rayon continu sur la cible ; plus il y reste, plus il brûle (×1 → ×4 en 3 s).
+func _beam_step(delta: float, target: Enemy) -> void:
+	var arena := player.arena
+	if beam == null:
+		beam = Line2D.new()
+		beam.top_level = true
+		beam.z_index = 3
+		beam.width = 2.0
+		beam.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		add_child(beam)
+		beam_wst = st.duplicate()
+		var f: Array = (st.frac as Array).duplicate()
+		for i in f.size():
+			f[i] *= 0.15   # beaucoup de petits coups : moins de chances d'effet par coup
+		beam_wst.frac = f
+	if target == null:
+		beam.visible = false
+		beam_target = null
+		beam_t = 0.0
+		return
+	if target != beam_target:
+		beam_target = target
+		beam_t = 0.0
+	beam_t += delta
+	var ramp := 1.0 + minf(3.0, beam_t)
+	var from := player.position + position + Vector2.from_angle(aim) * length * 0.5
+	beam.visible = true
+	beam.points = PackedVector2Array([from, target.position])
+	beam.width = 1.5 + ramp
+	beam.default_color = Color(1.0, 1.0 - 0.15 * ramp, 0.6 - 0.12 * ramp, 0.85)
+	beam_acc += delta * _atk_mult()
+	while beam_acc >= 0.1:
+		beam_acc -= 0.1
+		var b: Dictionary = st.bullets[0]
+		arena.hit_enemy(target, b.damage / st.cooldown * 0.1 * ramp * 0.6, beam_wst, Vector2.ZERO, 0.0)
+		if target.dead:
+			break
+
+
+## Miroir déformant (onde qui renvoie les tirs) et Grande Signature (trait géant) : pas de cible.
+func _special_step(delta: float) -> void:
+	var arena := player.arena
+	position = position.lerp(_home(), 0.5)
+	_rest_pose()
+	special_t -= delta * _atk_mult()
+	if special_t > 0.0:
+		return
+	var b: Dictionary = st.bullets[0]
+	if st.style == "mirror":
+		special_t = 2.0
+		var r := 90.0 * _range_mult()
+		var n := 0
+		for p in arena.bullets:
+			if not p.hostile or p.position.distance_to(player.position) > r:
+				continue
+			var tg: Enemy = arena.nearest(p.position, 500.0)
+			var dir := (tg.position - p.position).normalized() if tg else -p.vel.normalized()
+			p.hostile = false
+			p.hang = 0.0
+			p.wst = st
+			p.dmg = maxf(p.dmg * 3.0, b.damage * 1.5)
+			p.pierce = 1
+			p.hit_ids.clear()
+			p.vel = dir * maxf(p.vel.length(), 220.0)
+			n += 1
+		arena.explosion(player.position, r, Color(0.8, 0.9, 1.0, 0.5), true)
+		if n > 0:
+			arena.float_text(player.position + Vector2(0, -26), "RENVOI ×%d" % n, Color(0.8, 0.9, 1.0))
+	else:
+		special_t = 8.0
+		var mult := 1.0 + Run.kills * 0.004   # plus fort avec les ennemis tués dans la partie
+		# Passe à la hauteur d'un des ennemis les plus proches (sinon près de toi)
+		var y := player.position.y + randf_range(-40.0, 40.0)
+		var close := arena.enemies.filter(func(e): return not e.dead and e.position.distance_to(player.position) < 220.0)
+		if not close.is_empty():
+			y = (close.pick_random() as Enemy).position.y
+		arena.signature(y, b.damage * 4.0 * mult, st)
 
 
 ## Palette vivante : un orbe chercheur par couleur du dessin, avec son effet garanti.

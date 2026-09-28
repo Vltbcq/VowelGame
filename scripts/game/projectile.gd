@@ -19,6 +19,9 @@ var burst_r := 0.0       # Autoportrait : explose au premier contact (ou en fin 
 var upright := false     # reste droit (le clone ne tourne pas sur lui-même)
 var hang := 0.0          # Craie : reste suspendu au tableau, puis part vers le joueur
 var hang_speed := 140.0
+var boomerang := false   # Avion en papier : part, puis revient vers le joueur
+var out_t := 0.0
+var returning := false
 
 
 func setup(tex: Texture2D, effect: String, outline := true) -> void:
@@ -39,6 +42,18 @@ func tick(delta: float, arena: Arena) -> bool:
 			return false
 		if hang > 0.0:
 			return true
+	if boomerang:
+		out_t -= delta
+		if not returning and out_t <= 0.0:
+			returning = true
+			hit_ids.clear()   # retransperce au retour
+		if returning:
+			var to := arena.player.position - position
+			var sp := vel.length() + 500.0 * delta
+			vel = to.normalized() * sp
+			rotation = vel.angle()
+			if to.length() < 12.0:
+				return false
 	if homing:
 		var tg := arena.nearest(position, 220.0)
 		if tg:

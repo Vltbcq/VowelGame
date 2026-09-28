@@ -54,7 +54,8 @@ func _ready() -> void:
 			continue
 		var r: int = def.min_rar
 		var cols := [Pal.SHADES[1][1], Pal.SHADES[3][1], Pal.SHADES[2][1]] if t == "palette_vivante" else [Pal.INK]
-		Run.set_weapon_art(t, r, _multi(def.canvas, int(def.ink * 0.9), cols), "", null, "")
+		var bl: Image = _blob(def.get("bcanvas", 16), 20, Pal.SHADES[3][1]) if def.kind == "ranged" and not def.get("nobullet", false) else null
+		Run.set_weapon_art(t, r, _multi(def.canvas, int(def.ink * 0.9), cols), "", bl, "")
 		Run.add_weapon(t, r, 0, Vector2(-14 + i * 6, -6 + (i % 2) * 12))
 		i += 1
 	for id in ["calque", "estompe", "sanguine", "craquelure", "perspective", "tache", "collage", "croquis_rapide",
