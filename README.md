@@ -92,6 +92,8 @@ Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties s
 
 ## Effets (« juice »)
 
+Fin de vague : toutes les gouttes restées au sol s'envolent vers le perso (les plus proches d'abord) et sont comptées en arrivant. Chaque goutte donne de l'XP et un peu d'or (environ 62 % de sa valeur).
+
 Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et grosse éclaboussure à chaque mort ; ennemis qui s'écrasent quand on les frappe ; chiffres de dégâts qui sautent (critiques plus gros) ; traînée colorée derrière les coups de mêlée (et le Compas) ; éclat au canon des armes à distance ; voile rouge sur les bords de l'écran et arrêt sur image quand tu es touché ; arrêt sur image à la mort d'une élite ou d'un boss ; explosion de particules à la montée de niveau ; bannières de vague qui « popent ». Tout est dans `arena.gd` (`burst`, `hitstop`, `hit_fx`, classe `_Sparks`).
 
 ## Cartes

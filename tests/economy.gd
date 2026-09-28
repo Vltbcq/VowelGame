@@ -39,6 +39,7 @@ func _ready() -> void:
 			frames += 1
 			if frames % 120 == 0:
 				await get_tree().process_frame
+		arena._flush_pickups()   # les gouttes aspirées en fin de vague
 		var g := Run.gold - gold_before
 		total += g
 		print("%5d | %12d | %8d | %5d | %17d | %21d | %11d" % [w, Run.kills - kills_before, g, total,

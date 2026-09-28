@@ -41,6 +41,7 @@ var boss: Enemy
 var boss_spawned := false
 var spawn_acc := 0.0
 var ended := false
+var vacuum := false         # fin de vague : les gouttes restantes sont aspirées vers le joueur
 var shake_amt := 0.0
 var tex_cache := {}
 var eproj_tex := {}
@@ -174,6 +175,8 @@ func _process(delta: float) -> void:
 		floor_dirty = false
 		floor_timer = 0.12
 	if ended:
+		if vacuum:
+			_tick_vacuum(delta)
 		return
 
 	_rebuild_grid()
@@ -614,10 +617,15 @@ func _end_wave() -> void:
 	if ended:
 		return
 	ended = true
+	# Les gouttes restantes s'envolent vers le joueur (voir _tick_vacuum)
+	vacuum = not pickups.is_empty()
+	var far := 1.0
 	for p in pickups:
-		collect(p)
-		p.queue_free()
-	pickups.clear()
+		far = maxf(far, p.position.distance_to(player.position))
+	for p in pickups:
+		p.vac = 0.0
+		# les plus proches partent d'abord : une vague qui converge vers le perso
+		p.vac_delay = 0.12 + 0.3 * p.position.distance_to(player.position) / far + randf() * 0.08
 	for e in enemies:
 		e.dead = true
 		_splat(e.position, e.radius, Pal.SHADES[0][2])
@@ -641,10 +649,34 @@ func _end_wave() -> void:
 	Meta.check_achievements(Run.achievement_ctx(Run.wave, not player.was_hurt, Run.wave == Run.WAVES))
 	hud.announce("VAGUE %d TERMINÉE !" % Run.wave, Pal.GOOD)
 	Sfx.play("win" if Run.wave == Run.WAVES else "wave")
-	_after(1.8, func(): done.emit("cleared"))
+	_after(1.8, func():
+		_flush_pickups()
+		done.emit("cleared"))
 
 
 # ------------------------------------------------------------------ Encre au sol, cloches, règles, gommes
+
+func _tick_vacuum(delta: float) -> void:
+	var keep: Array[Pickup] = []
+	for p in pickups:
+		if p.vacuum(delta, self):
+			keep.append(p)
+		else:
+			p.queue_free()
+	pickups = keep
+	sparks.tick(delta)
+	if pickups.is_empty():
+		vacuum = false
+
+
+## Sécurité : tout ce qui n'est pas encore arrivé est compté avant de quitter la vague.
+func _flush_pickups() -> void:
+	for p in pickups:
+		collect(p)
+		p.queue_free()
+	pickups.clear()
+	vacuum = false
+
 
 func add_hazard(pos: Vector2, r: float, life: float, slow: float, dmg: float, col: Color) -> void:
 	if hazards.size() > 600:
