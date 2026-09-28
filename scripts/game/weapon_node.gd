@@ -139,7 +139,7 @@ func tick(delta: float) -> void:
 	cd -= delta * _atk_mult()
 	_update_trail()
 	if st.style == "orbit":
-		_orbit_step()
+		_orbit_step(delta)
 		return
 	var home := _home()
 	var rng: float
@@ -303,12 +303,14 @@ func _paint(tip: Vector2) -> void:
 
 
 ## Compas : tourne en permanence autour du perso et coupe tout ce qu'il croise.
-func _orbit_step() -> void:
+func _orbit_step(delta: float) -> void:
 	var arena := player.arena
 	var period := 0.9 * clampf(st.cooldown / 0.85, 0.5, 1.4) / _atk_mult()
-	orbit_a = wrapf(orbit_a + TAU * get_process_delta_time() / period, 0.0, TAU)
+	orbit_a = wrapf(orbit_a + TAU * delta / period, 0.0, TAU)
 	var r: float = st.reach * _range_mult() * 0.75
-	position = _home() + Vector2.from_angle(orbit_a) * r
+	# Centré sur le perso (et pas sur l'endroit où l'arme est posée, qui passe en miroir
+	# quand le perso se retourne) : le cercle ne saute pas en changeant de direction.
+	position = Vector2.from_angle(orbit_a) * r
 	rotation = orbit_a + PI / 2.0
 	sprite.flip_v = false
 	sprite.flip_h = false
