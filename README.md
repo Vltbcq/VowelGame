@@ -71,7 +71,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
    - Vague 10 : boss *Le Critique*
    - Vague 15 : mini-boss *La Muse*
    - Vague 20 : boss final *La Toile Blanche*
-5. **Les PV ne remontent pas entre les vagues.** Une fois sur deux, la boutique a une case « événement » : une potion (Fiole d'encre 30%, Grand flacon 70%, Élixir de sève : régénération ×4, au moins +8, pendant les 10 premières secondes de la vague suivante), ou, rarement (8 % chacun), un **événement** :
+5. **Les PV ne remontent pas entre les vagues.** Une fois sur deux, la boutique propose une potion (Fiole d'encre 30%, Grand flacon 70%, Élixir de sève : régénération ×4, au moins +8, pendant les 10 premières secondes de la vague suivante), À part (35 % des boutiques, dès la 2e ; donc parfois en plus d'une potion), un **événement** au hasard (~7 % chacun) :
    - **Roulette** : mise ton or sur Rouge ou Noir (×2) ou Vert (×36, comme au casino), 37 cases dont 1 verte, une mise par roulette.
    - **Ticket à gratter** (8 or) : gratte les 3 cases à la souris ; 3 symboles pareils (1 chance sur 3) : pièces = +25 or, étoiles = +15 % dégâts à la vague suivante, diamants = une amulette rare gratuite.
    - **Vente aux enchères** : une arme ou amulette épique (10 % légendaire). Surenchéris (+5 / +10 / +20) contre un collectionneur qui a un plafond secret (70 à 140 % du prix), ou retire-toi.

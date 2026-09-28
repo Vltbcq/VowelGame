@@ -45,9 +45,17 @@ func _ready() -> void:
 	for ev in Run.EVENTS:
 		var pct := 100.0 * int(cnt.get(ev, 0)) / n
 		line.append("%s %.1f%%" % [ev, pct])
-		ok = ok and pct > 2.8 and pct < 5.2
+		ok = ok and pct > 5.5 and pct < 8.5
 	print("     fréquences : ", ", ".join(line), ", potions %.1f%%" % (100.0 * int(cnt.get("heal", 0)) / n))
-	_check(ok, "chaque événement dans ~4 % des boutiques")
+	var both := 0
+	for k in 2000:
+		Run.roll_shop()
+		var types: Array = Run.shop_offers.map(func(o): return o.type)
+		if "heal" in types and types.any(func(t): return t in Run.EVENTS):
+			both += 1
+	print("     potion ET événement dans la même boutique : %.1f%%" % (100.0 * both / 2000))
+	_check(ok, "chaque événement dans ~7 % des boutiques")
+	_check(both > 2000 * 0.12, "potion et événement peuvent tomber ensemble")
 	# Enchères : toujours épique ou légendaire
 	var low := 0
 	for k in 300:

@@ -35,9 +35,11 @@ const HEALS := {
 }
 ## Roulette de la boutique : 37 cases (0 = vert, puis rouge / noir en alternance)
 const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 35 contre 1 + la mise
-## Case « événement » de la boutique : une potion, ou (8 % chacun) un de ces événements
+## Boutique : une case « potion » (1 fois sur 2) et, à part, une case « événement »
+## (35 % des boutiques, un des événements au hasard : ~7 % chacun).
+const POTION_CHANCE := 0.5
 const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
-const EVENT_CHANCE := 0.08
+const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
 const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
 ## Mécène : [id, or reçu, texte du contrat]
@@ -678,21 +680,16 @@ func roll_shop() -> void:
 		fresh.append(key)
 	for key in fresh:
 		Meta.mark_seen(key)
-	# Case « événement » (une fois sur deux) : une potion... ou, rarement (8 %), la roulette
-	if randf() < 0.5:
-		var ev := ""
-		var r := randf()
-		if wave >= 2 and r < EVENT_CHANCE * EVENTS.size():
-			ev = EVENTS[int(r / EVENT_CHANCE)]
-			if ev == "restorer" and restorable().is_empty():
-				ev = ""   # pas d'amulette à restaurer : une potion à la place
-		if ev != "":
-			shop_offers.append(make_event(ev))
-		else:
-			var roll := randf()
-			var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
-			shop_offers.append({"type": "heal", "id": hid, "rar": 0,
-				"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
+	# Case « potion » : une fois sur deux
+	if randf() < POTION_CHANCE:
+		var roll := randf()
+		var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
+		shop_offers.append({"type": "heal", "id": hid, "rar": 0,
+			"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
+	# Case « événement », à part (dès la 2e boutique) : peut tomber EN PLUS d'une potion
+	if wave >= 2 and randf() < EVENT_CHANCE:
+		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())
+		shop_offers.append(make_event(evs.pick_random()))
 
 
 ## Offre « événement » de la boutique.
