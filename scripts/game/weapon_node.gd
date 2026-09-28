@@ -137,6 +137,7 @@ func _atk_mult() -> float:
 	if player.arena.elapsed < 10.0:
 		m += 0.6 * Run.amulet_count("croquis_rapide")
 	m += 0.03 * player.arena.fly_n * Run.amulet_count("papillon")   # Effet papillon
+	m += player.arena.dynamo_bonus()   # Dynamo
 	return maxf(0.2, m)
 
 

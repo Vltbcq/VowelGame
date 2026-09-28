@@ -164,12 +164,15 @@ Le **Bestiaire** (menu principal) liste toutes les armes, amulettes et ennemis a
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
-## Amulettes (101)
+## Amulettes (125)
 
 - 30 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
 - Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
 - Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
 - Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).
+- **Vol de vie** : Encre rouge, Encre carmin (le soin en trop devient un bouclier d'encre), Calice (soigne 2 % des dégâts du coup), Chauve-souris (+1 % dégâts par PV soigné ces 5 s), Pacte de sang (vol de vie ×2, plus de régénération).
+- **Épines** : Carapace (+25 % de l'armure), Oursin (6 épines lancées quand tu es touché), Cactus (+1 par 10 PV max), Ronces (l'agresseur est repoussé et empoisonné), Hérisson (épines en continu au contact).
+- **Éléments** : Allumette et Braise (Feu), Givre et Stalactite (Glace), Paratonnerre et Dynamo (Foudre), Fiole et Champignon (Poison), Grimoire et Pentacle (Arcane), Vitrail et Auréole (Lumière) ; Cercle chromatique (+15 % par élément différent subi) et Alchimie (effets propagés au voisin).
 - Légendaires, nouvelles : Mise en abyme (projectiles qui se divisent), Pinceau de Midas (+1 or par ennemi tué, −20 % PV max), Palimpseste (bonus de niveau doublés, un choix de moins), Fresque (+0,5 % par dessin de ta galerie, max +60 %), Autographe (critiques ×2 sur les boss), Nuit étoilée (étoile toutes les 10 éliminations), Dernière touche (sous 25 % de PV : ×2 dégâts, +20 % vitesse), Horloge (temps arrêté 2 s toutes les 12 s).
 
 ## Tutoriel

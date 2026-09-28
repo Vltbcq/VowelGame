@@ -151,6 +151,13 @@ static func player(run: Node) -> Dictionary:
 	n = run.amulet_count("taille_douce")
 	s.crit += floorf(maxf(0.0, s.armor) / 3.0) * n
 	s.max_hp *= pow(0.8, run.amulet_count("midas")) * pow(0.9, run.amulet_count("derniere_touche"))
+	# Épines : Carapace (+25 % de l'armure), Cactus (+1 par 10 PV max)
+	s.thorns += 0.25 * maxf(0.0, s.armor) * run.amulet_count("carapace")
+	s.thorns += floorf(s.max_hp / 10.0) * run.amulet_count("cactus")
+	# Pacte de sang : vol de vie doublé, plus de régénération
+	if run.amulet_count("pacte_sang") > 0:
+		s.lifesteal *= 2.0
+		s.regen = 0.0
 	# Finalisation
 	s.max_hp = maxf(1.0, roundf(s.max_hp))
 	s.move = s.speed_base * maxf(0.25, 1.0 + s.speed / 100.0)
@@ -236,6 +243,10 @@ static func amulet_live(id: String) -> String:
 			return "+%d%% dégâts" % (2 * Run.level)
 		"accordeon":
 			return "+%d%% vit. d'attaque" % roundi(0.5 * maxf(0.0, s.get("speed", 0.0)))
+		"carapace":
+			return "+%d épines" % roundi(0.25 * maxf(0.0, s.get("armor", 0.0)))
+		"cactus":
+			return "+%d épines" % floori(float(s.get("max_hp", 0.0)) / 10.0)
 		"etiquette_prix":
 			var c := Run.amulet_count("etiquette_prix")
 			return "-%d%% sur les prix (%d/5)" % [roundi((1.0 - pow(0.92, c)) * 100.0), c]

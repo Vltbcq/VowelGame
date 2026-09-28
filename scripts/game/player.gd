@@ -23,6 +23,8 @@ var god := false            # OUTIL DE DEV : invincible
 var invis_t := 0.0          # Encre invisible : les ennemis te perdent de vue
 var shadow_ready := false   # Ombre portée : prochain coup ×2 après une esquive
 var paper := 0              # Bouclier de papier : coups ignorés restants dans la vague
+var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
+var spike_acc := 0.0        # Hérisson
 
 
 func setup(a: Arena) -> void:
@@ -56,6 +58,9 @@ func setup(a: Arena) -> void:
 
 
 func _draw() -> void:
+	if shield > 0.5:
+		# Encre carmin : anneau du bouclier d'encre
+		draw_arc(Vector2(0, -2), radius + 7.0, 0.0, TAU, 28, Color(0.75, 0.1, 0.2, 0.7), 2.0)
 	draw_set_transform(Vector2(0, radius + 2), 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, radius + 3, Color(0, 0, 0, 0.18))
 
@@ -102,6 +107,15 @@ func tick(delta: float) -> void:
 
 	if st.regen > 0.0:
 		heal(st.regen * 0.2 * delta, false)
+	# Hérisson : les épines frappent en continu les ennemis collés à toi
+	if st.thorns > 0.0 and Run.amulet_count("herisson") > 0:
+		spike_acc += delta
+		if spike_acc >= 0.5:
+			spike_acc = 0.0
+			for e in arena.near(position, radius + 8.0):
+				e.hurt(st.thorns, false, (e.position - position).normalized() * 30.0)
+	if shield > 0.0:
+		queue_redraw()
 	inv -= delta
 	invis_t -= delta
 	if flash > 0.0:
@@ -141,6 +155,16 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	if element > 0:
 		d *= 1.0 - st.res[element] / 100.0
 	d = maxf(1.0, roundf(d))
+	# Encre carmin : le bouclier d'encre absorbe d'abord
+	if shield > 0.0:
+		var ab := minf(shield, d)
+		shield -= ab
+		d -= ab
+		queue_redraw()
+		if d < 1.0:
+			inv = 0.5
+			arena.float_text(position + Vector2(0, -14), "ABSORBÉ", Color(0.85, 0.3, 0.35))
+			return
 	hp -= d
 	was_hurt = true
 	if Run.amulet_count("encre_invisible") > 0:
@@ -154,6 +178,14 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	arena.float_text(position + Vector2(0, -14), "-%d" % int(d), Pal.BAD if element == 0 else Pal.main_color(element))
 	if st.thorns > 0.0 and src is Enemy:
 		(src as Enemy).hurt(st.thorns, false, Vector2.ZERO)
+	# Ronces : l'agresseur est repoussé et empoisonné
+	if src is Enemy and Run.amulet_count("ronces") > 0:
+		var en := src as Enemy
+		en.knock += (en.position - position).normalized() * 260.0
+		en.add_poison()
+	# Oursin : 6 épines d'encre tout autour
+	if Run.amulet_count("oursin") > 0:
+		arena.urchin(position, maxf(4.0, st.thorns * 2.0) * Run.amulet_count("oursin"))
 	if hp <= 0.0:
 		if Run.amulet_count("renaissance") > 0 and not Run.revived:
 			Run.revived = true
@@ -216,8 +248,16 @@ func erase_at(_world: Vector2) -> void:
 	Sfx.play("explode")
 
 
-func heal(n: float, show := true) -> void:
+func heal(n: float, show := true, from_steal := false) -> void:
 	var before := hp
+	# Encre carmin : le soin du vol de vie en trop devient un bouclier (20 % des PV max au plus)
+	if from_steal and Run.amulet_count("encre_carmin") > 0:
+		var extra := hp + n - max_hp
+		if extra > 0.0:
+			shield = minf(shield + extra, max_hp * 0.2 * Run.amulet_count("encre_carmin"))
+			queue_redraw()
 	hp = minf(max_hp, hp + n)
+	if hp > before:
+		arena.bat_heal(hp - before)   # Chauve-souris
 	if show and hp - before >= 1.0:
 		arena.float_text(position + Vector2(0, -14), "+%d" % int(hp - before), Pal.GOOD)

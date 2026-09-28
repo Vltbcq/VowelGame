@@ -64,6 +64,8 @@ var ally := false            # Retouche : redessiné dans le camp du joueur
 var ally_t := 0.0
 var ally_cd := 0.0
 var blind_t := 0.0           # Encre de seiche : aveuglé
+var el_seen := {}            # Cercle chromatique : éléments différents subis
+var shroom_cd := 0.0         # Champignon : délai entre deux nuages
 
 # Statuts
 var slow_t := 0.0
@@ -166,6 +168,7 @@ func tick(delta: float) -> void:
 	var dist := maxf(0.01, to_p.length())
 	var dirp := to_p / dist
 	blind_t -= delta
+	shroom_cd -= delta
 	if not is_boss and (blind_t > 0.0 or p.invis_t > 0.0):
 		# Aveuglé (Seiche) ou joueur invisible (Encre invisible) : il erre
 		dirp = Vector2.from_angle(phase + t * 0.8)
@@ -345,7 +348,7 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if dead:
 		return
 	if mark_t > 0.0:
-		amount *= 1.5 if arena.syn.has(Pal.ARCANE) else 1.25
+		amount *= (1.5 if arena.syn.has(Pal.ARCANE) else 1.25) + 0.15 * Run.amulet_count("grimoire")
 	if state == "jam":
 		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
 	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
@@ -367,25 +370,30 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 
 
 func burn(tick_dmg: float) -> void:
-	burn_ticks = 4
+	burn_ticks = 4 * (1 + Run.amulet_count("allumette"))   # Allumette : dure plus longtemps
 	burn_dmg = maxf(burn_dmg, tick_dmg)
 
 
 func chill_hit() -> void:
 	slow_t = 1.5
 	chill += 1
-	if chill >= 3:
+	if chill >= (2 if Run.amulet_count("givre") > 0 else 3):   # Givre : gèle en 2 coups
 		chill = 0
 		freeze_t = 0.35 if is_boss else 1.0
 
 
 func add_poison() -> void:
-	poison += 1
+	poison += 1 + Run.amulet_count("fiole")   # Fiole : 2 cumuls
 	poison_t = 4.0
+	# Champignon : à 6 cumuls, éclate en nuage toxique qui contamine les voisins
+	if poison >= 6 and shroom_cd <= 0.0 and Run.amulet_count("champignon") > 0 and not dead:
+		shroom_cd = 2.0
+		poison = 2
+		arena.toxic_burst(self)
 
 
 func mark() -> void:
-	mark_t = 3.0
+	mark_t = 3.0 * (1 + Run.amulet_count("grimoire"))   # Grimoire : dure plus longtemps
 
 
 # ------------------------------------------------------------------ Comportements

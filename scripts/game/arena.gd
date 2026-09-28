@@ -83,6 +83,9 @@ var lure_t := 0.0
 var lure_pos := Vector2.ZERO
 var kal_i := 0            # Kaléidoscope : couleur suivante
 var star_kills := 0       # Nuit étoilée
+var bat_log: Array = []   # Chauve-souris : [temps, PV soignés]
+var bat_sum := 0.0
+var chain_log: Array = [] # Dynamo : temps des chaînes d'éclairs
 var clock_cd := 12.0
 var air: _Marks
 
@@ -538,7 +541,10 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	var ls := Stats.lifesteal_of(scale) / 100.0
 	var heal := floorf(ls) + (1.0 if randf() < ls - floorf(ls) else 0.0)
 	if heal > 0.0:
-		player.heal(heal)
+		var cal := Run.amulet_count("calice")
+		if cal > 0:
+			heal *= maxf(1.0, dmg * 0.02 * cal)   # Calice : 2 % des dégâts du coup
+		player.heal(heal, true, true)
 	_procs(e, dmg, wst)
 
 
@@ -570,9 +576,20 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
 
 
 ## Effet élémentaire sur un ennemi (brûlure, gel, chaîne, poison, marque, éclat).
-func _apply_el(e: Enemy, el: int, dmg: float) -> void:
+func _apply_el(e: Enemy, el: int, dmg: float, spread := true) -> void:
 	if e.dead:
 		return
+	e.el_seen[el] = true   # Cercle chromatique
+	# Alchimie : l'effet se propage à l'ennemi le plus proche (50 %)
+	if spread and Run.amulet_count("alchimie") > 0 and randf() < 0.5:
+		var best: Enemy = null
+		var bd := 100.0
+		for o in near(e.position, 100.0):
+			if o != e and not o.dead and o.position.distance_to(e.position) < bd:
+				bd = o.position.distance_to(e.position)
+				best = o
+		if best:
+			_apply_el(best, el, dmg, false)
 	if true:
 		match el:
 			Pal.FEU:
@@ -588,10 +605,16 @@ func _apply_el(e: Enemy, el: int, dmg: float) -> void:
 				if randf() < 0.3:
 					player.heal(1.0)
 			Pal.LUMIERE:
-				explosion(e.position, 34.0, Color(1, 1, 0.9, 0.9))
+				var lr := 34.0 * (1.0 + 0.5 * Run.amulet_count("vitrail"))   # Vitrail : +50 % de rayon
+				var au := Run.amulet_count("aureole")
+				explosion(e.position, lr, Color(1, 1, 0.9, 0.9))
 				if syn.has(Pal.LUMIERE):
 					player.heal(1.0)   # synergie Lumière
-				for o in near(e.position, 34.0):
+				if au > 0:
+					player.heal(1.0 * au)   # Auréole
+				for o in near(e.position, lr):
+					if au > 0:
+						o.blind_t = maxf(o.blind_t, 1.0)
 					if o != e:
 						o.hurt(dmg * 0.4, false, (o.position - e.position).normalized() * 60.0, Pal.LUMIERE)
 
@@ -601,13 +624,15 @@ func _chain(from: Enemy, dmg: float) -> void:
 	var cands := near(from.position, 130.0 if boosted else 90.0).filter(func(o): return o != from)
 	cands.sort_custom(func(a, b): return a.position.distance_squared_to(from.position) < b.position.distance_squared_to(from.position))
 	var prev := from.position
-	for i in mini(4 if boosted else 2, cands.size()):
+	for i in mini((4 if boosted else 2) + 2 * Run.amulet_count("paratonnerre"), cands.size()):
 		var o: Enemy = cands[i]
 		_bolt(prev, o.position)
 		prev = o.position
 		o.hurt(dmg, false, Vector2.ZERO, Pal.FOUDRE)
 	if cands.size() > 0:
 		Sfx.play("zap")
+		if Run.amulet_count("dynamo") > 0:
+			chain_log.append(elapsed)
 
 
 func kill_enemy(e: Enemy) -> void:
@@ -672,6 +697,26 @@ func kill_enemy(e: Enemy) -> void:
 		var apos: Vector2 = e.position
 		var ael: bool = e.elite
 		_after(0.05, func(): spawn_ally(aid, apos, ael))   # (l'ennemi mort est déjà effacé)
+	# Braise : un ennemi qui meurt en brûlant explose et enflamme ses voisins
+	if e.burn_ticks > 0 and Run.amulet_count("braise") > 0:
+		explosion(e.position, 40.0, Color(Pal.main_color(Pal.FEU), 0.8), true)
+		burst(e.position, Pal.main_color(Pal.FEU), 12, 110.0)
+		for o in near(e.position, 40.0):
+			if o != e and not o.dead:
+				o.burn(e.burn_dmg)
+				o.hurt(e.burn_dmg * 2.0 * Run.amulet_count("braise"), false, (o.position - e.position).normalized() * 50.0, Pal.FEU)
+	# Pentacle : tuer un marqué soigne et transfère la marque
+	if e.mark_t > 0.0 and Run.amulet_count("pentacle") > 0:
+		player.heal(2.0 * Run.amulet_count("pentacle"))
+		var nb: Enemy = null
+		var nd := 150.0
+		for o in near(e.position, 150.0):
+			if o != e and not o.dead and o.position.distance_to(e.position) < nd:
+				nd = o.position.distance_to(e.position)
+				nb = o
+		if nb:
+			nb.mark()
+			_bolt(e.position, nb.position)
 	# Pinceau de Midas : +1 or par ennemi tué
 	Run.gold += Run.amulet_count("midas")
 	# Bulle de soin : goutte qui soigne
@@ -1044,6 +1089,16 @@ func _board_event() -> void:
 
 ## Minuteries des amulettes (Papillon, Seiche, Lanterne) et foule autour du joueur.
 func _tick_amulets(delta: float) -> void:
+	# Chauve-souris : PV soignés ces 5 dernières secondes ; Dynamo : chaînes ces 5 dernières secondes
+	if not bat_log.is_empty():
+		bat_log = bat_log.filter(func(b): return elapsed - b[0] < 5.0)
+		bat_sum = 0.0
+		for b in bat_log:
+			bat_sum += b[1]
+	else:
+		bat_sum = 0.0
+	if not chain_log.is_empty():
+		chain_log = chain_log.filter(func(t): return elapsed - t < 5.0)
 	fly_t -= delta
 	if fly_t <= 0.0:
 		fly_n = 0
@@ -1070,6 +1125,35 @@ func _tick_amulets(delta: float) -> void:
 			float_text(player.position + Vector2(0, -26), "LEURRE !", Pal.ACCENT)
 
 
+## Chauve-souris : note un soin reçu.
+func bat_heal(amount: float) -> void:
+	if Run.amulet_count("chauve_souris") > 0 and amount > 0.0:
+		bat_log.append([elapsed, amount])
+
+
+## Dynamo : bonus de vitesse d'attaque (0 à 0,4).
+func dynamo_bonus() -> float:
+	return minf(0.4, 0.02 * chain_log.size()) * Run.amulet_count("dynamo")
+
+
+## Oursin : 6 épines d'encre autour du joueur.
+func urchin(pos: Vector2, dmg: float) -> void:
+	for k in 6:
+		var p := spawn_bullet(pos, Vector2.from_angle(TAU * k / 6.0) * 260.0, {"damage": dmg, "radius": 3.0, "pierce": 1},
+			{"frac": []}, _dot(0), "", 0.45)
+		p.spin = 12.0
+
+
+## Champignon : nuage toxique qui contamine les voisins.
+func toxic_burst(e: Enemy) -> void:
+	clouds.append({"pos": e.position, "r": 36.0, "t": 3.0, "acc": 0.0, "dps": 3.0 + Run.wave})
+	burst(e.position, Pal.main_color(Pal.POISON), 14, 90.0)
+	for o in near(e.position, 50.0):
+		if o != e and not o.dead:
+			o.poison += 2
+			o.poison_t = 4.0
+
+
 ## Où les ennemis visent : le joueur, ou le leurre de la Lanterne magique.
 func target_pos() -> Vector2:
 	return lure_pos if lure_t > 0.0 else player.position
@@ -1089,6 +1173,14 @@ func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
 	if ca > 0:
 		var late := elapsed > (wave_len * 0.5 if wave_len > 0.0 else 30.0)
 		m *= (1.0 + 0.2 * ca) if late else pow(0.95, ca)
+	if e.freeze_t > 0.0:
+		m *= 1.0 + 0.5 * Run.amulet_count("stalactite")   # Stalactite : gelés ×1,5
+	var cs := Run.amulet_count("chauve_souris")
+	if cs > 0:
+		m *= 1.0 + minf(0.3, 0.01 * bat_sum) * cs
+	var cc := Run.amulet_count("cercle_chromatique")
+	if cc > 0:
+		m *= 1.0 + 0.15 * e.el_seen.size() * cc
 	var pv := Run.amulet_count("papier_verre")
 	if pv > 0:
 		m *= 1.0 + minf(0.3, 0.03 * crowd) * pv
