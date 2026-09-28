@@ -170,7 +170,7 @@ func _ready() -> void:
 	Run.wave = 4
 	var arena := Arena.new()
 	add_child(arena)
-	_check(Run.patron == "" and arena.patron_elites.size() == 3, "mécène : 3 élites programmées pour la vague")
+	_check(Run.patron == "" and arena.patron_elites.size() == 8, "mécène : 8 élites programmées pour la vague")
 	_check(is_equal_approx(Run.stats.dmg - base_dmg, 15.0), "étoile : +15 %% dégâts pendant la vague (%+.0f)" % (Run.stats.dmg - base_dmg))
 	var seen_el := {}
 	for f in 60 * 50:
@@ -182,7 +182,7 @@ func _ready() -> void:
 		if arena.ended:
 			break
 	print("     élites apparues pendant la vague : %d" % seen_el.size())
-	_check(arena.patron_elites.is_empty() and seen_el.size() >= 3, "mécène : les 3 élites sont arrivées")
+	_check(arena.patron_elites.is_empty() and seen_el.size() >= 8, "mécène : les 8 élites sont arrivées")
 	_check(Run.wave_dmg == 0.0 and is_equal_approx(Run.stats.dmg, base_dmg), "étoile : fini après la vague")
 	arena.queue_free()
 	Run.active = false

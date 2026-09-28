@@ -43,7 +43,9 @@ const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
 const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
 ## Mécène : [id, or reçu, texte du contrat]
-const PATRON_DEALS := [["more", 40, "+30% d'ennemis à la vague suivante"], ["elites", 50, "3 élites en plus à la vague suivante"]]
+const PATRON_DEALS := [["more", 40, "+15% d'ennemis à la vague suivante"], ["elites", 50, "8 élites en plus à la vague suivante"]]
+const PATRON_MORE := 1.15   # contrat I : ennemis en plus
+const PATRON_ELITES := 8    # contrat II : élites en plus
 
 var active := false
 var map := 1                 # carte de la partie (MapDB)

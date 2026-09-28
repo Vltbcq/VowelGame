@@ -141,11 +141,12 @@ func _ready() -> void:
 		_after(0.9, func(): float_text(player.position + Vector2(0, -34), "ÉTOILE : +%d%% DÉGÂTS" % roundi(Run.wave_dmg), Pal.ACCENT))
 	match Run.patron:
 		"more":
-			patron_mult = 1.3
+			patron_mult = Run.PATRON_MORE
 		"elites":
-			patron_elites = [0.25, 0.5, 0.75]
+			for k in Run.PATRON_ELITES:
+				patron_elites.append((k + 1.0) / (Run.PATRON_ELITES + 1.0))   # réparties sur la vague
 	if Run.patron != "":
-		var txt := "MÉCÈNE : +30% D'ENNEMIS" if Run.patron == "more" else "MÉCÈNE : 3 ÉLITES EN PLUS"
+		var txt := ("MÉCÈNE : +%d%% D'ENNEMIS" % roundi((Run.PATRON_MORE - 1.0) * 100.0)) if Run.patron == "more" else ("MÉCÈNE : %d ÉLITES EN PLUS" % Run.PATRON_ELITES)
 		_after(1.2, func(): float_text(player.position + Vector2(0, -44), txt, Pal.BAD))
 		Run.patron = ""
 
