@@ -95,6 +95,10 @@ static func player(run: Node) -> Dictionary:
 			s[def.stat] += def.v * am.mag
 		if def.has("malus"):
 			s[def.malus[0]] += def.malus[1]
+		for pv in def.get("plus", []):    # bonus en plus (comme la stat principale)
+			s[pv[0]] += float(pv[1]) * am.mag
+		for mv in def.get("minus", []):   # défauts en plus
+			s[mv[0]] += float(mv[1])
 		var z: Dictionary = AmuletDB.ZONES[am.zone]
 		s[z.stat] += z.v
 		# La couleur d'une amulette donne un peu de résistance à son élément.
