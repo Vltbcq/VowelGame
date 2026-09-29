@@ -29,6 +29,10 @@ func _ready() -> void:
 	sounds.buy = _tone([[800, 800, 0.05], [1200, 1200, 0.08]], "square", 0.22)
 	sounds.enemy_shot = _tone([[500, 300, 0.07]], "tri", 0.25)
 	sounds.zap = _tone([[1500, 600, 0.08]], "noise", 0.2)
+	# Roulette : la bille qui cogne les cases, puis tombe dans la sienne
+	sounds.tick = _tone([[3400, 2600, 0.006], [1900, 1500, 0.012]], "square", 0.1)
+	sounds.clack = _tone([[1500, 1100, 0.018], [1, 1, 0.035], [1700, 1300, 0.014], [1, 1, 0.05], [1300, 1000, 0.02]], "tri", 0.3)
+	sounds.whirr = _tone([[180, 420, 0.25]], "noise", 0.12)
 	sounds.lose = _tone([[392, 392, 0.2], [330, 330, 0.2], [262, 200, 0.5]], "tri", 0.45)
 	sounds.win = _tone([[523, 523, 0.12], [659, 659, 0.12], [784, 784, 0.12], [1046, 1046, 0.4]], "square", 0.28)
 

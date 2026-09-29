@@ -689,11 +689,19 @@ class _Wheel extends Control:
 		spinning = true
 		var target := -TAU * (slot + 0.5) / 37.0
 		var end := angle - fposmod(angle, TAU) + TAU * 5.0 + fposmod(target, TAU)
+		Sfx.play("whirr", 0.0)   # lancer
+		var last := -1
 		var tw := create_tween()
 		tw.tween_method(func(v: float):
 			angle = v
-			queue_redraw(), angle, end, 3.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+			# un « tic » à chaque case qui passe sous le pointeur : rapide au début, puis de plus en plus espacé
+			var c := floori(v / (TAU / 37.0))
+			if c != last:
+				last = c
+				Sfx.play("tick", 0.15)
+			queue_redraw(), angle, end, 3.6).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		await tw.finished
+		Sfx.play("clack", 0.05)   # la bille tombe dans sa case
 		angle = fposmod(angle, TAU)
 		spinning = false
 
