@@ -193,6 +193,9 @@ Débloqué : armes, amulettes et ennemis disponibles"
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
 		if tab == "amulettes":
 			b.add_theme_color_override("font_color", Pal.RARITY[AmuletDB.get_def(iid).rar])
+		elif tab == "armes":
+			# couleur de la rareté minimum de l'arme (commune blanc, rare bleu, épique violet, légendaire orange)
+			b.add_theme_color_override("font_color", Pal.RARITY[int(WeaponDB.TYPES[iid].get("min_rar", 0))])
 		var d = null if locked else Meta.bestiary_get(_slots(iid)[0][0])
 		if locked:
 			b.add_theme_color_override("font_color", Pal.DISABLED)
