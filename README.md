@@ -97,7 +97,7 @@ Le pot de peinture (Remplir, touche F) est disponible dès le départ. En jeu, l
 
 Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties suivantes. La galerie s'ouvre sur l'onglet **Tout** (ou par catégorie) ; clique un dessin pour le voir en grand. Les nouveaux dessins sont **sans bord** par défaut (bouton « Bord » pour l'ajouter).
 
-**Pourboire** (stat) : or gagné automatiquement à chaque fin de vague (amulettes Pièce et Mécène, bonus de niveau).
+**Pourboire** (stat) : or gagné automatiquement à chaque fin de vague (amulettes Pièce, Trèfle et Tirelire, bonus de niveau).
 
 ## Effets (« juice »)
 
