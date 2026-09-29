@@ -42,7 +42,10 @@ func tick(delta: float, arena: Arena) -> bool:
 		hang -= delta
 		rotation += 6.0 * delta
 		if hang <= 0.0:
-			vel = (arena.player.position - position).normalized() * hang_speed
+			var tgt := arena.player.position
+			if Run.difficulty >= 2:
+				tgt += arena.player_vel() * (position.distance_to(tgt) / hang_speed)   # Aquarelle+ : visent où tu vas
+			vel = (tgt - position).normalized() * hang_speed
 		elif hostile and position.distance_to(arena.player.position) < radius + arena.player.radius:
 			arena.player.take_hit(dmg, element, null)
 			return false

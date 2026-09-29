@@ -411,6 +411,13 @@ func _spawn_pos(min_dist: float) -> Vector2:
 
 
 func spawn_enemy_now(id: String, pos: Vector2, small: bool, elite := false) -> Enemy:
+	var e0 := _spawn_enemy_raw(id, pos, small, elite)
+	if e0 and e0.power != "":
+		float_text(pos + Vector2(0, -20), "ÉLITE " + String(Enemy.TRAITS[e0.power][0]), e0.power_color())
+	return e0
+
+
+func _spawn_enemy_raw(id: String, pos: Vector2, small: bool, elite := false) -> Enemy:
 	if not Run.enemy_art.has(id):
 		id = "tache"
 		if not Run.enemy_art.has(id):
@@ -678,6 +685,20 @@ func kill_enemy(e: Enemy) -> void:
 	Sfx.play("kill")
 	var col: Color = Pal.main_color(e.element) if e.element > 0 else Pal.SHADES[0][1]
 	_splat(e.position, e.radius, col)
+	# Huile et plus : l'ennemi laisse une petite flaque qui ralentit
+	if Run.difficulty >= 3 and not e.is_boss and not e.small:
+		add_hazard(e.position, e.radius * 0.8 + 3.0, 3.0, 0.7, 0.0, col.darkened(0.3))
+	# Élite explosive : elle explose peu après sa mort
+	if e.power == "explosive":
+		var bp := e.position
+		var bdmg: float = e.dmg   # comme un coup de contact
+		explosion(bp, 46.0, Color(1.0, 0.55, 0.15, 0.35), true)   # avertissement : toute la zone
+		_after(0.45, func():
+			if ended:
+				return
+			explosion(bp, 46.0, Color(1.0, 0.55, 0.15, 0.9))
+			if bp.distance_to(player.position) < 46.0 + player.radius:
+				player.take_hit(bdmg, 0, null))
 	# Éclaboussure d'encre (plus grosse pour les élites et les boss)
 	var big := e.is_boss or e.elite
 	burst(e.position, col, 40 if e.is_boss else (18 if e.elite else 8), 150.0 if big else 90.0)

@@ -21,6 +21,10 @@ var dead := false
 var is_boss := false
 var small := false
 var elite := false
+var power := ""             # Huile+ : pouvoir de l'élite (shield, fast, vampire, explosive, summoner)
+var shield_up := false      # élite « bouclier » : ignore le premier coup
+var summon_cd := 0.0        # élite « invocatrice »
+var frenzy_on := false      # Chef-d'œuvre : boss en fureur sous 25 % de PV
 var contact := true
 var body: Node2D
 var sprite: Sprite2D
@@ -101,6 +105,16 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	hp = max_hp
 	dmg = def.dmg * wave_dmg * d.dmg * (1.3 if elite else 1.0)
 	speed = def.spd * randf_range(0.9, 1.1) * (1.1 if Run.difficulty >= 2 else 1.0)
+	# Huile et plus : chaque élite a un pouvoir
+	if elite and Run.difficulty >= 3:
+		power = TRAITS.keys().pick_random()
+		match power:
+			"shield":
+				shield_up = true
+			"fast":
+				speed *= 1.3
+			"summoner":
+				summon_cd = 3.0
 	if is_boss:
 		# Les boss frappent plus fort et bougent plus vite que leurs stats de base
 		dmg *= BOSS_DMG
@@ -123,6 +137,39 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	mirror_mode = randi_range(1, 2) if small else 0
 
 
+## Pouvoirs des élites (Huile et plus) : [nom affiché, couleur de l'aura]
+const TRAITS := {
+	"shield": ["BOUCLIER", Color("5aa8ff")],
+	"fast": ["RAPIDE", Color("ffe066")],
+	"vampire": ["VAMPIRE", Color("e03a3a")],
+	"explosive": ["EXPLOSIVE", Color("ff8a2a")],
+	"summoner": ["INVOCATRICE", Color("b06aff")],
+}
+
+
+func power_color() -> Color:
+	return TRAITS[power][1] if power != "" else Pal.ACCENT
+
+
+## Chef-d'œuvre : sous 25 % de PV, le boss entre en fureur (2e colère).
+func _frenzy() -> bool:
+	return is_boss and Run.difficulty >= 4 and hp < max_hp * 0.25
+
+
+## Aquarelle et plus : les tireurs visent là où tu VAS (t = temps de vol du tir).
+func _lead(t_fly: float) -> Vector2:
+	var p := arena.target_pos()
+	if Run.difficulty >= 2 and not is_boss:
+		p += arena.player_vel() * t_fly
+	return p
+
+
+func _lead_dir(bullet_speed: float) -> Vector2:
+	var d0 := arena.target_pos().distance_to(position)
+	var d := (_lead(d0 / maxf(1.0, bullet_speed)) - position)
+	return d.normalized() if d.length() > 0.01 else Vector2.RIGHT
+
+
 func _draw() -> void:
 	draw_set_transform(Vector2(0, radius * 0.9), 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, radius + 2, Color(0, 0, 0, 0.15))
@@ -130,7 +177,9 @@ func _draw() -> void:
 		# Aura des élites
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		var pulse := 0.5 + 0.5 * sin(t * 6.0)
-		draw_arc(Vector2.ZERO, radius + 5.0 + pulse * 2.0, 0.0, TAU, 28, Color(Pal.ACCENT, 0.35 + pulse * 0.4), 2.0)
+		draw_arc(Vector2.ZERO, radius + 5.0 + pulse * 2.0, 0.0, TAU, 28, Color(power_color(), 0.35 + pulse * 0.4), 2.0)
+		if shield_up:
+			draw_arc(Vector2.ZERO, radius + 3.0, 0.0, TAU, 24, Color(0.6, 0.8, 1.0, 0.8), 2.0)
 		draw_arc(Vector2.ZERO, radius + 9.0 + pulse * 3.0, 0.0, TAU, 28, Color(ink_col, 0.25), 1.0)
 	if ink_t > 0.0:
 		# Encre de Chine : taches noires sur l'ennemi marqué
@@ -188,6 +237,23 @@ func tick(delta: float) -> void:
 		mult = 0.0
 	hop_h = 0.0
 
+	# Chef-d'œuvre : boss en fureur = attaques plus rapprochées
+	var bd := delta
+	if _frenzy():
+		bd = delta * 1.35
+		if not frenzy_on:
+			frenzy_on = true
+			arena.float_text(position + Vector2(0, -44), "FUREUR !", Pal.BAD)
+			arena.shake(8.0)
+			Sfx.play("boss")
+		flash = maxf(flash, 0.25 if int(t * 10.0) % 2 == 0 else 0.0)
+	# Élite invocatrice : appelle des petits
+	if power == "summoner":
+		summon_cd -= delta
+		if summon_cd <= 0.0:
+			summon_cd = 5.0
+			for k in 2:
+				arena.spawn_enemy_now(id, position + Vector2.from_angle(randf() * TAU) * (radius + 12.0), true)
 	match def.beh:
 		"hop":
 			v = _hop(delta * mult, dirp)
@@ -208,13 +274,13 @@ func tick(delta: float) -> void:
 			if dead:
 				return
 		"b_rature":
-			v = _boss_rature(delta, dirp, dist)
+			v = _boss_rature(bd, dirp, dist)
 		"b_critique":
-			v = _boss_critique(delta, dirp)
+			v = _boss_critique(bd, dirp)
 		"b_muse":
-			v = _boss_muse(delta, dirp, dist)
+			v = _boss_muse(bd, dirp, dist)
 		"b_toile":
-			v = _boss_toile(delta, dirp, dist)
+			v = _boss_toile(bd, dirp, dist)
 		"pin":
 			v = _pin(delta * mult, dirp, dist)
 		"chalk":
@@ -230,11 +296,11 @@ func tick(delta: float) -> void:
 		"equation":
 			v = _equation(delta * mult, dirp)
 		"b_prof":
-			v = _boss_prof(delta, dirp, dist)
+			v = _boss_prof(bd, dirp, dist)
 		"b_copy":
-			v = _boss_copy(delta, dirp, dist)
+			v = _boss_copy(bd, dirp, dist)
 		"b_ink":
-			v = _boss_ink(delta, dirp, dist)
+			v = _boss_ink(bd, dirp, dist)
 
 	# Séparation entre ennemis
 	if not is_boss and def.beh != "dvd":
@@ -347,6 +413,12 @@ func _update_tint() -> void:
 func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if dead:
 		return
+	if shield_up:
+		shield_up = false   # élite « bouclier » : le premier coup est bloqué
+		flash = 1.0
+		arena.float_text(position + Vector2(0, -16), "BLOQUÉ", Color("5aa8ff"))
+		queue_redraw()
+		return
 	if mark_t > 0.0:
 		amount *= (1.5 if arena.syn.has(Pal.ARCANE) else 1.25) + 0.15 * Run.amulet_count("grimoire")
 	if state == "jam":
@@ -447,7 +519,7 @@ func _mortar(delta: float, dist: float) -> Vector2:
 	cd -= delta
 	if cd <= 0.0 and dist < 320.0:
 		cd = 2.6
-		arena.lob(self, arena.player.position, 1.1)
+		arena.lob(self, _lead(1.1), 1.1)
 	cd2 -= delta
 	if cd2 <= 0.0:
 		cd2 = randf_range(6.0, 8.0)
@@ -510,7 +582,7 @@ func _mirror(delta: float, p: Player, dirp: Vector2) -> Vector2:
 	cd -= delta
 	if cd <= 0.0:
 		cd = randf_range(2.5, 3.5)
-		_shoot(dirp, 0.8)
+		_shoot(_lead_dir(140.0 * 0.8), 0.8)
 		Sfx.play("enemy_shot")
 	var to := target - position
 	if to.length() < 4.0:
@@ -533,8 +605,9 @@ func _compass(delta: float, p: Player, dirp: Vector2) -> Vector2:
 	cd -= delta
 	if cd <= 0.0:
 		cd = 2.5
+		var aim := _lead_dir(140.0)
 		for k in [-1, 0, 1]:
-			_shoot(dirp.rotated(k * 0.3), 1.0)
+			_shoot(aim.rotated(k * 0.3), 1.0)
 		Sfx.play("enemy_shot")
 	return ((target - position) * 4.0).limit_length(speed * 1.6)
 
@@ -886,6 +959,8 @@ func _shoot(dir: Vector2, speed_mult: float) -> void:
 
 
 func _ring(n: int, offset := 0.0, speed_mult := 1.0) -> void:
+	if _frenzy():
+		n += ceili(n / 3.0)   # fureur : un tiers de projectiles en plus
 	for i in n:
 		_shoot(Vector2.from_angle(offset + TAU * i / n), speed_mult)
 	Sfx.play("enemy_shot")

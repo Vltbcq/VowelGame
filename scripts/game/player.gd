@@ -132,7 +132,11 @@ func tick(delta: float) -> void:
 
 	for e in arena.near(position, radius + 1.0):
 		if e.contact:
+			var before := hp
 			take_hit(e.dmg, e.element, e)
+			if e.power == "vampire" and hp < before:
+				e.hp = minf(e.max_hp, e.hp + (before - hp) * 4.0)   # élite vampire
+				arena.float_text(e.position + Vector2(0, -16), "+%d" % roundi((before - hp) * 4.0), Color("e03a3a"))
 			break
 	for w in weapons:
 		w.tick(delta)

@@ -52,7 +52,11 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 
 ## Déroulé d'une partie
 
-1. Choix de la difficulté : Esquisse → Croquis → Aquarelle → Huile → Chef-d'œuvre (chacune se débloque en gagnant la précédente).
+1. Choix de la difficulté : Esquisse → Croquis → Aquarelle → Huile → Chef-d'œuvre (chacune se débloque en gagnant la précédente). En plus des PV / dégâts / nombre d'ennemis :
+   - **Croquis** : les élites arrivent.
+   - **Aquarelle** : ennemis 10 % plus rapides ; les tireurs (Crachoir, Scinde, Éclaboussure, Craie) **visent là où tu vas**.
+   - **Huile** : chaque élite a un **pouvoir** (aura colorée + nom à l'apparition) : Bouclier (ignore le 1er coup), Rapide (+30 %), Vampire (se soigne ×4 en te touchant), Explosive (explose peu après sa mort), Invocatrice (appelle 2 petits toutes les 5 s). Les ennemis tués laissent une **petite flaque qui ralentit** 3 s.
+   - **Chef-d'œuvre** : sous 25 % de PV, les boss entrent en **FUREUR** (attaques 35 % plus rapprochées, +1/3 de projectiles dans leurs salves en cercle).
 2. **Dessin du perso**, avec une encre limitée.
 3. Choix de la première arme parmi 10 types (5 mêlée, 5 distance), puis dessin de l'arme (et de ses balles si c'est une arme à distance). Tu la **poses où tu veux** sur ton perso.
    - Chaque type d'arme et chaque amulette ne se dessine **qu'une fois par partie** : les exemplaires suivants réutilisent ce dessin.
