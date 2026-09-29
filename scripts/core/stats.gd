@@ -220,6 +220,8 @@ static func amulet_live(id: String) -> String:
 	var s: Dictionary = Run.stats
 	var a: Dictionary = Run.char_a
 	match id:
+		"capital":
+			return "prix moyen de la vague : ● %d" % Run.avg_item_price()
 		"palette":
 			return "%d couleur(s) = +%d%% dégâts" % [int(a.get("elements", 0)), 8 * int(a.get("elements", 0))]
 		"esquisse":

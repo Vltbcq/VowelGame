@@ -381,6 +381,7 @@ func _buy(i: int) -> void:
 		Run.gold += o.price
 		return
 	o.sold = true
+	Run.apply_capital()   # Le Capital vient d'être acheté : toute la boutique passe au prix moyen
 	if o.has("replace"):
 		# Restaurateur : l'amulette donnée disparaît
 		for k in Run.amulets.size():

@@ -633,6 +633,29 @@ func rarity_odds() -> Array:
 	return [rar, epi, leg]
 
 
+## Prix moyen d'un objet (arme ou amulette) dans la boutique de cette vague : raretés selon les
+## chances actuelles, 40 % d'armes / 60 % d'amulettes, × le multiplicateur de prix. (Le Capital)
+func avg_item_price() -> int:
+	var o := rarity_odds()
+	var p := [maxf(0.0, 100.0 - o[0] - o[1] - o[2]), o[0], o[1], o[2]]
+	var base := 0.0
+	for r in 4:
+		base += p[r] / 100.0 * (0.4 * WeaponDB.PRICE[r] + 0.6 * AmuletDB.PRICE[r])
+	return maxi(1, roundi(base * price_mult()))
+
+
+## Le Capital : les armes et amulettes à vendre coûtent toutes le prix moyen de la vague
+## (et le Capital lui-même coûte toujours ce prix-là).
+func apply_capital() -> void:
+	var avg := avg_item_price()
+	var owned := amulet_count("capital") > 0
+	for o in shop_offers:
+		if o.sold or o.get("gift", false) or not o.type in ["weapon", "amulet"]:
+			continue
+		if owned or (o.type == "amulet" and o.id == "capital"):
+			o.price = avg
+
+
 func roll_rarity() -> int:
 	var o := rarity_odds()
 	var r := randf() * 100.0
@@ -689,6 +712,7 @@ func roll_shop() -> void:
 		fresh.append(key)
 	for key in fresh:
 		Meta.mark_seen(key)
+	apply_capital()
 	# Case « potion » : une fois sur deux
 	if randf() < POTION_CHANCE:
 		var roll := randf()

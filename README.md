@@ -107,7 +107,7 @@ Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et
 
 ## Objets à débloquer (succès du Bestiaire)
 
-La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 9 armes classiques restent libres) et **62 amulettes sur 124**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
+La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 9 armes classiques restent libres) et **62 amulettes sur 125**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
 
 ## Cartes
 
@@ -173,9 +173,9 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
-## Amulettes (124)
+## Amulettes (125)
 
-- 29 communes, 27 rares, 25 épiques, 19 légendaires (uniques). Toutes ont un défaut. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
+- 29 communes, 27 rares, 26 épiques, 19 légendaires (uniques). Presque toutes ont un défaut. **Le Capital** (épique, achat unique) : toutes les armes et amulettes de la boutique coûtent le prix moyen de la vague (≈ 13 or en vague 1, 48 en vague 8, 150 en vague 15), et il coûte lui-même ce prix. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
 - Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
 - Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
 - Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).

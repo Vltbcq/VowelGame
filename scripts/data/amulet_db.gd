@@ -38,6 +38,7 @@ const LIST := [
 	{"id": "porte_mine", "ink": 18, "name": "Porte-mine", "rar": 0, "stat": "crit", "v": 5.0, "desc": "+{v}% critique · {m} régénération", "malus": ["regen", -1.0]},
 	{"id": "encre_rouge", "ink": 18, "name": "Encre rouge", "rar": 0, "stat": "lifesteal", "v": 2.0, "desc": "+{v}% vol de vie · {m} armure", "malus": ["armor", -1.0]},
 	{"id": "petard", "ink": 20, "name": "Pétard", "rar": 0, "flag": true, "desc": "+25% dégâts des explosions (Marteau, Mortier, éclats de Lumière, Rature...) · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
+	{"id": "capital", "ink": 36, "name": "Le Capital", "rar": 2, "flag": true, "limit": 1, "desc": "Toutes les armes et amulettes de la boutique coûtent le PRIX MOYEN de la vague (il coûte lui-même ce prix) · achat unique"},
 	{"id": "fusain", "ink": 22, "name": "Fusain", "rar": 0, "stat": "atk_speed", "v": 12.0, "desc": "+{v}% vit. d'attaque · {m} PV max", "malus": ["max_hp", -3.0]},
 	# Rares
 	{"id": "sangsue", "ink": 30, "name": "Sangsue", "rar": 1, "stat": "lifesteal", "v": 4.0, "desc": "+{v}% vol de vie · {m} régénération", "malus": ["regen", -1.0]},

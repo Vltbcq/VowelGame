@@ -71,6 +71,33 @@ func _ready() -> void:
 		Run.new_shop()
 		back += Run.shop_offers.filter(func(o): return o.type in Run.EVENTS).size()
 	_check(back > 30, "boutique suivante : les événements reviennent")
+	# Le Capital : prix moyen de la vague
+	for w in [1, 8, 15]:
+		Run.wave = w
+		var s := 0.0
+		var m := 0
+		for k in 1500:
+			Run.roll_shop()
+			for o in Run.shop_offers:
+				if o.type in ["weapon", "amulet"] and not (o.type == "amulet" and o.id == "capital"):
+					s += o.price
+					m += 1
+		var avg := Run.avg_item_price()
+		print("     Capital vague %d : prix moyen calculé %d, mesuré %.1f" % [w, avg, s / m])
+		_check(absf(avg - s / m) <= maxf(3.0, s / m * 0.12), "Capital : prix moyen juste en vague %d" % w)
+	Run.wave = 8
+	Run.roll_shop()
+	Run.shop_offers.append({"type": "amulet", "id": "capital", "rar": 2, "price": 999, "sold": false})
+	Run.apply_capital()
+	_check(int(Run.shop_offers[-1].price) == Run.avg_item_price(), "Capital : il coûte le prix moyen")
+	Run.set_amulet_art("capital", _blob(16, 20), "")
+	Run.add_amulet("capital", Run.amulet_art["capital"].image, Vector2i(22, 22))
+	Run.roll_shop()
+	var same := Run.shop_offers.filter(func(o): return o.type in ["weapon", "amulet"]).all(func(o): return int(o.price) == Run.avg_item_price())
+	var capital_again := Run.shop_offers.any(func(o): return o.type == "amulet" and o.id == "capital")
+	_check(same and not capital_again, "Capital possédé : tout au prix moyen (● %d), plus jamais reproposé" % Run.avg_item_price())
+	Run.amulets = []
+	Run.recompute()
 	# Enchères : toujours épique ou légendaire
 	var low := 0
 	for k in 300:
