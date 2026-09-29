@@ -98,6 +98,45 @@ func _ready() -> void:
 	_check(same and not capital_again, "Capital possédé : tout au prix moyen (● %d), plus jamais reproposé" % Run.avg_item_price())
 	Run.amulets = []
 	Run.recompute()
+	# Case opening : que des caisses, moins chères que leur contenu, et on peut laisser l'objet
+	Run.set_amulet_art("case_opening", _blob(16, 20), "")
+	Run.add_amulet("case_opening", Run.amulet_art["case_opening"].image, Vector2i(24, 24))
+	Run.wave = 8
+	Run.roll_shop()
+	var only_cases := Run.shop_offers.filter(func(o): return o.type in ["weapon", "amulet"]).is_empty() 		and Run.shop_offers.any(func(o): return o.type == "case")
+	_check(only_cases, "Case opening : la boutique ne vend que des caisses")
+	for tier in 3:
+		for kind in ["weapon", "amulet"]:
+			var c := Run.make_case(tier, kind)
+			var val := 0.0
+			var rars := [0, 0, 0, 0]
+			for k in 2000:
+				var it := Run.roll_case_item(tier, kind)
+				rars[int(it.rar)] += 1
+				val += (WeaponDB.PRICE if kind == "weapon" else AmuletDB.PRICE)[int(it.rar)] * Run.price_mult()
+			val /= 2000.0
+			print("     %s %s : prix ● %d, valeur moyenne du contenu %.0f, raretés %s" % [Run.CASE_NAMES[tier], kind, c.price, val, rars])
+			_check(c.price < val * 0.9, "Case opening : %s (%s) moins chère que son contenu" % [Run.CASE_NAMES[tier], kind])
+	Run.gold = 500
+	var cshop := _shop([Run.make_case(0, "weapon"), Run.make_case(1, "amulet"), Run.make_case(2, "weapon"), Run.make_case(2, "amulet"), Run.make_event("scratch")])
+	await get_tree().process_frame
+	await _shot("boutique_caisses")
+	cshop.queue_free()
+	var shop := _shop([Run.make_case(2, "amulet")])
+	shop._open_case(0)
+	await get_tree().create_timer(2.0).timeout
+	await _shot("caisse_ouverture")
+	await get_tree().create_timer(3.0).timeout
+	await _shot("caisse_ouverte")
+	var leave: Array = shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.text == "Laisser")
+	_check(leave.size() == 1 and not leave[0].disabled and Run.gold == 500 - int(Run.shop_offers[0].price), "Case opening : caisse payée, on peut laisser l'objet")
+	if leave.size() == 1:
+		leave[0].pressed.emit()
+	await get_tree().process_frame
+	_check(Run.shop_offers.size() == 1 and Run.shop_offers[0].sold, "Case opening : objet laissé, rien d'ajouté")
+	shop.queue_free()
+	Run.amulets = []
+	Run.recompute()
 	# Enchères : toujours épique ou légendaire
 	var low := 0
 	for k in 300:
@@ -107,7 +146,7 @@ func _ready() -> void:
 	_check(low == 0, "enchère : épique+, départ 60 %, plafond 70-140 %")
 
 	# --- Grattage : ~1 chance sur 3
-	var shop := _shop([Run.make_event("scratch")])
+	shop = _shop([Run.make_event("scratch")])
 	var wins := 0
 	var tries := 60
 	for k in tries:

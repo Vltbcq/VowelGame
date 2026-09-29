@@ -24,6 +24,7 @@ const FRAME := [[Color("8a5a2b"), Color("5a3818")], [Color("2f6fe0"), Color("173
 const FRAME_HEAL := [Color("5d9a6a"), Color("2e5a38")]
 const FRAME_ROULETTE := [Color("b8322a"), Color("1d1a1a")]
 const FRAME_EVENT := [Color("2a8a8a"), Color("134444")]
+const CASE_FRAME := [[Color("8a5a2b"), Color("4a2e14")], [Color("b8c0c8"), Color("5a6068")], [Color("e0a830"), Color("8c6414")]]
 const EVENT_TYPES := ["roulette", "scratch", "auction", "restorer", "patron"]
 const WHEEL_RED := Color("c8322a")
 const WHEEL_BLACK := Color("221e1e")
@@ -223,6 +224,20 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×36."
 			frame_cols = FRAME_ROULETTE
 			icon = _wheel_icon()
+		"case":
+			var kname := "Armes" if o.kind == "weapon" else "Amulettes"
+			oname = "%s" % Run.CASE_NAMES[o.tier]
+			kind = "Caisse · %s" % kname
+			var od: Array = Run.CASE_ODDS[o.tier]
+			var parts := []
+			for r in 4:
+				if od[r] > 0.0:
+					parts.append("%s %d%%" % [["Com.", "Rare", "Épi.", "Lég."][r], roundi(od[r])])
+			desc = " · ".join(parts)
+			frame_cols = CASE_FRAME[o.tier]
+			icon = _case_icon(o.tier, o.kind)
+			if o.kind == "weapon" and Run.weapons.size() >= Run.max_weapons():
+				full = true
 		"scratch":
 			oname = "Ticket à gratter"
 			kind = "Jeu de hasard"
@@ -255,7 +270,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	spots.append(Rect2(pos, Vector2(fw, 64)))
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
-	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type == "heal" else Pal.RARITY_NAMES_F[o.rar]
+	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type in ["heal", "case"] else Pal.RARITY_NAMES_F[o.rar]
 	if o.get("new", false) and not o.sold:
 		var ukey := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
 		if ItemUnlockDB.CONDS.has(ukey):
@@ -290,7 +305,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
 		UI.put(ct, dot, Vector2(fw - 14, 77), Vector2(14, 14))
-		var sold_txt: String = {"roulette": "JOUÉ", "scratch": "JOUÉ", "auction": "ADJUGÉ", "restorer": "PARTI", "patron": "PARTI"}.get(o.type, "VENDU")
+		var sold_txt: String = {"case": "OUVERTE", "roulette": "JOUÉ", "scratch": "JOUÉ", "auction": "ADJUGÉ", "restorer": "PARTI", "patron": "PARTI"}.get(o.type, "VENDU")
 		UI.put(ct, UI.label(sold_txt, 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
 		frame.modulate = Color(1, 1, 1, 0.55)
 		return
@@ -304,7 +319,9 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		b.disabled = Run.gold <= int(o.bid)
 	elif o.type == "restorer":
 		b.disabled = Run.restorable().is_empty()
-	if full and o.get("id", "") == "seve":
+	if full and o.type == "case":
+		b.tooltip_text = "Plus de place pour une arme : revends-en une d'abord."
+	elif full and o.get("id", "") == "seve":
 		b.tooltip_text = "Tu as déjà un Élixir de sève pour la vague suivante."
 	elif full and o.type == "weapon":
 		b.tooltip_text = "Tu as déjà %d armes : revends-en une." % Run.max_weapons()
@@ -457,6 +474,9 @@ func _buy(i: int) -> void:
 		_open_roulette(i)
 		return
 	match o.type:
+		"case":
+			_open_case(i)
+			return
 		"scratch":
 			_open_scratch(i)
 			return
@@ -1121,3 +1141,144 @@ func _open_patron(i: int) -> void:
 	UI.hotkey(_ev_button(inner, "Refuser", Vector2(144, 196), Vector2(100, 18), func():
 		o.sold = true
 		_ev_close()), [KEY_ESCAPE])
+
+
+# ------------------------------------------------------------------ Case opening (caisses façon CS:GO)
+
+func _case_icon(tier: int, kind: String) -> Image:
+	var n := 32
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	var body: Color = [Color("a0692f"), Color("c9d0d8"), Color("e8b53a")][tier]
+	var dark: Color = [Color("5a3818"), Color("6a7078"), Color("8c6414")][tier]
+	img.fill_rect(Rect2i(3, 9, 26, 19), dark)
+	img.fill_rect(Rect2i(4, 10, 24, 17), body)
+	img.fill_rect(Rect2i(3, 9, 26, 5), dark)       # couvercle
+	img.fill_rect(Rect2i(4, 10, 24, 3), body.lightened(0.15))
+	img.fill_rect(Rect2i(14, 12, 4, 5), Pal.INK)    # serrure
+	img.fill_rect(Rect2i(15, 13, 2, 2), GOLD)
+	# emblème : épée (armes) ou pendentif (amulettes)
+	if kind == "weapon":
+		for k in 8:
+			img.set_pixel(12 + k, 25 - k, Pal.INK)
+		img.fill_rect(Rect2i(11, 22, 4, 1), Pal.INK)
+	else:
+		for y in range(19, 26):
+			for x in range(12, 21):
+				if Vector2(x - 16, y - 22.5).length() < 3.3:
+					img.set_pixel(x, y, Pal.INK)
+		img.fill_rect(Rect2i(15, 18, 2, 2), Pal.INK)
+	return img
+
+
+func _open_case(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if ev_layer or Run.gold < o.price:
+		return
+	var won := Run.roll_case_item(int(o.tier), String(o.kind))
+	if won.is_empty():
+		return
+	Run.gold -= o.price
+	o.sold = true
+	var inner := _ev_window("%s · %s" % [Run.CASE_NAMES[o.tier].to_upper(), "ARMES" if o.kind == "weapon" else "AMULETTES"], CASE_FRAME[o.tier], 220.0)
+	# La bande : objets au hasard de la caisse, le gagnant à la case WIN
+	var items := []
+	for k in 44:
+		items.append(Run.roll_case_item(int(o.tier), String(o.kind)))
+	var WIN := 36
+	items[WIN] = won
+	var strip := _CaseStrip.new()
+	strip.shop = self
+	strip.items = items
+	strip.clip_contents = true
+	UI.put(inner, strip, Vector2(14, 44), Vector2(360, 76))
+	var res := UI.label("", 20, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, res, Vector2(0, 130), Vector2(388, 24))
+	var sub := UI.label("", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(inner, sub, Vector2(0, 156), Vector2(388, 12))
+	var take := _ev_button(inner, "Prendre", Vector2(84, 186), Vector2(100, 20), func(): _grant(won, 0))
+	take.disabled = true
+	var leave := _ev_button(inner, "Laisser", Vector2(204, 186), Vector2(100, 20), func(): _ev_close())
+	leave.tooltip_text = "Ne pas prendre cet objet (la caisse est quand même payée)"
+	leave.disabled = true
+	await strip.spin_to(WIN)
+	if not is_instance_valid(res):
+		return
+	res.text = _item_name(won).to_upper()
+	res.add_theme_color_override("font_color", Pal.RARITY[int(won.rar)])
+	sub.text = "%s · %s" % ["Arme" if won.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[int(won.rar)].to_lower()]
+	Sfx.play("level" if int(won.rar) >= 2 else "buy")
+	if int(won.rar) >= 2:
+		shake_flash(inner, Pal.RARITY[int(won.rar)])
+	take.disabled = false
+	leave.disabled = false
+	if won.type == "weapon" and Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(won.wtype, int(won.rar)) < 0:
+		take.disabled = true
+		sub.text += " · plus de place pour une arme"
+
+
+## Petit éclat de couleur sur la fenêtre (épique / légendaire sorti).
+func shake_flash(node: Control, col: Color) -> void:
+	var fl := ColorRect.new()
+	fl.color = Color(col, 0.55)
+	fl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.put(node, fl, Vector2.ZERO, node.size)
+	var tw := fl.create_tween()
+	tw.tween_property(fl, "color:a", 0.0, 0.6)
+	tw.tween_callback(fl.queue_free)
+
+
+class _CaseStrip extends Control:
+	var shop: ShopScreen
+	var items: Array = []
+	var offset := 0.0          # défilement (px)
+	var last_cell := -1
+	var icons := {}
+	const CELL := 64.0
+
+	func _icon(it: Dictionary) -> Texture2D:
+		var key := "%s_%s_%d" % [it.type, it.get("wtype", it.get("id", "")), it.rar]
+		if not icons.has(key):
+			icons[key] = ImageTexture.create_from_image(shop._item_icon(it))
+		return icons[key]
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Color("1d1510"))
+		var mid := size.x / 2.0
+		for k in items.size():
+			var x := k * CELL - offset + mid - CELL / 2.0
+			if x < -CELL or x > size.x:
+				continue
+			var it: Dictionary = items[k]
+			var col: Color = Pal.RARITY[int(it.rar)]
+			var r := Rect2(Vector2(x + 2, 4), Vector2(CELL - 4, size.y - 8))
+			draw_rect(r, Color("efe6cf"))
+			draw_rect(Rect2(r.position + Vector2(0, r.size.y - 6), Vector2(r.size.x, 6)), col)
+			var tex := _icon(it)
+			var ts := Vector2(tex.get_size())
+			var sc := minf(36.0 / ts.x, 36.0 / ts.y)
+			draw_texture_rect(tex, Rect2(r.get_center() - ts * sc / 2.0 - Vector2(0, 9), ts * sc), false)
+			# nom de l'objet (utile quand il n'est pas encore dessiné)
+			var font := get_theme_default_font()
+			draw_string(font, Vector2(r.position.x + 2, r.end.y - 9), shop._item_name(it), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 4, 10, Pal.INK)
+		# curseur central
+		draw_rect(Rect2(Vector2(mid - 1, 0), Vector2(2, size.y)), ShopScreen.GOLD)
+		draw_colored_polygon(PackedVector2Array([Vector2(mid - 6, 0), Vector2(mid + 6, 0), Vector2(mid, 8)]), ShopScreen.GOLD)
+		draw_colored_polygon(PackedVector2Array([Vector2(mid - 6, size.y), Vector2(mid + 6, size.y), Vector2(mid, size.y - 8)]), ShopScreen.GOLD)
+
+	func spin_to(k: int) -> void:
+		var target := k * CELL + randf_range(-CELL * 0.35, CELL * 0.35)
+		var tw := create_tween()
+		tw.tween_method(func(v: float):
+			offset = v
+			var c := int(roundf(v / CELL))
+			if c != last_cell:
+				last_cell = c
+				Sfx.play("click")
+			queue_redraw(), 0.0, target, 4.2).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+		await tw.finished
+		# se recale au centre de la case gagnante
+		var tw2 := create_tween()
+		tw2.tween_method(func(v: float):
+			offset = v
+			queue_redraw(), offset, k * CELL, 0.25)
+		await tw2.finished

@@ -38,6 +38,11 @@ const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 
 ## Boutique : une case « potion » (1 fois sur 2) et, à part, une case « événement »
 ## (35 % des boutiques, un des événements au hasard : ~7 % chacun).
 const POTION_CHANCE := 0.5
+## Case opening : la boutique ne vend plus que des caisses (Bois / Argent / Or, Armes ou Amulettes).
+## CASE_ODDS[caisse] = % de [commune, rare, épique, légendaire] ; prix = valeur moyenne du contenu −20 %.
+const CASE_NAMES := ["Caisse en bois", "Caisse d'argent", "Caisse dorée"]
+const CASE_ODDS := [[75.0, 22.0, 3.0, 0.0], [10.0, 65.0, 22.0, 3.0], [0.0, 20.0, 65.0, 15.0]]
+const CASE_DISCOUNT := 0.8
 const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
 const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
@@ -647,6 +652,8 @@ func avg_item_price() -> int:
 ## Le Capital : les armes et amulettes à vendre coûtent toutes le prix moyen de la vague
 ## (et le Capital lui-même coûte toujours ce prix-là).
 func apply_capital() -> void:
+	if amulet_count("case_opening") > 0:
+		return   # Case opening : les caisses ont leur propre prix (le Capital n'a plus d'effet)
 	var avg := avg_item_price()
 	var owned := amulet_count("capital") > 0
 	for o in shop_offers:
@@ -654,6 +661,42 @@ func apply_capital() -> void:
 			continue
 		if owned or (o.type == "amulet" and o.id == "capital"):
 			o.price = avg
+
+
+func make_case(tier: int, kind: String) -> Dictionary:
+	var base := 0.0
+	for r in 4:
+		base += CASE_ODDS[tier][r] / 100.0 * (WeaponDB.PRICE[r] if kind == "weapon" else AmuletDB.PRICE[r])
+	return {"type": "case", "id": "case", "tier": tier, "kind": kind, "rar": tier,
+		"price": maxi(1, roundi(base * price_mult() * CASE_DISCOUNT)), "sold": false}
+
+
+## Objets possibles d'une rareté pour une caisse (débloqués, limites, légendaires uniques).
+func case_pool(kind: String, rar: int) -> Array:
+	if kind == "weapon":
+		return WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t))).map(
+			func(t): return {"type": "weapon", "wtype": t, "rar": rar})
+	return amulet_candidates(rar).filter(func(d): return d.id != "case_opening").map(
+		func(d): return {"type": "amulet", "id": d.id, "rar": rar})
+
+
+## Tire un objet d'une caisse (si une rareté est vide, on descend d'un cran).
+func roll_case_item(tier: int, kind: String) -> Dictionary:
+	var odds: Array = CASE_ODDS[tier]
+	var r := randf() * 100.0
+	var rar := 0
+	var acc := 0.0
+	for k in 4:
+		acc += odds[k]
+		if r < acc:
+			rar = k
+			break
+	while rar >= 0:
+		var pool := case_pool(kind, rar)
+		if not pool.is_empty():
+			return pool.pick_random()
+		rar -= 1
+	return {}
 
 
 func roll_rarity() -> int:
@@ -684,6 +727,10 @@ func roll_shop() -> void:
 	var offered := {}
 	for i in n:
 		var rar := roll_rarity()
+		if amulet_count("case_opening") > 0:
+			# Case opening : une caisse à la place (la rareté tirée donne la caisse)
+			shop_offers.append(make_case(mini(rar, 2), "weapon" if randf() < 0.4 else "amulet"))
+			continue
 		if randf() < 0.4:
 			# Les armes spéciales n'apparaissent qu'à partir de leur rareté minimum.
 			var type: String = WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t))).pick_random()
