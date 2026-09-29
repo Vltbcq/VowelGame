@@ -342,7 +342,6 @@ func _stats_text(id: String) -> String:
 			var def := AmuletDB.get_def(id)
 			L.append("%s — encre %d" % [Pal.RARITY_NAMES_F[def.rar], AmuletDB.ink(def)])
 			L.append(AmuletDB.describe(def))
-			L.append("La taille du dessin ne change pas l'effet ; ses couleurs donnent un peu de résistance élémentaire.")
 		"ennemis":
 			var def := EnemyDB.get_def(id)
 			var kind := "Boss" if def.get("boss", 0) == 2 else ("Mini-boss" if def.has("boss") else "Ennemi")

@@ -129,6 +129,8 @@ func _ready() -> void:
 	player.position = Vector2(W / 2.0, H / 2.0)
 	world.add_child(player)
 	player.setup(self)
+	if Run.regen_boost > 0.0 and Run.amulet_count("pacte_sang") > 0:
+		Run.regen_boost = 0.0   # Pacte de sang : l'Élixir de sève ne marche plus
 	if Run.regen_boost > 0.0:
 		player.sap_t = Run.regen_boost   # Élixir de sève (acheté à la boutique précédente)
 		Run.regen_boost = 0.0
@@ -640,13 +642,12 @@ func _apply_el(e: Enemy, el: int, dmg: float, spread := true) -> void:
 				var lr := boom(34.0 * (1.0 + 0.5 * Run.amulet_count("vitrail")))   # Vitrail : +50 % de rayon
 				var au := Run.amulet_count("aureole")
 				explosion(e.position, lr, Color(1, 1, 0.9, 0.9))
-				if au > 0:
-					player.heal(1.0 * au)   # Auréole
 				for o in near(e.position, lr):
 					if au > 0:
-						o.blind_t = maxf(o.blind_t, 1.0)
+						o.blind_t = maxf(o.blind_t, 1.0)   # Auréole : aveugle 1 s
 					if o != e:
-						o.hurt(boom_dmg(dmg * 0.4), false, (o.position - e.position).normalized() * 60.0, Pal.LUMIERE)
+						# Auréole : +10 % de dégâts par exemplaire
+						o.hurt(boom_dmg(dmg * 0.4 * (1.0 + 0.1 * au)), false, (o.position - e.position).normalized() * 60.0, Pal.LUMIERE)
 
 
 func _chain(from: Enemy, dmg: float) -> void:

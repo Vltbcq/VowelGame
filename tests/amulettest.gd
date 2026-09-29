@@ -272,7 +272,14 @@ func _batch2() -> void:
 	arena._rebuild_grid()
 	arena.player.hp = 5.0
 	arena._apply_el(l1, Pal.LUMIERE, 20.0)
-	_ok("Vitrail : éclat à 45 px touche (%.0f PV) ; Auréole : +1 PV, aveuglé" % l2.hp, l2.hp < 100.0 and l2.blind_t > 0.0 and arena.player.hp >= 6.0)
+	_ok("Vitrail : éclat à 45 px touche (%.1f PV) ; Auréole : +10 %% dégâts (8,8), aveuglé, plus de soin" % l2.hp, absf((100.0 - l2.hp) - 8.8) < 0.05 and l2.blind_t > 0.0 and arena.player.hp == 5.0)
+	# Pacte de sang : plus de potions en boutique, l'Élixir de sève ne marche plus
+	await _setup({"pacte_sang": 1})
+	var pots := 0
+	for k in 300:
+		Run.roll_shop()
+		pots += Run.shop_offers.filter(func(o): return o.type == "heal").size()
+	_ok("Pacte de sang : aucune potion en boutique (%d)" % pots, pots == 0)
 	# Cercle chromatique
 	await _setup({"cercle_chromatique": 1})
 	var c1 := _enemy(Vector2(200, 200))

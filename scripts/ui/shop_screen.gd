@@ -216,6 +216,8 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			full = Run.hp >= Run.stats.max_hp and h.heal > 0.0
 			if o.id == "seve":
 				full = Run.regen_boost > 0.0
+			if Run.amulet_count("pacte_sang") > 0:
+				full = true   # Pacte de sang : les potions ne marchent plus
 			var liquid: Color = {"grande_potion": Pal.SHADES[1][1], "seve": Pal.main_color(Pal.POISON)}.get(o.id, Pal.SHADES[4][1])
 			icon = Gfx.icon(Gfx.ICON_POTION, liquid)
 		"roulette":
@@ -319,7 +321,9 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		b.disabled = Run.gold <= int(o.bid)
 	elif o.type == "restorer":
 		b.disabled = Run.restorable().is_empty()
-	if full and o.type == "case":
+	if full and o.type == "heal" and Run.amulet_count("pacte_sang") > 0:
+		b.tooltip_text = "Pacte de sang : les potions ne marchent plus."
+	elif full and o.type == "case":
 		b.tooltip_text = "Plus de place pour une arme : revends-en une d'abord."
 	elif full and o.get("id", "") == "seve":
 		b.tooltip_text = "Tu as déjà un Élixir de sève pour la vague suivante."

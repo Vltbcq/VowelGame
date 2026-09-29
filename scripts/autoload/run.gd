@@ -761,7 +761,7 @@ func roll_shop() -> void:
 		Meta.mark_seen(key)
 	apply_capital()
 	# Case « potion » : une fois sur deux
-	if randf() < POTION_CHANCE:
+	if randf() < POTION_CHANCE and amulet_count("pacte_sang") == 0:   # Pacte de sang : pas de potions
 		var roll := randf()
 		var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
 		shop_offers.append({"type": "heal", "id": hid, "rar": 0,

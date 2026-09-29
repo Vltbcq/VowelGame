@@ -112,7 +112,7 @@ const LIST := [
 	{"id": "dynamo", "ink": 42, "name": "Dynamo", "rar": 2, "flag": true, "desc": "FOUDRE : +2% vit. d'attaque par chaîne d'éclairs ces 5 dernières secondes (max +40%) · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "champignon", "ink": 48, "name": "Champignon", "rar": 2, "flag": true, "desc": "POISON : un ennemi à 6 cumuls éclate en nuage toxique qui contamine ses voisins · {m} PV max", "malus": ["max_hp", -4.0]},
 	{"id": "pentacle", "ink": 46, "name": "Pentacle", "rar": 2, "flag": true, "desc": "ARCANE : tuer un ennemi marqué te soigne 2 PV et transfère la marque à son voisin · {m} armure", "malus": ["armor", -1.0]},
-	{"id": "aureole", "ink": 44, "name": "Auréole", "rar": 2, "flag": true, "desc": "LUMIÈRE : chaque éclat te soigne 1 PV et aveugle 1 s les ennemis touchés · {m}% vit. d'attaque", "malus": ["atk_speed", -5.0]},
+	{"id": "aureole", "ink": 44, "name": "Auréole", "rar": 2, "flag": true, "desc": "LUMIÈRE : tes éclats font +10% de dégâts et aveuglent 1 s les ennemis touchés · {m}% vit. d'attaque", "malus": ["atk_speed", -5.0]},
 	{"id": "sceau", "ink": 58, "name": "Sceau d'encre", "rar": 2, "stat": "dmg", "v": 25.0, "desc": "+{v}% dégâts · {m} régénération", "malus": ["regen", -3.0]},
 	# Légendaires
 	{"id": "chef_oeuvre", "ink": 100, "name": "Chef-d'œuvre", "rar": 3, "flag": true, "desc": "Les stats du dessin de ton perso ×1.5 · {m}% vitesse", "malus": ["speed", -10.0]},
@@ -132,7 +132,7 @@ const LIST := [
 	{"id": "autographe", "ink": 66, "name": "Autographe", "rar": 3, "flag": true, "desc": "Tes critiques font ×2 sur les boss, mais -8% dégâts contre les autres"},
 	{"id": "nuit_etoilee", "ink": 84, "name": "Nuit étoilée", "rar": 3, "flag": true, "desc": "Un ennemi tué sur 10 fait tomber une étoile qui explose en zone · {m} PV max", "malus": ["max_hp", -5.0]},
 	{"id": "derniere_touche", "ink": 72, "name": "Dernière touche", "rar": 3, "flag": true, "desc": "Sous 25% de PV : tes armes font ×2 et tu vas 20% plus vite, mais -10% PV max"},
-	{"id": "pacte_sang", "ink": 70, "name": "Pacte de sang", "rar": 3, "flag": true, "desc": "Ton vol de vie est DOUBLÉ, mais ta régénération ne marche plus"},
+	{"id": "pacte_sang", "ink": 70, "name": "Pacte de sang", "rar": 3, "flag": true, "desc": "Ton vol de vie est DOUBLÉ, mais ta régénération et les potions ne marchent plus"},
 	{"id": "herisson", "ink": 74, "name": "Hérisson", "rar": 3, "flag": true, "desc": "Tes épines frappent EN CONTINU les ennemis collés à toi (toutes les 0,5 s) · {m}% dégâts", "malus": ["dmg", -6.0]},
 	{"id": "cercle_chromatique", "ink": 86, "name": "Cercle chromatique", "rar": 3, "flag": true, "desc": "Chaque élément DIFFÉRENT appliqué à un ennemi lui fait +15% de dégâts (jusqu'à +90%) · {m}% critique", "malus": ["crit", -6.0]},
 	{"id": "alchimie", "ink": 80, "name": "Alchimie", "rar": 3, "flag": true, "desc": "Tes effets élémentaires ont 50% de chances de se propager à l'ennemi le plus proche · {m} PV max", "malus": ["max_hp", -5.0]},
