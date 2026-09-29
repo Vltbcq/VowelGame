@@ -20,7 +20,7 @@ const LIST := [
 	{"id": "taille_crayon", "ink": 18, "name": "Taille-crayon", "rar": 0, "stat": "crit", "v": 7.0, "desc": "+{v}% critique · {m}% portée", "malus": ["range", -8.0]},
 	{"id": "gouache", "ink": 40, "name": "Gouache", "rar": 0, "stat": "max_hp", "v": 4.0, "plus": [["armor", 1.0]], "desc": "+{v} PV max, +1 armure · {m}% esquive", "malus": ["dodge", -4.0]},
 	{"id": "fixatif", "ink": 28, "name": "Fixatif", "rar": 0, "stat": "regen", "v": 2.0, "desc": "+{v} régénération · {m}% dégâts", "malus": ["dmg", -4.0]},
-	{"id": "chevalet", "ink": 44, "name": "Chevalet", "rar": 0, "stat": "dmg", "v": 6.0, "plus": [["range", 10.0]], "desc": "+{v}% dégâts, +10% portée · {m}% vitesse", "malus": ["speed", -7.0]},
+	{"id": "chevalet", "ink": 44, "name": "Chevalet", "rar": 0, "stat": "dmg", "v": 6.0, "plus": [["range", 5.0]], "desc": "+{v}% dégâts, +5% portée · {m}% vitesse", "malus": ["speed", -7.0]},
 	{"id": "pastel", "ink": 20, "name": "Pastel", "rar": 0, "stat": "dodge", "v": 6.0, "desc": "+{v}% esquive · {m} armure", "malus": ["armor", -1.0]},
 	{"id": "craie_grasse", "ink": 18, "name": "Craie grasse", "rar": 0, "stat": "regen", "v": 2.0, "desc": "+{v} régénération · {m} chance", "malus": ["luck", -4.0]},
 	{"id": "papier_kraft", "ink": 24, "name": "Papier kraft", "rar": 0, "stat": "armor", "v": 2.0, "desc": "+{v} armure · {m}% critique", "malus": ["crit", -4.0]},
