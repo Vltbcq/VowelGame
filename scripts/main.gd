@@ -251,7 +251,7 @@ func _pre_wave(w: int) -> void:
 		if def.get("shoots", false):
 			Run.auto_eproj(id)
 	# Difficultés hautes : une version élite par vague
-	if Run.difficulty >= 2 and w >= 4 and EnemyDB.boss_for(w) == "":
+	if Run.difficulty >= 1 and w >= 4 and EnemyDB.boss_for(w) == "":   # élites dès Croquis
 		for id in EnemyDB.pool(w):
 			if Run.enemy_art.has(id) and not Run.elite_art.has(id):
 				var art = await _obtain(id + "_elite", DrawCfg.elite(id), 3)

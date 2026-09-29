@@ -138,7 +138,7 @@ Plus tu mets d'encre dans un ennemi, plus il a de PV (×0,6 à ×1,4) et plus il
 
 Boss : le Raturé rature la page (zigzags, hachures à esquiver entre les lignes, croix sur ta position, gribouillage) ; le Critique lance des pâtés en cloche ; **la Toile Blanche gomme des morceaux de ton perso** (−12 % PV max par coup, jusqu'à la fin de la vague, puis tout revient).
 
-**Élites** (Aquarelle et au-delà) : à partir de la vague 4, une fois par vague, tu redessines un ennemi en version élite (ton dessin + des ajouts). Aura, PV ×3, butin ×3.
+**Élites** (Croquis et au-delà, 7 % puis +2 % par difficulté) : à partir de la vague 4, une fois par vague, tu redessines un ennemi en version élite (ton dessin + des ajouts). Aura, PV ×3, butin ×3.
 
 Des **flèches** au bord de l'écran montrent les ennemis hors champ (rouge = boss, jaune = élite, orange = tireur, gris = proches).
 

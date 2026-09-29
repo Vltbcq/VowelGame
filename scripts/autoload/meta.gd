@@ -10,7 +10,7 @@ const GALLERY_MAX_PER_KIND := 60
 
 const DIFFICULTIES := [
 	{"name": "Esquisse", "desc": "Déjà pas facile.", "hp": 1.0, "dmg": 1.0, "spawn": 1.0, "reward": 1.0},
-	{"name": "Croquis", "desc": "Ennemis plus coriaces.", "hp": 1.3, "dmg": 1.2, "spawn": 1.15, "reward": 1.3},
+	{"name": "Croquis", "desc": "Ennemis plus coriaces. Les élites arrivent.", "hp": 1.3, "dmg": 1.2, "spawn": 1.15, "reward": 1.3},
 	{"name": "Aquarelle", "desc": "Plus d'ennemis, plus rapides.", "hp": 1.7, "dmg": 1.45, "spawn": 1.3, "reward": 1.6},
 	{"name": "Huile", "desc": "Les ennemis frappent très fort.", "hp": 2.2, "dmg": 1.75, "spawn": 1.45, "reward": 2.0},
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent.", "hp": 2.9, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},

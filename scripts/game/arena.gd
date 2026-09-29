@@ -371,7 +371,7 @@ func _spawn(delta: float) -> void:
 				telegraphs.append({"pos": (c + dir * (i - group / 2.0) * 26.0).clamp(Vector2(16, 16), Vector2(W - 16, H - 16)), "id": id, "t": 0.8})
 			continue
 		for i in group:
-			var el: bool = Run.difficulty >= 2 and Run.elite_art.has(id) and randf() < 0.05 + 0.02 * Run.difficulty   # (le Mécène amène les siennes)
+			var el: bool = Run.difficulty >= 1 and Run.elite_art.has(id) and randf() < 0.05 + 0.02 * Run.difficulty   # (le Mécène amène les siennes)
 			telegraphs.append({"pos": c + Vector2(randf_range(-16, 16), randf_range(-16, 16)), "id": id, "t": 0.8, "elite": el})
 
 
