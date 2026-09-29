@@ -454,6 +454,8 @@ func check_achievements(ctx: Dictionary) -> void:
 # ------------------------------------------------------------------ Galerie
 
 func add_to_gallery(kind: String, img: Image, effect: String) -> void:
+	if kind in GALLERY_HIDDEN:
+		return
 	if no_save:
 		return
 	if Analyzer.count_pixels(img) == 0:
@@ -478,8 +480,12 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 	check_achievements({})
 
 
+## Dessins qu'on ne garde plus dans la galerie (marques, tirs ennemis : plus utiles).
+const GALLERY_HIDDEN := ["mark", "eproj"]
+
+
 func gallery(kind: String) -> Array:
-	var out: Array = data.gallery.filter(func(e): return (kind == "all" or e.kind == kind) and FileAccess.file_exists(e.file))
+	var out: Array = data.gallery.filter(func(e): return (e.kind == kind or (kind == "all" and not e.kind in GALLERY_HIDDEN)) and FileAccess.file_exists(e.file))
 	out.reverse()
 	return out
 

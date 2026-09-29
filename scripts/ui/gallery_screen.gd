@@ -7,7 +7,7 @@ signal done(result)
 
 const KINDS := [
 	["all", "Tout"], ["character", "Persos"], ["melee", "Mêlée"], ["ranged", "Distance"], ["bullet", "Balles"],
-	["amulet", "Amulettes"], ["mark", "Marques"], ["enemy", "Ennemis"], ["boss", "Boss"], ["eproj", "Tirs"],
+	["amulet", "Amulettes"], ["enemy", "Ennemis"], ["boss", "Boss"],
 ]
 
 var scroll_mem := {}         # position de défilement de la grille, par onglet
