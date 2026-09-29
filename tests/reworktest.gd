@@ -195,6 +195,27 @@ func _ready() -> void:
 	var comp: Array = cx._completion()
 	_check(comp[0] >= 0.0 and comp[0] <= 100.0 and comp[1] > 0.0 and comp[1] <= 100.0, "Bestiaire : complétion %d%% dessiné · %d%% débloqué" % [roundi(comp[0]), roundi(comp[1])])
 	await _shot("bestiaire_completion")
+	# Tri : par rareté, puis ordre alphabétique (armes et amulettes)
+	for tb in ["armes", "amulettes"]:
+		cx.tab = tb
+		var its: Array = cx._items()
+		var keys := its.map(func(i): return CodexScreen._order(int(WeaponDB.TYPES[i].get("min_rar", 0)) if tb == "armes" else int(AmuletDB.get_def(i).rar), WeaponDB.TYPES[i].name if tb == "armes" else AmuletDB.get_def(i).name))
+		var sorted := keys.duplicate()
+		sorted.sort()
+		_check(keys == sorted, "Bestiaire (%s) : trié par rareté puis alphabétique" % tb)
+	cx.queue_free()
+	var cx2 := CodexScreen.new("amulettes", "capital")
+	cx2.size = Vector2(640, 360)
+	add_child(cx2)
+	await get_tree().process_frame
+	await _shot("bestiaire_capital")
+	cx2.queue_free()
+	var cx3 := CodexScreen.new("armes", "pistolet")
+	cx3.size = Vector2(640, 360)
+	add_child(cx3)
+	await get_tree().process_frame
+	await _shot("bestiaire_cadres")
+	cx3.queue_free()
 	Run.active = false
 	print("REWORK : %d échec(s)" % fails)
 	get_tree().quit(1 if fails else 0)

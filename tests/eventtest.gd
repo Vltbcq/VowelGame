@@ -128,6 +128,11 @@ func _ready() -> void:
 	await _shot("caisse_ouverture")
 	await get_tree().create_timer(3.0).timeout
 	await _shot("caisse_ouverte")
+	var strip = shop.ev_layer.find_children("*", "", true, false).filter(func(c): return c.has_method("spin_to"))[0]
+	var tip: String = strip._get_tooltip(strip.size / 2.0)
+	print("     infobulle sous le curseur : ", tip.replace("
+", " / "))
+	_check(tip.length() > 10, "Case opening : survoler un objet de la bande montre ce qu'il fait")
 	var leave: Array = shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.text == "Laisser")
 	_check(leave.size() == 1 and not leave[0].disabled and Run.gold == 500 - int(Run.shop_offers[0].price), "Case opening : caisse payée, on peut laisser l'objet")
 	if leave.size() == 1:

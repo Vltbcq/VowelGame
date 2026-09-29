@@ -749,6 +749,23 @@ func _grant(item: Dictionary, price: int, extra := {}) -> void:
 	done.emit({"a": "buy", "i": Run.shop_offers.size() - 1})
 
 
+## Texte d'infobulle d'un objet : nom, type, rareté et ce qu'il fait.
+func _item_desc(it: Dictionary) -> String:
+	var r: String = String(Pal.RARITY_NAMES_F[int(it.rar)]).to_lower()
+	if it.type == "weapon":
+		var wd := WeaponDB.get_def(it.wtype)
+		var ratio := ("
+" + Stats.scale_text(wd.scale)) if wd.has("scale") else ""
+		return "%s — arme %s (%s)
+%s%s" % [wd.name, r, "mêlée" if wd.kind == "melee" else "distance", wd.desc, ratio]
+	var ad := AmuletDB.get_def(it.id)
+	var lines := Array(AmuletDB.describe(ad).split("
+")).filter(func(l): return l != "" and not l.begins_with("Actuellement"))
+	return "%s — amulette %s
+%s" % [ad.name, r, "
+".join(lines)]
+
+
 func _item_name(it: Dictionary) -> String:
 	return String(WeaponDB.get_def(it.wtype).name) if it.type == "weapon" else String(AmuletDB.get_def(it.id).name)
 
@@ -1192,6 +1209,7 @@ func _open_case(i: int) -> void:
 	strip.clip_contents = true
 	UI.put(inner, strip, Vector2(14, 44), Vector2(360, 76))
 	var res := UI.label("", 20, CARTEL, HORIZONTAL_ALIGNMENT_CENTER)
+	res.mouse_filter = Control.MOUSE_FILTER_STOP
 	UI.put(inner, res, Vector2(0, 130), Vector2(388, 24))
 	var sub := UI.label("", 10, CARTEL_DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(inner, sub, Vector2(0, 156), Vector2(388, 12))
@@ -1204,8 +1222,9 @@ func _open_case(i: int) -> void:
 	if not is_instance_valid(res):
 		return
 	res.text = _item_name(won).to_upper()
+	res.tooltip_text = _item_desc(won)   # survole pour savoir ce que fait l'objet
 	res.add_theme_color_override("font_color", Pal.RARITY[int(won.rar)])
-	sub.text = "%s · %s" % ["Arme" if won.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[int(won.rar)].to_lower()]
+	sub.text = "%s · %s · survole le nom pour voir ce qu'elle fait" % ["Arme" if won.type == "weapon" else "Amulette", Pal.RARITY_NAMES_F[int(won.rar)].to_lower()]
 	Sfx.play("level" if int(won.rar) >= 2 else "buy")
 	if int(won.rar) >= 2:
 		shake_flash(inner, Pal.RARITY[int(won.rar)])
@@ -1234,6 +1253,16 @@ class _CaseStrip extends Control:
 	var last_cell := -1
 	var icons := {}
 	const CELL := 64.0
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		tooltip_text = " "   # le vrai texte vient de _get_tooltip (objet sous la souris)
+
+	func _get_tooltip(at: Vector2) -> String:
+		var k := floori((at.x + offset - size.x / 2.0 + CELL / 2.0) / CELL)
+		if k < 0 or k >= items.size():
+			return ""
+		return shop._item_desc(items[k])
 
 	func _icon(it: Dictionary) -> Texture2D:
 		var key := "%s_%s_%d" % [it.type, it.get("wtype", it.get("id", "")), it.rar]

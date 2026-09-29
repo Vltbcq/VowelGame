@@ -33,13 +33,25 @@ func _items() -> Array:
 		"armes":
 			for id in WeaponDB.TYPES:
 				out.append(id)
+			# par rareté (minimum), puis ordre alphabétique
+			out.sort_custom(func(a, b): return _order(int(WeaponDB.TYPES[a].get("min_rar", 0)), WeaponDB.TYPES[a].name) < _order(int(WeaponDB.TYPES[b].get("min_rar", 0)), WeaponDB.TYPES[b].name))
 		"amulettes":
 			for d in AmuletDB.LIST:
 				out.append(d.id)
+			out.sort_custom(func(a, b): return _order(int(AmuletDB.get_def(a).rar), AmuletDB.get_def(a).name) < _order(int(AmuletDB.get_def(b).rar), AmuletDB.get_def(b).name))
 		"ennemis":
 			for id in EnemyDB.TYPES:
 				out.append(id)
 	return out
+
+
+## Clé de tri : rareté, puis nom sans accents ni majuscules (« Écu » se range avec les E).
+static func _order(rar: int, name: String) -> String:
+	var n := name.to_lower()
+	for pair in [["é", "e"], ["è", "e"], ["ê", "e"], ["ë", "e"], ["à", "a"], ["â", "a"], ["î", "i"], ["ï", "i"],
+			["ô", "o"], ["ù", "u"], ["û", "u"], ["ç", "c"], ["œ", "oe"], ["'", ""], ["’", ""], ["-", " "]]:
+		n = n.replace(pair[0], pair[1])
+	return "%d %s" % [rar, n]
 
 
 ## Ennemi / boss d'une carte pas encore débloquée : on ne sait pas ce que c'est.
@@ -73,7 +85,8 @@ func _slots(id: String) -> Array:
 				out.append(["balle_" + id, "Balles", DrawCfg.bullet(id, wa, "", 0)])
 			return out
 		"amulettes":
-			return [["amulette_" + id, "Amulette", DrawCfg.amulet(AmuletDB.get_def(id))]]
+			var ad := AmuletDB.get_def(id)
+			return [["amulette_" + id, "Amulette " + Pal.RARITY_NAMES_F[int(ad.rar)].to_lower(), DrawCfg.amulet(ad), Pal.RARITY[int(ad.rar)]]]
 	return [[id, "Ennemi", DrawCfg.enemy(id)]]
 
 
@@ -233,7 +246,7 @@ func _slot_small(parent: Control, slot: Array, pos: Vector2) -> void:
 	var d = Meta.bestiary_get(key)
 	var col: Color = slot[3] if slot.size() > 3 else Pal.DIM
 	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, col, HORIZONTAL_ALIGNMENT_CENTER), pos, Vector2(64, 12))
-	var frame := UI.panel(Pal.PAPER, col if d != null else Pal.BORDER, 2)
+	var frame := UI.panel(Pal.PAPER, col, 2)   # cadre de la couleur de la rareté, dessiné ou non
 	UI.put(parent, frame, pos + Vector2(4, 12), Vector2(56, 56))
 	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(48, 48)), Vector2(4, 4), Vector2(48, 48))
@@ -255,8 +268,10 @@ func _slot_ui(parent: Control, slot: Array, pos: Vector2) -> void:
 	var key: String = slot[0]
 	var cfg: Dictionary = slot[2]
 	var d = Meta.bestiary_get(key)
-	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, Pal.DIM), pos)
-	var frame := UI.panel(Pal.PAPER, Pal.ACCENT if d != null else Pal.BORDER, 2)
+	var rcol: Color = slot[3] if slot.size() > 3 else Color(0, 0, 0, 0)
+	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, rcol if slot.size() > 3 else Pal.DIM), pos)
+	# armes / amulettes : cadre de la couleur de la rareté, dessiné ou non
+	var frame := UI.panel(Pal.PAPER, rcol if slot.size() > 3 else (Pal.ACCENT if d != null else Pal.BORDER), 2)
 	UI.put(parent, frame, pos + Vector2(0, 12), Vector2(76, 76))
 	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))
