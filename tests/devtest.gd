@@ -27,6 +27,11 @@ func _ready() -> void:
 		await get_tree().process_frame
 	var dp: DevPanel = arena.hud.dev_panel
 	print("DEV ouvert=%s, jeu en pause=%s" % [dp != null, get_tree().paused])
+	var t0: float = arena.time_left
+	var tb: Array = dp.find_children("*", "Button", true, false).filter(func(b): return b.text.begins_with("+30 s"))
+	if tb.size() == 1:
+		tb[0].pressed.emit()
+	print("DEV +30 s à la vague : bouton=%s, chrono %.1f → %.1f" % [tb.size() == 1, t0, arena.time_left])
 	if dp == null:
 		get_tree().quit()
 		return

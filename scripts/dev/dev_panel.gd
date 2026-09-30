@@ -129,6 +129,16 @@ func _perso(area: Control) -> void:
 		_build())
 	ua.tooltip_text = "Objets à succès, succès, améliorations de l'Atelier au max, cartes et difficultés.\nModifie la sauvegarde en cours (irréversible)."
 	col.add_child(ua)
+	var tb := UI.button("+30 s à la vague", func():
+		if arena.time_left > 0.0:
+			arena.time_left += 30.0
+			arena.wave_len += 30.0
+			UI.toast("OUTIL DE DEV\n+30 s (reste %d s)" % ceili(arena.time_left))
+		else:
+			UI.toast("OUTIL DE DEV\nVague de boss : pas de chrono"))
+	tb.tooltip_text = "Ajoute 30 secondes au chrono de la vague en cours"
+	tb.disabled = arena.time_left <= 0.0
+	col.add_child(tb)
 	col.add_child(UI.button("Finir la vague", func():
 		_close()
 		arena._end_wave()))
