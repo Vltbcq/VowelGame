@@ -378,7 +378,7 @@ func _build_body_preview() -> void:
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var r: Rect2 = pt[2]
 		UI.put(body_view, tr, off + r.position * sc, r.size * sc)
-	_set_body_view(true)
+	_set_body_view(false)   # de base : les stats (V ou le bouton pour voir sur le perso)
 
 
 func _toggle_body_view() -> void:

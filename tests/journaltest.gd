@@ -23,7 +23,6 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	await get_tree().process_frame
 	Run.start(1, 1)
-	Run.log_event("wave", "Nouvelle partie : La Feuille, Croquis")
 	Run.set_character(_blob(32, 180), "")
 	Run.set_weapon_art("epee", 1, _blob(32, 90), "", null, "")
 	Run.add_weapon("epee", 1, 28, Vector2(8, 0))
@@ -38,8 +37,8 @@ func _ready() -> void:
 	Run.pending_levels -= 1
 	Run.apply_upgrade({"stat": "dmg", "v": 5.0, "text": "+5% dégâts"})
 	Run.log_event("event", "Roulette : ● 10 sur rouge → noir, perdu")
-	_check(Run.journal.size() == 4, "4 entrées dans le journal")
-	_check(String(Run.journal[2].t) == "Niveau 2 : +5% dégâts", "bonus de niveau noté (%s)" % Run.journal[2].t)
+	_check(Run.journal.size() == 3, "3 entrées dans le journal")
+	_check(String(Run.journal[1].t) == "Niveau 2 : +5% dégâts", "bonus de niveau noté (%s)" % Run.journal[1].t)
 	_check(int(Run.wave_stats.wave) == 3 and String(Run.wave_stats.text).contains("Dégâts"), "stats au début de la vague 3")
 	# fichier texte
 	var path := Meta.slot_dir() + "journal_derniere_partie.txt"
@@ -49,11 +48,11 @@ func _ready() -> void:
 	var d := Run.to_save("after")
 	Run.start(0, 1)
 	_check(Run.journal.is_empty(), "nouvelle partie : journal vidé")
-	Run.log_event("wave", "Nouvelle partie : La Feuille, Esquisse")
+	Run.log_event("buy", "Arme de départ : Arc commune")
 	var txt2 := FileAccess.get_file_as_string(path)
 	_check(not txt2.contains("Épée rare") and txt2.contains("Esquisse"), "fichier écrasé à la nouvelle partie")
 	Run.from_save(d)
-	_check(Run.journal.size() == 4 and int(Run.wave_stats.wave) == 3, "reprise : journal et stats retrouvés")
+	_check(Run.journal.size() == 3 and int(Run.wave_stats.wave) == 3, "reprise : journal et stats retrouvés")
 	# écrans
 	var scr := RunLogScreen.new("resume")
 	scr.size = Vector2(640, 360)

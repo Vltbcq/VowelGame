@@ -107,7 +107,6 @@ func _new_run() -> void:
 		_title()
 		return
 	Run.start(d, map)
-	Run.log_event("wave", "Nouvelle partie : %s, %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[int(d)].name])
 	var r = await _obtain("perso", DrawCfg.character(), 0, "TON DERNIER PERSO")
 	if r == null:
 		_title()

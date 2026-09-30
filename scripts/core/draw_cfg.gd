@@ -7,7 +7,7 @@ static func character() -> Dictionary:
 	var s := 32 + Meta.canvas_bonus()
 	return {"kind": "character", "gallery": "character", "size": Vector2i(s, s), "ink": Meta.base_ink(),
 		"title": "Dessine ton personnage",
-		"sub": "Seuls les traits coûtent de l'encre : remplir est gratuit. Petit = rapide mais fragile, gros = solide mais lent.",
+		"sub": "Seuls les traits coûtent de l'encre : remplir est gratuit.",
 		"cancel": true, "min": 12}
 
 
@@ -15,9 +15,9 @@ static func weapon(type: String, rar := 0, cancel := true) -> Dictionary:
 	var def := WeaponDB.get_def(type)
 	var s: int = def.canvas + Meta.canvas_bonus()
 	var kind: String = def.kind
-	var sub := "Manche à GAUCHE, pointe à DROITE → (c'est elle qui frappe).  %s  Plus d'encre = plus fort mais plus lent." % def.desc
+	var sub := "Manche à GAUCHE, pointe à DROITE → (c'est elle qui frappe).  %s" % def.desc
 	if kind == "ranged":
-		sub = "Crosse à GAUCHE, canon à DROITE → (les tirs partent de là).  %s  Plus d'encre = tirs plus puissants mais plus lents." % def.desc
+		sub = "Crosse à GAUCHE, canon à DROITE → (les tirs partent de là).  %s" % def.desc
 	return {"kind": kind, "wtype": type, "gallery": kind, "size": Vector2i(s, s),
 		"ink": roundi(def.ink * WeaponDB.RAR_INK[rar]) + Meta.weapon_ink_bonus(), "rar": rar,
 		"title": "Dessine ton arme : %s" % def.name, "sub": sub + "  (Ce dessin servira pour toute la partie.)",
@@ -31,7 +31,7 @@ static func bullet(type: String, weapon_a: Dictionary, weapon_effect: String, ra
 	return {"kind": "bullet", "wtype": type, "gallery": "bullet", "size": Vector2i(s, s), "ink": roundi(def.bink * WeaponDB.RAR_INK[rar]),
 		"weapon_a": weapon_a, "weapon_effect": weapon_effect,
 		"title": "Dessine les projectiles : %s" % def.name,
-		"sub": "Gros = lent mais puissant. Allongé = perforant. Chaque morceau séparé = un projectile en plus !",
+		"sub": "Chaque morceau séparé = un projectile en plus !",
 		"cancel": false, "min": 1}
 
 
@@ -41,7 +41,7 @@ static func enemy(id: String) -> Dictionary:
 	var title := "Nouvel ennemi : %s" % def.name
 	if boss:
 		title = ("BOSS : %s" if def.boss == 2 else "MINI-BOSS : %s") % def.name
-	var sub := "%s  Plus d'encre = plus de PV, mais plus de butin. Sa couleur = son élément." % def.desc
+	var sub := "%s  Sa couleur = son élément." % def.desc
 	var min_ink := 0
 	if boss:
 		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
@@ -70,7 +70,7 @@ static func eproj(id: String) -> Dictionary:
 	var def := EnemyDB.get_def(id)
 	return {"kind": "eproj", "gallery": "eproj", "size": Vector2i(12, 12), "ink": 40,
 		"title": "Dessine les projectiles de : %s" % def.name,
-		"sub": "Gros = lent mais facile à toucher. Petit = rapide mais discret. Sa couleur = son élément.",
+		"sub": "Sa couleur = son élément.",
 		"cancel": false, "min": 1, "random": true}
 
 
@@ -78,7 +78,7 @@ static func amulet(def: Dictionary) -> Dictionary:
 	var s := AmuletDB.canvas(def)
 	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def),
 		"def": def, "title": "Dessine l'amulette : %s" % def.name,
-		"sub": AmuletDB.describe(def) + "  La taille ne change pas l'effet ; ses couleurs donnent des résistances. Ce dessin servira pour toute la partie.",
+		"sub": AmuletDB.describe(def) + "  Ce dessin servira pour toute la partie.",
 		"cancel": true, "min": 3}
 
 
