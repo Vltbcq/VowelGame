@@ -110,21 +110,34 @@ static func weapon_kind() -> Control:
 	picks.shuffle()
 	s.build = func(root: _Screen):
 		UI.put(root, UI.label("Ta première arme", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 20), Vector2(640, 24))
-		UI.put(root, UI.label("3 armes tirées au hasard. Tu la dessineras une fois : ce dessin servira pour toute la partie.", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 48), Vector2(640, 14))
+		UI.put(root, UI.label("3 armes tirées au hasard. Ton dessin de base est affiché s'il existe.", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 48), Vector2(640, 14))
 		for i in picks.size():
 			var id: String = picks[i]
 			var def := WeaponDB.get_def(id)
 			var p := UI.panel()
-			UI.put(root, p, Vector2(40 + i * 192, 80), Vector2(176, 220))
-			UI.put(p, UI.label(def.name, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(176, 24))
-			UI.put(p, UI.label("Corps à corps" if def.kind == "melee" else "À distance", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 38), Vector2(176, 12))
+			UI.put(root, p, Vector2(40 + i * 192, 72), Vector2(176, 262))
+			UI.put(p, UI.label(def.name, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(176, 24))
+			UI.put(p, UI.label("Corps à corps" if def.kind == "melee" else "À distance", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 32), Vector2(176, 12))
+			# Son dessin de base (Bestiaire), s'il existe : l'arme commune, et ses balles
+			var art = Meta.bestiary_get(Run.weapon_key(id, 0))
+			var bart = Meta.bestiary_get("balle_" + id) if def.kind == "ranged" else null
+			var fr := UI.panel(Pal.PAPER, Pal.RARITY[0], 2)
+			UI.put(p, fr, Vector2(38 if bart != null else 58, 48), Vector2(60, 56))
+			var wimg: Image = Analyzer.trim(art.image) if art != null else Gfx.icon(Gfx.ICON_UNKNOWN)
+			UI.put(fr, UI.thumb(wimg, Vector2(52, 48)), Vector2(4, 4), Vector2(52, 48))
+			if bart != null:
+				var bf := UI.panel(Pal.PAPER, Pal.BORDER, 1)
+				UI.put(p, bf, Vector2(104, 60), Vector2(34, 34))
+				UI.put(bf, UI.thumb(Analyzer.trim(bart.image), Vector2(28, 28)), Vector2(3, 3), Vector2(28, 28))
+			if art == null:
+				UI.put(p, UI.label("pas encore dessinée", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 106), Vector2(176, 12))
 			var ink := "Encre %d" % def.ink
 			if def.kind == "ranged":
 				ink += " + balles %d" % def.bink
 			var l := UI.label(def.desc + "\n\n" + ink, 10, Pal.TEXT)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			UI.put(p, l, Vector2(12, 62), Vector2(152, 110))
-			UI.put(p, UI.button("Choisir", func(): root.done.emit(id)), Vector2(38, 186), Vector2(100, 20))
+			UI.put(p, l, Vector2(12, 122), Vector2(152, 100))
+			UI.put(p, UI.button("Choisir", func(): root.done.emit(id)), Vector2(38, 230), Vector2(100, 20))
 	return s
 
 
