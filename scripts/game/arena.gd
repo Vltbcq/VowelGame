@@ -76,6 +76,10 @@ var stop_t := 0.0         # Horloge : temps arrêté
 # Amulettes
 var wave_len := 0.0       # durée de la vague (Cadran solaire)
 var patron_mult := 1.0    # Mécène : ennemis en plus
+var void_f := 0.0         # Toile Blanche : part effacée de chaque bord (0 = rien, 0.113 = zone à 60 %)
+var void_target := 0.0
+var void_dmg := 0.0
+var void_acc := 0.0
 var patron_elites: Array = []   # Mécène : moments (fraction de vague) où une élite arrive
 var crowd := 0            # ennemis proches du joueur (Papier de verre)
 var fly_n := 0            # Effet papillon : cumuls
@@ -968,7 +972,27 @@ func add_eraser(pos: Vector2, r: float, dur: float, dmg: float) -> void:
 	erasers.append({"pos": pos, "r": r, "t": 0.0, "dur": dur, "dmg": dmg})
 
 
+## Zone de la page encore dessinée (la Toile Blanche efface les bords).
+func void_rect() -> Rect2:
+	return Rect2(W * void_f, H * void_f, W * (1.0 - 2.0 * void_f), H * (1.0 - 2.0 * void_f))
+
+
+func _tick_void(delta: float) -> void:
+	if void_target <= 0.0 and void_f <= 0.0:
+		return
+	void_f = move_toward(void_f, void_target, delta * 0.03)
+	marks.queue_redraw()
+	if not void_rect().has_point(player.position):
+		void_acc += delta
+		if void_acc >= 0.5:
+			void_acc = 0.0
+			player.take_hit(void_dmg, 0, null)   # le vide fait mal
+	else:
+		void_acc = 0.0
+
+
 func _tick_effects(delta: float) -> void:
+	_tick_void(delta)
 	for h in hazards:
 		h.t -= delta
 	hazards = hazards.filter(func(h): return h.t > 0.0)
@@ -1699,6 +1723,16 @@ class _Marks extends Node2D:
 		if air:
 			_draw_air()
 			return
+		if arena.void_f > 0.0:
+			# Bords effacés par la Toile Blanche : papier vide, bordure qui clignote
+			var r := arena.void_rect()
+			var full := Rect2(0, 0, Arena.W, Arena.H)
+			var vc := Color(1, 1, 1, 0.85)
+			draw_rect(Rect2(full.position, Vector2(full.size.x, r.position.y)), vc)
+			draw_rect(Rect2(Vector2(0, r.end.y), Vector2(full.size.x, full.end.y - r.end.y)), vc)
+			draw_rect(Rect2(Vector2(0, r.position.y), Vector2(r.position.x, r.size.y)), vc)
+			draw_rect(Rect2(Vector2(r.end.x, r.position.y), Vector2(full.end.x - r.end.x, r.size.y)), vc)
+			draw_rect(r, Color(Pal.BAD, 0.4 + 0.4 * sin(arena.elapsed * 8.0)), false, 2.0)
 		for h in arena.hazards:
 			var a: float = clampf(h.t / minf(h.life, 0.6), 0.0, 1.0)
 			var c: Color = h.col

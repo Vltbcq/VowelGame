@@ -146,7 +146,7 @@ Plus tu mets d'encre dans un ennemi, plus il a de PV (×0,6 à ×1,4) et plus il
 | Colosse | **Gomme géante** : s'arrête pour viser (elle clignote), puis **fonce sur toi** en ligne droite |
 | Pâté | **Taches piégées** qui foncent sur toi de plus en plus vite, gonflent au contact et explosent |
 
-Boss : le Raturé tourne autour de toi en tirant en éventail et réapparaît près de toi dans un anneau de tirs ; la Muse rature la page (zigzags, hachures à esquiver entre les lignes, croix sur ta position, gribouillage) ; le Critique lance des pâtés en cloche ; **la Toile Blanche gomme des morceaux de ton perso** (−12 % PV max par coup, jusqu'à la fin de la vague, puis tout revient).
+Boss : le Raturé tourne autour de toi en tirant en éventail et réapparaît près de toi dans un anneau de tirs ; la Muse rature la page (zigzags, hachures à esquiver entre les lignes, croix sur ta position, gribouillage) ; le Critique lance des pâtés en cloche ; **la Toile Blanche (3 phases : à 66 % et 33 % de PV, elle accélère, fait pleuvoir des gommes et efface les bords de la page, ce vide fait mal) gomme des morceaux de ton perso** (−12 % PV max par coup, jusqu'à la fin de la vague, puis tout revient).
 
 **Élites** (Croquis et au-delà, 7 % puis +2 % par difficulté) : à partir de la vague 4, une fois par vague, tu redessines un ennemi en version élite (ton dessin + des ajouts). Aura, PV ×3, butin ×3.
 

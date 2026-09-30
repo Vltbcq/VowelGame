@@ -25,6 +25,8 @@ var power := ""             # Huile+ : pouvoir de l'élite (shield, fast, vampir
 var shield_up := false      # élite « bouclier » : ignore le premier coup
 var summon_cd := 0.0        # élite « invocatrice »
 var frenzy_on := false      # Chef-d'œuvre : boss en fureur sous 25 % de PV
+var toile_phase := 1        # Toile Blanche : phase 1, 2 ou 3
+var boss_inv := 0.0         # boss intouchable (passage de phase)
 var contact := true
 var body: Node2D
 var sprite: Sprite2D
@@ -411,7 +413,7 @@ func _update_tint() -> void:
 # ------------------------------------------------------------------ Dégâts & statuts
 
 func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
-	if dead:
+	if dead or boss_inv > 0.0:
 		return
 	if shield_up:
 		shield_up = false   # élite « bouclier » : le premier coup est bloqué
@@ -1173,8 +1175,21 @@ func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 
 
 ## La Toile Blanche : spirales, anneaux, charges, renforts... et elle GOMME des bouts de ton perso.
+## La Toile Blanche, boss final de La Feuille, en 3 PHASES (66 % et 33 % de PV) :
+## 1. spirale, anneaux, charge, renforts, coups de gomme ;
+## 2. tout va 30 % plus vite, pluie de gommes, et la page commence à s'effacer par les bords ;
+## 3. presque sans pause (70 % plus vite), gommes pendant la spirale, la page rétrécit encore.
+## À chaque palier : elle est intouchable 1,5 s, une onde te repousse, « LA TOILE S'EFFACE... ».
 func _boss_toile(delta: float, dirp: Vector2, dist: float) -> Vector2:
-	var fast := 1.4 if _enraged() else 1.0
+	var want := 1 if hp > max_hp * 0.66 else (2 if hp > max_hp * 0.33 else 3)
+	if want > toile_phase:
+		toile_phase = want
+		_toile_transition()
+	if boss_inv > 0.0:
+		boss_inv -= delta
+		flash = 0.6 if int(t * 12.0) % 2 == 0 else 0.1
+		return Vector2.ZERO
+	var fast: float = [1.0, 1.0, 1.3, 1.7][toile_phase]
 	cd -= delta * fast
 	if state == "dash":
 		st_t -= delta
@@ -1190,10 +1205,10 @@ func _boss_toile(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			dash_dir = dirp
 		return Vector2.ZERO
 	if state == "rings":
-		cd3 -= delta
+		cd3 -= delta * fast
 		if cd3 <= 0.0:
 			cd3 = 0.5
-			_ring(18, repeat * 0.17, 0.9)
+			_ring(18 + 4 * (toile_phase - 1), repeat * 0.17, 0.9)
 			repeat -= 1
 			if repeat <= 0:
 				state = "walk"
@@ -1201,38 +1216,69 @@ func _boss_toile(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if state == "spiral":
 		st_t -= delta
 		cd3 -= delta
+		cd2 -= delta
 		if cd3 <= 0.0:
-			cd3 = 0.08
+			cd3 = 0.08 / fast
 			spiral_a += 0.33
 			for k in 4:
 				_shoot(Vector2.from_angle(spiral_a * (1 if k % 2 == 0 else -1) + TAU * k / 4), 0.85)
 			Sfx.play("enemy_shot")
+		if toile_phase >= 3 and cd2 <= 0.0:
+			cd2 = 1.0   # phase 3 : des gommes tombent pendant la spirale
+			arena.add_eraser(arena.player.position, 30.0, 1.2, dmg)
 		if st_t <= 0.0:
 			state = "walk"
 		return dirp * speed * 0.3
 	if cd <= 0.0:
-		cd = 3.2
-		pattern = (pattern + 1) % 5
+		cd = 1.4 if toile_phase >= 3 else 3.2
+		pattern = (pattern + 1) % (5 if toile_phase == 1 else 6)
 		match pattern:
 			0:
 				state = "spiral"
 				st_t = 3.0
+				cd2 = 0.5
 			1:
 				state = "rings"
-				repeat = 3
+				repeat = 3 + (toile_phase - 1)
 				cd3 = 0.0
 			2:
 				state = "aim"
-				st_t = 0.6
+				st_t = 0.6 / fast
 			3:
 				var pool := EnemyDB.pool(Run.wave)
-				_summon(pool.pick_random(), 2)
+				_summon(pool.pick_random(), 2 + (toile_phase - 1))
 				_summon("tache", 2)
 			4:
 				# Coups de gomme : là où ils tombent, ton dessin s'efface
 				var p := arena.player.position
 				arena.add_eraser(p, 34.0, 1.1, dmg)
-				if _enraged():
+				if toile_phase >= 2:
 					for k in 2:
 						arena.add_eraser(p + Vector2.from_angle(randf() * TAU) * 60.0, 30.0, 1.4, dmg)
+			5:
+				# Phase 2+ : pluie de gommes autour de toi
+				var c := arena.player.position
+				arena.add_eraser(c, 28.0, 1.3, dmg)
+				for k in 4 + 2 * (toile_phase - 2):
+					arena.add_eraser(c + Vector2.from_angle(TAU * k / (4.0 + 2 * (toile_phase - 2)) + randf() * 0.4) * randf_range(45.0, 80.0), 26.0, 1.5 + k * 0.12, dmg)
+				arena.float_text(position + Vector2(0, -50), "PLUIE DE GOMMES", Pal.BAD)
 	return dirp * speed * (0.6 if dist < 80.0 else 1.0)
+
+
+## Passage de phase : intouchable 1,5 s, onde qui repousse, la page s'efface par les bords.
+func _toile_transition() -> void:
+	boss_inv = 1.5
+	state = "walk"
+	cd = 1.8
+	arena.hud.announce("LA TOILE S'EFFACE..." if toile_phase == 2 else "TOUT DOIT DISPARAÎTRE !", Pal.BAD)
+	arena.shake(12.0)
+	arena.hitstop(0.2)
+	Sfx.play("boss")
+	arena.explosion(position, 140.0, Color(1, 1, 1, 0.9))
+	var p := arena.player
+	var away := (p.position - position).normalized()
+	p.position = (p.position + away * 70.0).clamp(Vector2(12, 12), Vector2(Arena.W - 12, Arena.H - 12))
+	arena.void_target = 0.06 if toile_phase == 2 else 0.113   # zone de jeu : 77 % puis 60 %
+	arena.void_dmg = dmg * 0.35
+
+

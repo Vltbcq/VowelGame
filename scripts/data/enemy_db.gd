@@ -45,7 +45,7 @@ const TYPES := {
 	"muse": {"name": "La Muse", "beh": "b_hatch", "boss": 2, "hp": 5000.0, "dmg": 15.6, "spd": 60.0, "wave": 10, "canvas": 64, "ink": 340, "loot": 60, "shoots": true,
 		"desc": "Boss (vague 10, parfois à la place du Critique). Rature la page : charges en zigzag, hachures (passe entre les lignes), croix sur ta position, gribouillage furieux."},
 	"toile": {"name": "La Toile Blanche", "beh": "b_toile", "boss": 2, "hp": 26000.0, "dmg": 19.5, "spd": 50.0, "wave": 15, "canvas": 88, "ink": 560, "loot": 0, "shoots": true,
-		"desc": "Boss final (vague 15). Elle veut tout effacer."},
+		"desc": "Boss final (vague 15). Elle veut tout effacer. 3 phases : à 66 % et 33 % de PV elle accélère, fait pleuvoir des gommes et efface les bords de la page (le vide fait mal)."},
 	"professeur": {"name": "Le Professeur", "beh": "b_prof", "map": 2, "boss": 2, "hp": 3000.0, "dmg": 11.0, "spd": 48.0, "wave": 5, "canvas": 64, "ink": 300, "loot": 30, "shoots": true,
 		"desc": "Boss (vague 5). INTERRO SURPRISE : une question s'affiche, chaque colonne du tableau porte une réponse. Va dans la bonne avant que les autres explosent !"},
 	"photocopieuse": {"name": "La Photocopieuse", "beh": "b_copy", "map": 2, "boss": 2, "hp": 6500.0, "dmg": 13.0, "spd": 40.0, "wave": 10, "canvas": 80, "ink": 400, "loot": 60, "shoots": true,
