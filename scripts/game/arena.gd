@@ -170,6 +170,20 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.arena = self
 	add_child(hud)
+	# Extasie : la vision se trouble (le jeu ondule et change de couleur ; le HUD reste lisible)
+	if Run.amulet_count("extasie") > 0:
+		var fx_layer := CanvasLayer.new()
+		fx_layer.layer = 1
+		hud.layer = 2
+		var trip := ColorRect.new()
+		trip.name = "Extasie"
+		trip.set_anchors_preset(Control.PRESET_FULL_RECT)
+		trip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var sm := ShaderMaterial.new()
+		sm.shader = load("res://shaders/extasie.gdshader")
+		trip.material = sm
+		fx_layer.add_child(trip)
+		add_child(fx_layer)
 
 	boss_id = EnemyDB.boss_for(Run.wave)
 	if boss_id != "":
