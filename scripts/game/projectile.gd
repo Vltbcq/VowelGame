@@ -30,32 +30,25 @@ var out_t := 0.0
 var returning := false
 
 
-var glow_t := 0.0        # tirs ennemis : halo rouge qui pulse (bien visible)
+var glow_t := 0.0        # tirs ennemis : contour qui clignote blanc / rouge
+var mat: ShaderMaterial
 
 
 func setup(tex: Texture2D, effect: String, outline := false) -> void:
-	var s := Gfx.sprite(tex, Gfx.material(effect, outline))
+	mat = Gfx.material(effect, outline)
+	var s := Gfx.sprite(tex, mat)
 	add_child(s)
 	rotation = vel.angle()
 	glow_t = randf() * TAU
 
 
-## Halo des tirs ennemis (dessiné sous le sprite).
-func _draw() -> void:
-	if not hostile:
-		return
-	var k := 0.5 + 0.5 * sin(glow_t * 9.0)
-	var r := radius + 4.0 + 2.0 * k
-	draw_circle(Vector2.ZERO, r + 2.0, Color(1.0, 0.25, 0.1, 0.12 + 0.1 * k))
-	draw_circle(Vector2.ZERO, r, Color(1.0, 0.35, 0.15, 0.22 + 0.15 * k))
-	draw_arc(Vector2.ZERO, r, 0.0, TAU, 16, Color(1.0, 0.3, 0.1, 0.55 + 0.35 * k), 1.5)
-
-
 ## Retourne false quand le projectile doit disparaître.
 func tick(delta: float, arena: Arena) -> bool:
-	if hostile:
+	if hostile and mat:
+		# Tirs ennemis : contour qui épouse leur forme et clignote blanc / rouge
 		glow_t += delta
-		queue_redraw()
+		mat.set_shader_parameter("outline", true)
+		mat.set_shader_parameter("outline_color", Color.WHITE if int(glow_t * 8.0) % 2 == 0 else Color("e8352a"))
 	if hang > 0.0:
 		hang -= delta
 		rotation += 6.0 * delta
