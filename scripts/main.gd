@@ -180,7 +180,7 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 		return false
 	Run.set_weapon_art(type, rar, r.image, r.effect, base.bullet, base.beffect, r.outline, base.boutline)
 	# Premier dessin de cette rareté : il devient son dessin par défaut dans le Bestiaire
-	_remember(Run.weapon_key(type, rar), Meta.bestiary_get(Run.weapon_key(type, rar)), r)
+	await _remember(Run.weapon_key(type, rar), Meta.bestiary_get(Run.weapon_key(type, rar)), r)
 	return true
 
 
@@ -282,7 +282,7 @@ func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET")
 			"cancel":
 				return null
 			"keep":
-				_remember(key, existing, r)
+				await _remember(key, existing, r)
 				return {"image": r.image, "effect": r.effect, "outline": r.outline}
 		var c: Dictionary = cfg.duplicate()
 		c.cancel = true
@@ -298,14 +298,20 @@ func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET")
 		# Pigments seulement si on fait évoluer le dessin de son carnet (pas un dessin de galerie)
 		if reward > 0 and r.a == "redraw" and r.get("from_carnet", false) and d.image.get_data() != r.image.get_data():
 			Meta.add_pigments(reward)
-		_remember(key, existing, d)
+		await _remember(key, existing, d)
 		return {"image": d.image, "effect": d.effect, "outline": d.outline}
 
 
-## Le dessin choisi en partie ne devient le dessin par défaut que s'il n'y en avait pas :
-## celui réglé dans le Bestiaire reste la référence.
+## Le dessin choisi en partie devient le dessin par défaut s'il n'y en avait pas ; s'il y en avait
+## déjà un et que le nouveau est différent, on demande au joueur s'il veut le remplacer.
 func _remember(key: String, existing, r: Dictionary) -> void:
 	if existing == null:
+		Meta.bestiary_set(key, r.image, r.effect, r.outline)
+		return
+	var same: bool = (existing.image as Image).get_data() == (r.image as Image).get_data() 		and existing.effect == r.effect and existing.outline == r.outline
+	if same:
+		return
+	if await _ask(ChoiceScreens.default_prompt(existing.image, r.image)):
 		Meta.bestiary_set(key, r.image, r.effect, r.outline)
 
 

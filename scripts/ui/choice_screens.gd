@@ -75,6 +75,29 @@ static func confirm(title: String, text: String, yes: String, no: String, danger
 	return s
 
 
+## Nouveau dessin en partie alors que l'objet a déjà un dessin par défaut : on remplace ?
+## done(true) = le nouveau devient le dessin par défaut du Bestiaire.
+static func default_prompt(old_img: Image, new_img: Image) -> Control:
+	var s := _Screen.new()
+	s.build = func(root: _Screen):
+		var p := UI.panel(Pal.PANEL, Pal.ACCENT, 2)
+		UI.put(root, p, Vector2(150, 80), Vector2(340, 200))
+		UI.put(p, UI.label("Dessin par défaut ?", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(340, 24))
+		var l := UI.label("Utiliser ce nouveau dessin comme dessin par défaut dans le Bestiaire ?", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UI.put(p, l, Vector2(16, 38), Vector2(308, 26))
+		for k in 2:
+			var img: Image = [old_img, new_img][k]
+			var x := 60.0 + k * 150.0
+			UI.put(p, UI.label(["ACTUEL", "NOUVEAU"][k], 10, Pal.DIM if k == 0 else Pal.GOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(x, 68), Vector2(70, 12))
+			var fr := UI.panel(Pal.PAPER, Pal.BORDER if k == 0 else Pal.GOOD, 2)
+			UI.put(p, fr, Vector2(x, 82), Vector2(70, 70))
+			UI.put(fr, UI.thumb(Analyzer.trim(img), Vector2(62, 62)), Vector2(4, 4), Vector2(62, 62))
+		UI.put(p, UI.hotkey(UI.button("Garder l'actuel", func(): root.done.emit(false)), [KEY_ESCAPE]), Vector2(30, 168), Vector2(130, 20))
+		UI.put(p, UI.hotkey(UI.button("Utiliser le nouveau", func(): root.done.emit(true)), [KEY_ENTER, KEY_KP_ENTER]), Vector2(180, 168), Vector2(130, 20))
+	return s
+
+
 ## Difficultés de cette carte : chaque carte a ses propres difficultés débloquées.
 static func difficulty(map_id := 1) -> Control:
 	var s := _Screen.new()
