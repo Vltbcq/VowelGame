@@ -24,7 +24,7 @@ const FRAME := [[Color("8a5a2b"), Color("5a3818")], [Color("2f6fe0"), Color("173
 const FRAME_HEAL := [Color("5d9a6a"), Color("2e5a38")]
 const FRAME_ROULETTE := [Color("b8322a"), Color("1d1a1a")]
 const FRAME_EVENT := [Color("2a8a8a"), Color("134444")]
-const CASE_FRAME := [[Color("8a5a2b"), Color("4a2e14")], [Color("b8c0c8"), Color("5a6068")], [Color("e0a830"), Color("8c6414")]]
+const CASE_FRAME := [[Color("8a5a2b"), Color("4a2e14")], [Color("b8c0c8"), Color("5a6068")], [Color("e0a830"), Color("8c6414")], [Color("6ee0f0"), Color("2a8aa0")]]
 const EVENT_TYPES := ["roulette", "scratch", "auction", "restorer", "patron"]
 const WHEEL_RED := Color("c8322a")
 const WHEEL_BLACK := Color("221e1e")
@@ -96,13 +96,24 @@ func _build() -> void:
 			_style_tag(sb)
 			sb.tooltip_text = "Revendre cette œuvre"
 			UI.put(self, sb, Vector2(x + 6, 272), Vector2(34, 13))
-	var pair := _fusion_pair()
-	if not pair.is_empty():
-		var def := WeaponDB.get_def(pair[0])
-		var fb := UI.button("Fusion : 2× %s → %s" % [def.name, Pal.RARITY_NAMES_F[pair[1] + 1].to_lower()],
-			func(): done.emit({"a": "fuse", "type": pair[0], "rar": pair[1]}))
-		_style_museum(fb)
-		UI.put(self, fb, Vector2(12, 289), Vector2(300, 14))
+	# Fusions : un bouton par paire possible (tu choisis laquelle)
+	var pairs := _fusion_pairs()
+	if not pairs.is_empty():
+		var frow := HBoxContainer.new()
+		frow.add_theme_constant_override("separation", 3)
+		UI.put(self, frow, Vector2(12, 289), Vector2(300, 14))
+		for pr in pairs:
+			var fdef := WeaponDB.get_def(pr[0])
+			var ftype: String = pr[0]
+			var frar: int = pr[1]
+			var txt := "Fusion : 2× %s → %s" % [fdef.name, Pal.RARITY_NAMES_F[frar + 1].to_lower()]
+			var fb := UI.button(txt if pairs.size() == 1 else "2× %s → %s" % [fdef.name, Pal.RARITY_NAMES_F[frar + 1].to_lower()],
+				func(): done.emit({"a": "fuse", "type": ftype, "rar": frar}))
+			fb.tooltip_text = txt
+			fb.clip_text = true
+			fb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			_style_museum(fb)
+			frow.add_child(fb)
 	# Vitrine des amulettes
 	var vit := UI.panel(Color(0.75, 0.85, 1.0, 0.12), Color(0.8, 0.9, 1.0, 0.5), 1)
 	UI.put(self, vit, Vector2(12, 307), Vector2(300, 22))
@@ -216,9 +227,9 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			full = Run.hp >= Run.stats.max_hp and h.heal > 0.0
 			if o.id == "seve":
 				full = Run.regen_boost > 0.0
-			if Run.amulet_count("pacte_sang") > 0:
+			if Run.amulet_count("pacte_sang") > 0 and o.id != "encre":
 				full = true   # Pacte de sang : les potions ne marchent plus
-			var liquid: Color = {"grande_potion": Pal.SHADES[1][1], "seve": Pal.main_color(Pal.POISON)}.get(o.id, Pal.SHADES[4][1])
+			var liquid: Color = {"grande_potion": Pal.SHADES[1][1], "seve": Pal.main_color(Pal.POISON), "encre": Pal.INK}.get(o.id, Pal.SHADES[4][1])
 			icon = Gfx.icon(Gfx.ICON_POTION, liquid)
 		"roulette":
 			oname = "Roulette"
@@ -273,6 +284,19 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
 	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type in ["heal", "case"] else Pal.RARITY_NAMES_F[o.rar]
+	# Petite icône : arme ou amulette (aussi pour les caisses et les enchères)
+	var ik := ""
+	if o.type in ["weapon", "amulet"]:
+		ik = o.type
+	elif o.type == "case":
+		ik = o.kind
+	elif o.type == "auction":
+		ik = o.item.type
+	if ik != "":
+		var badge := UI.panel(CARTEL, GOLD_DARK, 1)
+		badge.tooltip_text = "Arme" if ik == "weapon" else "Amulette"
+		UI.put(self, badge, pos + Vector2(2, 2), Vector2(16, 16))
+		UI.put(badge, UI.thumb(_kind_icon(ik), Vector2(12, 12)), Vector2(2, 2), Vector2(12, 12))
 	if o.get("new", false) and not o.sold:
 		var ukey := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
 		if ItemUnlockDB.CONDS.has(ukey):
@@ -319,7 +343,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		b.disabled = Run.gold <= int(o.bid)
 	elif o.type == "restorer":
 		b.disabled = Run.restorable().is_empty()
-	if full and o.type == "heal" and Run.amulet_count("pacte_sang") > 0:
+	if full and o.type == "heal" and o.id != "encre" and Run.amulet_count("pacte_sang") > 0:
 		b.tooltip_text = "Pacte de sang : les potions ne marchent plus."
 	elif full and o.type == "case":
 		b.tooltip_text = "Plus de place pour une arme : revends-en une d'abord."
@@ -458,16 +482,21 @@ class _Wall extends Control:
 
 # ------------------------------------------------------------------ Logique (inchangée)
 
-func _fusion_pair() -> Array:
+## Toutes les fusions possibles : [type, rareté] (une par paire différente).
+func _fusion_pairs() -> Array:
+	var out := []
+	var seen := {}
 	for i in Run.weapons.size():
 		var a: Dictionary = Run.weapons[i]
-		if a.rar >= 3:
+		if a.rar >= 3 or seen.has("%s#%d" % [a.type, a.rar]):
 			continue
 		for j in range(i + 1, Run.weapons.size()):
 			var b: Dictionary = Run.weapons[j]
 			if b.type == a.type and b.rar == a.rar:
-				return [a.type, a.rar]
-	return []
+				seen["%s#%d" % [a.type, a.rar]] = true
+				out.append([a.type, a.rar])
+				break
+	return out
 
 
 func _buy(i: int) -> void:
@@ -493,6 +522,9 @@ func _buy(i: int) -> void:
 			return
 	if o.type != "heal":
 		done.emit({"a": "buy", "i": i})
+		return
+	if o.id == "encre":
+		done.emit({"a": "ink", "i": i})   # retouche du perso : géré par le Main
 		return
 	if Run.gold < o.price:
 		return
@@ -1181,8 +1213,8 @@ func _open_patron(i: int) -> void:
 func _case_icon(tier: int, kind: String) -> Image:
 	var n := 32
 	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
-	var body: Color = [Color("a0692f"), Color("c9d0d8"), Color("e8b53a")][tier]
-	var dark: Color = [Color("5a3818"), Color("6a7078"), Color("8c6414")][tier]
+	var body: Color = [Color("a0692f"), Color("c9d0d8"), Color("e8b53a"), Color("8eeaf5")][tier]
+	var dark: Color = [Color("5a3818"), Color("6a7078"), Color("8c6414"), Color("2a8aa0")][tier]
 	img.fill_rect(Rect2i(3, 9, 26, 19), dark)
 	img.fill_rect(Rect2i(4, 10, 24, 17), body)
 	img.fill_rect(Rect2i(3, 9, 26, 5), dark)       # couvercle
@@ -1328,3 +1360,22 @@ class _CaseStrip extends Control:
 			offset = v
 			queue_redraw(), offset, k * CELL, 0.25)
 		await tw2.finished
+
+
+## Icône 12×12 : épée (arme) ou pendentif (amulette).
+func _kind_icon(kind: String) -> Image:
+	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
+	if kind == "weapon":
+		for k in 8:
+			img.fill_rect(Rect2i(3 + k, 8 - k, 1, 1), Pal.INK)
+			img.fill_rect(Rect2i(4 + k, 8 - k, 1, 1), Color("9aa0a8"))
+		img.fill_rect(Rect2i(1, 7, 4, 1), Color("8a5a2b"))
+		img.fill_rect(Rect2i(2, 8, 2, 3), Color("8a5a2b"))
+	else:
+		for x in range(3, 9):
+			img.set_pixel(x, 1 + absi(x - 6) / 2, Pal.INK)
+		for y in 12:
+			for x in 12:
+				if Vector2(x - 5.5, y - 7.5).length() < 3.3:
+					img.set_pixel(x, y, GOLD if Vector2(x - 5.5, y - 7.5).length() < 2.2 else Pal.INK)
+	return img

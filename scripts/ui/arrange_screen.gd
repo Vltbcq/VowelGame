@@ -30,7 +30,7 @@ func _init(type := "", rar := 0) -> void:
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
-	var comp := Run.build_player_image()
+	var comp := Run.build_player_image(false)   # sans les amulettes : elles se déplacent aussi
 	base = Image.create_empty(comp.get_width() + MARGIN * 2, comp.get_height() + MARGIN * 2, false, Image.FORMAT_RGBA8)
 	base.blit_rect(comp, Rect2i(Vector2i.ZERO, comp.get_size()), Vector2i(MARGIN, MARGIN))
 	base_tex = ImageTexture.create_from_image(Gfx.baked_outline(base) if Run.char_outline else base)
@@ -42,6 +42,13 @@ func _ready() -> void:
 		e.tl = Vector2i((cc + w.anchor - Vector2(e.img.get_size()) / 2.0).round())
 		e.placed = true
 		entries.append(e)
+	# Amulettes : déplaçables (et orientables) comme les armes
+	for i in Run.amulets.size():
+		var am: Dictionary = Run.amulets[i]
+		var e := {"kind": "amulet", "id": am.id, "src": am.image, "rot": 0, "flip": false,
+			"outline": am.get("outline", false), "idx": i, "tl": Vector2i(am.pos) + Vector2i(MARGIN, MARGIN), "placed": true}
+		_rebuild(e)
+		entries.append(e)
 	if new_type != "":
 		var e := _entry(new_type, new_rar, 0, false, -1)
 		e.placed = false
@@ -49,11 +56,10 @@ func _ready() -> void:
 		held = entries.size() - 1
 		sel = held
 
-	var title: String = "Pose ton arme : %s" % WeaponDB.get_def(new_type).name if new_type != "" else "Range tes armes"
+	var title: String = "Pose ton arme : %s" % WeaponDB.get_def(new_type).name if new_type != "" else "Range tes armes et amulettes"
 	UI.put(self, UI.label(title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
-	UI.put(self, UI.label("Clique une arme pour la prendre, reclique pour la poser.  R : tourner · M : miroir (pose au repos)
-En combat, l'arme vise toujours avec le côté DROIT de ton dessin (pointe / canon).",
-		10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 30), Vector2(640, 26))
+	UI.put(self, UI.label("Clique une arme ou une amulette pour la prendre, reclique pour la poser.  R : tourner · M : miroir (pose au repos)",
+		10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 30), Vector2(640, 14))
 
 	var s := base.get_size()
 	px = maxi(2, mini(300 / s.x, 280 / s.y))
@@ -62,7 +68,7 @@ En combat, l'arme vise toujours avec le côté DROIT de ton dessin (pointe / can
 	view.draw.connect(_draw_view)
 	view.gui_input.connect(_input_view)
 	var vs := Vector2(s * px)
-	UI.put(self, view, Vector2(36 + (310 - vs.x) / 2.0, 56 + (280 - vs.y) / 2.0), vs)
+	UI.put(self, view, Vector2(36 + (310 - vs.x) / 2.0, 66 + (270 - vs.y) / 2.0), vs)   # (sous les 2 lignes d'aide)
 
 	info = UI.label("", 10, Pal.TEXT)
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -80,7 +86,7 @@ En combat, l'arme vise toujours avec le côté DROIT de ton dessin (pointe / can
 
 func _entry(type: String, rar: int, rot: int, flip: bool, idx: int) -> Dictionary:
 	var art: Dictionary = Run.weapon_art[Run.art_key(type, rar)]
-	var e := {"type": type, "src": Analyzer.trim(art.image), "rot": rot, "flip": flip,
+	var e := {"kind": "weapon", "type": type, "src": Analyzer.trim(art.image), "rot": rot, "flip": flip,
 		"outline": art.get("outline", false), "idx": idx, "tl": Vector2i(-100, -100)}
 	_rebuild(e)
 	return e
@@ -92,8 +98,13 @@ func _rebuild(e: Dictionary) -> void:
 
 
 func _clamp_tl(e: Dictionary, tl: Vector2i) -> Vector2i:
-	var s := base.get_size()
 	var sz: Vector2i = e.img.get_size()
+	if e.get("kind", "weapon") == "amulet":
+		# une amulette reste sur l'image du perso (sa marge comprise)
+		var lo := Vector2i(MARGIN, MARGIN)
+		var hi := base.get_size() - Vector2i(MARGIN, MARGIN) - sz
+		return Vector2i(clampi(tl.x, lo.x, maxi(lo.x, hi.x)), clampi(tl.y, lo.y, maxi(lo.y, hi.y)))
+	var s := base.get_size()
 	return Vector2i(clampi(tl.x, 0, maxi(0, s.x - sz.x)), clampi(tl.y, 0, maxi(0, s.y - sz.y)))
 
 
@@ -170,8 +181,12 @@ func _update() -> void:
 	var txt := ""
 	if sel >= 0:
 		var e: Dictionary = entries[sel]
-		var def := WeaponDB.get_def(e.type)
-		txt = "%s%s\n%s\n\n" % [def.name, " (nouvelle)" if e.idx < 0 else "", def.desc]
+		if e.get("kind", "weapon") == "amulet":
+			var ad := AmuletDB.get_def(e.id)
+			txt = "%s (amulette)\n%s\n\n" % [ad.name, AmuletDB.describe(ad)]
+		else:
+			var def := WeaponDB.get_def(e.type)
+			txt = "%s%s\n%s\n\n" % [def.name, " (nouvelle)" if e.idx < 0 else "", def.desc]
 	txt += "Chaque arme attaque l'ennemi le plus proche depuis l'endroit où elle est posée. C'est le côté droit du dessin qui vise."
 	info.text = txt
 	view.queue_redraw()
@@ -181,8 +196,11 @@ func _validate() -> void:
 	if not _all_placed():
 		return
 	Sfx.play("buy")
-	var res := {"new": null, "moves": []}
+	var res := {"new": null, "moves": [], "amulet_moves": []}
 	for e in entries:
+		if e.get("kind", "weapon") == "amulet":
+			res.amulet_moves.append({"pos": e.tl - Vector2i(MARGIN, MARGIN), "image": e.img})
+			continue
 		var center := Vector2(e.tl) + Vector2(e.img.get_size()) / 2.0
 		var d := {"anchor": center - cc, "rot": e.rot, "flip": e.flip}
 		if e.idx < 0:

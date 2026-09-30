@@ -753,7 +753,7 @@ func kill_enemy(e: Enemy) -> void:
 			o.queue_redraw()
 			o.hurt(e.ink_dmg, false, (o.position - e.position).normalized() * 50.0)
 	# Retouche : 15 % de chances de redessiner l'ennemi tué dans ton camp
-	if Run.weapon_count("retouche") > 0 and not e.is_boss and not e.small and randf() < 0.15:
+	if Run.weapon_count("retouche") > 0 and not e.is_boss and not e.small and randf() < 0.05:
 		var aid: String = e.id
 		var apos: Vector2 = e.position
 		var ael: bool = e.elite

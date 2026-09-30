@@ -18,9 +18,6 @@ func _ready() -> void:
 		var diff := []
 		for k in ["speed", "dodge", "armor", "harvest", "luck", "dmg", "range", "lifesteal", "thorns", "max_hp", "crit", "crit_mult", "atk_speed", "regen"]:
 			var d: float = st[k] - base[k]
-			var z: Dictionary = AmuletDB.ZONES[Run.amulets[0].zone]
-			if z.stat == k:
-				d -= z.v
 			if absf(d) > 0.001:
 				diff.append("%s %+.1f" % [k, d])
 		print("AMU %-18s %s   ← %s" % [id, ", ".join(diff), AmuletDB.describe(AmuletDB.get_def(id))])

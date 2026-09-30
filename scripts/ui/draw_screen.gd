@@ -889,6 +889,8 @@ func _load_gallery(entry: Dictionary, gi: Image) -> void:
 	_blit_centered(gi)
 	var fx: String = entry.get("effect", "")
 	effect = fx if fx in Meta.effects() else ""
+	outline = entry.get("outline", false)
+	preview_mat.set_shader_parameter("outline", outline)
 	_recount()
 	_close_gallery()
 	_refresh_buttons()

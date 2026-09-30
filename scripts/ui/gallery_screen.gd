@@ -100,7 +100,17 @@ func _view(e: Dictionary) -> void:
 	var fr := UI.panel(Pal.PAPER, Pal.BORDER, 2)
 	UI.put(p, fr, Vector2(70, 26), Vector2(280, 256))
 	var t := Analyzer.trim(img)
-	UI.put(fr, UI.thumb(t, Vector2(264, 240)), Vector2(8, 8), Vector2(264, 240))
+	var big := UI.thumb(Gfx.baked_outline(t) if e.get("outline", false) else t, Vector2(264, 240))
+	UI.put(fr, big, Vector2(8, 8), Vector2(264, 240))
+	var ob := UI.button("Bord : %s" % ("oui" if e.get("outline", false) else "non"), func(): pass)
+	ob.tooltip_text = "Contour noir quand tu réutilises ce dessin (touche C)"
+	ob.pressed.connect(func():
+		Meta.gallery_set_outline(e, not e.get("outline", false))
+		ob.text = "Bord : %s" % ("oui" if e.outline else "non")
+		big.texture = ImageTexture.create_from_image(Gfx.baked_outline(t) if e.outline else t)
+		Sfx.play("click"))
+	UI.hotkey(ob, [KEY_C])
+	UI.put(p, ob, Vector2(330, 8), Vector2(80, 14))
 	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 286), Vector2(420, 12))
 	UI.put(p, UI.hotkey(UI.button("Fermer", func():
 		viewer.queue_free()

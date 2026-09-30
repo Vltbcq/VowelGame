@@ -30,6 +30,8 @@ const SYNERGY_DESC := ["", "Brûlure contagieuse", "Éclats de glace à la mort 
 const HEALS := {
 	"potion": {"name": "Fiole d'encre", "heal": 0.3, "price": 7, "desc": "Soigne 30% de tes PV max."},
 	"grande_potion": {"name": "Grand flacon", "heal": 0.7, "price": 15, "desc": "Soigne 70% de tes PV max."},
+	"encre": {"name": "Pot d'encre", "heal": 0.0, "ink": 40, "price": 12,
+		"desc": "+40 d'encre pour retoucher ton perso (tu replaces ensuite tes armes et amulettes)."},
 	"seve": {"name": "Élixir de sève", "heal": 0.0, "regen": 10.0, "price": 10,
 		"desc": "Vague suivante : régénération ×4 (au moins +8) pendant les 10 premières secondes."},
 }
@@ -40,8 +42,8 @@ const ROULETTE_PAY := {"rouge": 2, "noir": 2, "vert": 36}   # comme au casino : 
 const POTION_CHANCE := 0.5
 ## Case opening : la boutique ne vend plus que des caisses (Bois / Argent / Or, Armes ou Amulettes).
 ## CASE_ODDS[caisse] = % de [commune, rare, épique, légendaire] ; prix = valeur moyenne du contenu −20 %.
-const CASE_NAMES := ["Caisse en bois", "Caisse d'argent", "Caisse dorée"]
-const CASE_ODDS := [[75.0, 22.0, 3.0, 0.0], [10.0, 65.0, 22.0, 3.0], [0.0, 20.0, 65.0, 15.0]]
+const CASE_NAMES := ["Caisse en bois", "Caisse d'argent", "Caisse dorée", "Caisse de diamant"]
+const CASE_ODDS := [[80.0, 18.0, 2.0, 0.0], [15.0, 70.0, 13.0, 2.0], [0.0, 20.0, 70.0, 10.0], [0.0, 0.0, 55.0, 45.0]]
 const CASE_DISCOUNT := 0.8
 const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
 const EVENT_CHANCE := 0.35
@@ -85,6 +87,7 @@ var rerolls := 0
 var joconde := 0            # vagues finies avec La Joconde (+15% dégâts chacune)
 var revived := false        # Renaissance déjà utilisée
 var levelup_choices: Array = []   # les 3 bonus proposés au niveau en attente (sauvegardés)
+var char_ink_bonus := 0     # Pots d'encre achetés : encre en plus pour retoucher le perso
 var regen_boost := 0.0      # Élixir de sève : secondes de régénération boostée au début de la vague suivante
 var star_buff := 0.0        # Grattage (étoile) : +X % dégâts à la vague suivante (en attente)
 var wave_dmg := 0.0         # ... actif pendant la vague en cours
@@ -131,6 +134,7 @@ func start(d: int, map_id := 1) -> void:
 	elite_kills = 0
 	boss_ids = {}
 	regen_boost = 0.0
+	char_ink_bonus = 0
 	journal = []
 	wave_stats = {}
 	star_buff = 0.0
@@ -247,6 +251,15 @@ func add_weapon(type: String, rar: int, price: int, anchor: Vector2, rot := 0, f
 
 
 ## Applique les déplacements faits dans l'écran de rangement (un par arme existante).
+## Rangement : nouvelles positions (et orientations) des amulettes.
+func apply_amulet_moves(moves: Array) -> void:
+	for i in mini(moves.size(), amulets.size()):
+		var m: Dictionary = moves[i]
+		amulets[i].pos = m.pos
+		amulets[i].image = m.image
+	recompute()
+
+
 func apply_weapon_moves(moves: Array) -> void:
 	for i in mini(moves.size(), weapons.size()):
 		var m: Dictionary = moves[i]
@@ -317,7 +330,7 @@ func char_center() -> Vector2:
 
 
 ## Image du perso avec ses amulettes, avec une marge PAD tout autour.
-func build_player_image() -> Image:
+func build_player_image(with_amulets := true) -> Image:
 	var s := character.get_size()
 	var img := Image.create_empty(s.x + PAD * 2, s.y + PAD * 2, false, Image.FORMAT_RGBA8)
 	img.blit_rect(character, Rect2i(Vector2i.ZERO, s), Vector2i(PAD, PAD))
@@ -328,7 +341,7 @@ func build_player_image() -> Image:
 			mi = Gfx.baked_outline(mi)
 			mp -= Vector2i.ONE
 		img.blend_rect(mi, Rect2i(Vector2i.ZERO, mi.get_size()), mp)
-	for am in amulets:
+	for am in (amulets if with_amulets else []):
 		var ai: Image = am.image
 		var pos: Vector2i = am.pos
 		if am.id == "tache":
@@ -451,7 +464,7 @@ func to_save(stage: String) -> Dictionary:
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
 		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
 		"star_buff": star_buff, "patron": patron, "event_used": event_used,
-		"journal": journal.duplicate(true), "wave_stats": wave_stats.duplicate()}
+		"journal": journal.duplicate(true), "char_ink_bonus": char_ink_bonus, "wave_stats": wave_stats.duplicate()}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -523,6 +536,7 @@ func from_save(d: Dictionary) -> bool:
 	patron = String(d.get("patron", ""))
 	event_used = bool(d.get("event_used", false))
 	journal = d.get("journal", [])
+	char_ink_bonus = int(d.get("char_ink_bonus", 0))
 	wave_stats = d.get("wave_stats", {})
 	boss_ids = d.get("boss_ids", {})
 	recompute()
@@ -626,7 +640,7 @@ func write_journal() -> void:
 		L.append("- " + item_label("weapon", w.type, int(w.rar)))
 	L.append("== Amulettes ==")
 	for am in amulets:
-		L.append("- %s (%s)" % [AmuletDB.get_def(am.id).name, am.zone])
+		L.append("- %s" % AmuletDB.get_def(am.id).name)
 	L.append("")
 	L.append("== Journal ==")
 	for e in journal:
@@ -776,7 +790,7 @@ func roll_shop() -> void:
 		var rar := roll_rarity()
 		if amulet_count("case_opening") > 0:
 			# Case opening : une caisse à la place (la rareté tirée donne la caisse)
-			shop_offers.append(make_case(mini(rar, 2), "weapon" if randf() < 0.4 else "amulet"))
+			shop_offers.append(make_case(rar, "weapon" if randf() < 0.4 else "amulet"))
 			continue
 		if randf() < 0.4:
 			# Les armes spéciales n'apparaissent qu'à partir de leur rareté minimum.
@@ -808,11 +822,14 @@ func roll_shop() -> void:
 		Meta.mark_seen(key)
 	apply_capital()
 	# Case « potion » : une fois sur deux
-	if randf() < POTION_CHANCE and amulet_count("pacte_sang") == 0:   # Pacte de sang : pas de potions
+	if randf() < POTION_CHANCE:
 		var roll := randf()
-		var hid := "potion" if roll < 0.55 else ("grande_potion" if roll < 0.8 else "seve")
-		shop_offers.append({"type": "heal", "id": hid, "rar": 0,
-			"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
+		var hid := "potion" if roll < 0.5 else ("grande_potion" if roll < 0.73 else ("seve" if roll < 0.9 else "encre"))
+		if amulet_count("pacte_sang") > 0 and hid != "encre":
+			hid = ""   # Pacte de sang : pas de potions (le pot d'encre reste possible)
+		if hid != "":
+			shop_offers.append({"type": "heal", "id": hid, "rar": 0,
+				"price": roundi(HEALS[hid].price * price_mult()), "sold": false})
 	# Case « événement », à part (dès la 2e boutique) : peut tomber EN PLUS d'une potion
 	if wave >= 2 and not event_used and randf() < EVENT_CHANCE:
 		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())

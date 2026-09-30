@@ -107,6 +107,8 @@ func _ready() -> void:
 			Sfx.play("click")
 			from_carnet = false
 			frame_cap.text = "DESSIN CHOISI DANS TA GALERIE"
+			outline = e.get("outline", false)   # le bord choisi dans la galerie
+			bord_btn.text = "Bord : %s" % ("oui" if outline else "non")
 			_select(gi, _effect_ok(e.get("effect", "")))
 			for o in gallery_btns:
 				_style_thumb(o, o == b))

@@ -22,7 +22,7 @@ Pour dessiner : clic gauche pour peindre et clic droit pour gommer. Raccourcis B
 | Choix du dessin | **Entrée** utiliser, **M** modifier, **N** nouveau, **C** bord, **Échap** retour |
 | Dessin | **B E L R O F S** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
 | Pose / rangement | **R** tourner, **M** miroir, **Entrée** valider |
-| Galerie | clic = voir le dessin en grand ; **Suppr** supprimer (avec confirmation, **Échap** = garder) |
+| Galerie | clic = voir le dessin en grand, **C** = bord oui / non ; **Suppr** supprimer (avec confirmation, **Échap** = garder) |
 | Conseils | **Entrée**, **Espace** ou **Échap** = compris |
 
 Test automatique (simule dessins, 9 vagues avec boss, boutique, menus) :
@@ -65,7 +65,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
    - **Armes spéciales** (jamais au choix de départ, seulement en boutique) :
      - Épiques ou plus : **Pinceau** (balaie et laisse une traînée d'encre qui brûle les ennemis), **Compas** (tourne sans arrêt autour de toi), **Tampon** (imprime ton dessin ×2 au sol : seuls les ennemis sous l'encre sont touchés, ×1,5 dégâts).
      - Épiques ou plus (suite) : **Ciseaux** (exécute sous 25 % des PV), **Agrafeuse** (épingle 1 s ; deux ennemis agrafés à la suite sont reliés et se partagent 50 % des dégâts), **Loupe** (rayon continu, ×1 → ×4 en restant sur la cible), **Brumisateur** (cône qui mouille : −30 % de vitesse, +25 % de dégâts Foudre/Glace), **Avion en papier** (aller-retour qui transperce deux fois), **Crayon HB** (+3 % par coup donné dans la vague, jusqu'à +150 %), **Éventail** (repousse très fort, choc contre les bords).
-     - Légendaires (suite) : **Retouche** (15 % des ennemis tués sont redessinés dans ton camp 10 s), **Miroir déformant** (toutes les 2 s, renvoie les tirs ennemis proches), **Encre de Chine** (marque ; un marqué qui meurt éclabousse et marque ses voisins, en chaîne), **Grande Signature** (toutes les 8 s, une signature géante traverse l'écran ; plus forte avec les ennemis tués dans la partie), **Point final** (point noir qui aspire puis implose).
+     - Légendaires (suite) : **Retouche** (5 % des ennemis tués sont redessinés dans ton camp 10 s), **Miroir déformant** (toutes les 2 s, renvoie les tirs ennemis proches), **Encre de Chine** (marque ; un marqué qui meurt éclabousse et marque ses voisins, en chaîne), **Grande Signature** (toutes les 8 s, une signature géante traverse l'écran ; plus forte avec les ennemis tués dans la partie), **Point final** (point noir qui aspire puis implose).
      - Légendaires uniquement : **Gomme sacrée** (un long trait de gomme : 30 % de chances d'effacer net un ennemi, 15 % pour un élite, sinon 25 % de ses PV ; les boss perdent 3 % ; efface aussi l'encre ennemie au sol), **Palette vivante** (un orbe chercheur par couleur du dessin, avec son effet élémentaire garanti ; pas de balles à dessiner), **Autoportrait** (envoie un clone de ton perso qui court vers l'ennemi et explose ; pas de balles à dessiner).
    - Chaque type et chaque amulette a sa propre quantité d'encre (et ses balles aussi).
 4. **15 vagues**, un **boss toutes les 5 vagues** (vague 5 : Le Raturé, vague 10 : Le Critique *ou* La Muse, vague 15 : La Toile Blanche). La difficulté est calée pour que la vague 15 soit aussi dure que l'ancienne vague 20. Un nouvel ennemi apparaît régulièrement et tu dois le dessiner la première fois que tu le croises. Même chose pour ses projectiles.
@@ -74,7 +74,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
    - Vague 10 : boss *Le Critique*
    - Vague 15 : mini-boss *La Muse*
    - Vague 20 : boss final *La Toile Blanche*
-5. **Les PV ne remontent pas entre les vagues.** Une fois sur deux, la boutique propose une potion (Fiole d'encre 30%, Grand flacon 70%, Élixir de sève : régénération ×4, au moins +8, pendant les 10 premières secondes de la vague suivante). À part (35 % des boutiques, dès la 2e ; donc parfois en plus d'une potion), un **événement** au hasard (~7 % chacun ; une fois un événement joué, les relances de cette boutique n'en proposent plus) :
+5. **Les PV ne remontent pas entre les vagues.** Une fois sur deux, la boutique propose une potion (Fiole d'encre 30%, Grand flacon 70%, Élixir de sève : régénération ×4, au moins +8, pendant les 10 premières secondes de la vague suivante), ou plus rarement un **Pot d'encre** (+40 d'encre pour retoucher ton perso, puis tu replaces armes et amulettes). À part (35 % des boutiques, dès la 2e ; donc parfois en plus d'une potion), un **événement** au hasard (~7 % chacun ; une fois un événement joué, les relances de cette boutique n'en proposent plus) :
    - **Roulette** : mise ton or sur Rouge ou Noir (×2) ou Vert (×36, comme au casino), 37 cases dont 1 verte, une mise par roulette.
    - **Ticket à gratter** (8 or) : gratte les 3 cases à la souris ; 3 symboles pareils (1 chance sur 3) : pièces = +25 or, étoiles = +15 % dégâts à la vague suivante, diamants = une amulette rare gratuite.
    - **Vente aux enchères** : une arme ou amulette épique (10 % légendaire). Surenchéris (+5 / +10 / +20) contre un collectionneur qui a un plafond secret (70 à 140 % du prix), ou retire-toi.
@@ -178,13 +178,13 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 ## Synergies, fusion, pactes
 
 - **Synergies de couleur** (3 armes d'un même élément dominant) : Feu = brûlure contagieuse, Glace = les gelés éclatent en éclats, Foudre = chaînes à 4 cibles, Poison = nuage toxique, Arcane = marque doublée, Lumière = toutes tes explosions sont 33 % plus grandes.
-- **Fusion** : 2 exemplaires du même type et de même rareté → 1 de rareté supérieure, avec de l'encre en plus pour agrandir le dessin.
+- **Fusion** : 2 exemplaires du même type et de même rareté → 1 de rareté supérieure, avec de l'encre en plus pour agrandir le dessin. Si plusieurs fusions sont possibles, la boutique affiche un bouton par paire : tu choisis laquelle.
 - **Bonus / malus** : les amulettes simples ont un défaut ; certains choix de niveau sont des **pactes** (bonus doublé mais un attribut baisse).
 - **Amulettes légendaires uniques** : une seule de chaque par partie. Une fois achetée, elle ne revient plus en boutique, et la vitrine ne propose jamais deux fois la même.
 
 ## Amulettes (126)
 
-- 29 communes, 27 rares, 27 épiques, 19 légendaires (uniques). Presque toutes ont un défaut. **Le Capital** (épique, achat unique) : toutes les armes et amulettes de la boutique coûtent le prix moyen de la vague (≈ 13 or en vague 1, 48 en vague 8, 150 en vague 15), et il coûte lui-même ce prix. **Case opening** (épique, achat unique) : la boutique ne vend plus que des **caisses** façon CS:GO, en Bois / Argent / Or et en version Armes ou Amulettes. Chances : Bois 75 % commune · 22 % rare · 3 % épique ; Argent 10 / 65 / 22 / 3 % légendaire ; Or 20 % rare · 65 % épique · 15 % légendaire. Prix = valeur moyenne du contenu −20 %. Tu paies, la bande défile, puis tu choisis de **prendre** l'objet ou de le **laisser**. Avec Case opening, le Capital n'a plus d'effet. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
+- 29 communes, 27 rares, 27 épiques, 19 légendaires (uniques). Presque toutes ont un défaut. **Le Capital** (épique, achat unique) : toutes les armes et amulettes de la boutique coûtent le prix moyen de la vague (≈ 13 or en vague 1, 48 en vague 8, 150 en vague 15), et il coûte lui-même ce prix. **Case opening** (épique, achat unique) : la boutique ne vend plus que des **caisses** façon CS:GO, en Bois / Argent / Or / Diamant et en version Armes ou Amulettes. Une caisse par rareté : Bois 80 % commune · 18 % rare · 2 % épique ; Argent 15 / 70 / 13 % épique / 2 % légendaire ; Or 20 % rare · 70 % épique · 10 % légendaire ; **Diamant** 55 % épique · 45 % légendaire. Prix = valeur moyenne du contenu −20 %. Tu paies, la bande défile, puis tu choisis de **prendre** l'objet ou de le **laisser**. Avec Case opening, le Capital n'a plus d'effet. Pendant une partie, les amulettes dont l'effet varie affichent leur **valeur actuelle** (Fresque, Échelle, Accordéon, Taille-douce, Étiquette de prix, Palette, Poids, Cadre doré, Collage, Signature, La Joconde, Esquisse).
 - Communes, nouvelles : Pastel, Craie grasse, Papier kraft, Colle, Spatule (+12 % mêlée / −8 % distance), Viseur (l'inverse), Tube de peinture, Chiffon, Mètre ruban, Encre sympathique, Godet, Étiquette de prix (−8 % sur les prix, 5 achats max), Timbre, Gommette (+10 % d'XP), Porte-mine.
 - Rares, nouvelles : Aimant à pépites (+15 % d'or), Crayon de couleur (élément de ton perso), Ombre portée (après une esquive, coup ×2), Pansement (soin à chaque niveau), Cadran solaire (+20 % en 2e moitié de vague), Taille-douce (critique selon l'armure), Encre invisible (les ennemis te perdent de vue 1 s), Papier de verre (dégâts selon les ennemis proches), Bulle de soin (gouttes de soin), Élastique (rebonds sur les bords), Correcteur (insensible aux flaques), Cachet de cire (élites ×2 d'or).
 - Épiques, nouvelles : Kaléidoscope, Lanterne magique (leurre), Ressort (mêlée +30 % portée, recul ×2), Métronome (1 attaque sur 5 ×2,5), Pierre à aiguiser, Boussole (projectiles chercheurs), Effet papillon, Encre de seiche (nuage qui aveugle, recharge 15 s), Échelle (+2 % par niveau), Accordéon, Bouclier de papier (1er coup de chaque vague ignoré).
@@ -225,7 +225,6 @@ Tout est dans `scripts/core/stats.gd`. C'est le fichier à modifier pour équili
 | **Projectile ennemi** | Taille | Gros = lent mais facile à toucher |
 | **Amulette** | Taille / encre utilisée | Rien : l'effet est toujours celui indiqué |
 | | Couleur | Résistance à l'élément |
-| | Endroit où tu la poses | Bonus de zone : tête, cœur, mains, pieds ou aura |
 
 ### Couleurs = éléments
 
@@ -281,3 +280,9 @@ Sauvegarde : `%APPDATA%/VowelGame/`.
 - **Contraintes d'atelier** : défis optionnels (« dessine ton arme avec 40 pixels max ») qui rapportent des pigments bonus.
 - **Défi du jour** : même graine et palette imposée pour tout le monde.
 - **Musique chiptune** (pas encore de musique, seulement des bruitages).
+
+## Version
+
+Le numéro de version est affiché en bas à droite de l'écran titre (écrit par la pipeline de Release à partir du tag). **v0.X** = nouveautés (contenu, mécaniques) ; **v0.X.Y** = correctifs et équilibrage ; **v1.0** plus tard.
+
+Autres changements récents : plus de bonus de zone en posant une amulette (tu la poses où tu veux) ; les amulettes élémentaires (Allumette, Braise, Givre, Stalactite, Paratonnerre, Dynamo, Fiole, Champignon, Grimoire, Pentacle, Vitrail, Auréole) ne s'achètent qu'une fois chacune ; « Ranger mes armes » range aussi les amulettes ; icône arme / amulette sur les tableaux de la boutique ; le Raturé tire moins souvent.

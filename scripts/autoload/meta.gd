@@ -490,6 +490,15 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 	check_achievements({})
 
 
+## Galerie : active / désactive le bord d'un dessin (utilisé quand on le réutilise).
+func gallery_set_outline(entry: Dictionary, on: bool) -> void:
+	for e in data.gallery:
+		if e.file == entry.file:
+			e.outline = on
+	entry.outline = on
+	save()
+
+
 ## Dessins qu'on ne garde plus dans la galerie (marques, tirs ennemis : plus utiles).
 const GALLERY_HIDDEN := ["mark", "eproj"]
 

@@ -126,6 +126,7 @@ func _get_weapon(type: String, rar: int, price: int, cancel := true) -> bool:
 			return false
 	var p = await _ask(ArrangeScreen.new(type, rar))
 	Run.apply_weapon_moves(p.moves)
+	Run.apply_amulet_moves(p.get("amulet_moves", []))
 	Run.add_weapon(type, rar, price, p.new.anchor, p.new.rot, p.new.flip)
 	return true
 
@@ -367,6 +368,9 @@ func _shop() -> bool:
 			"arrange":
 				var p = await _ask(ArrangeScreen.new("", 0))
 				Run.apply_weapon_moves(p.moves)
+				Run.apply_amulet_moves(p.get("amulet_moves", []))
+			"ink":
+				await _ink_pot(r.i)
 	return false
 
 
@@ -407,6 +411,34 @@ func _buy(i: int) -> void:
 				Run.amulets.remove_at(k)
 				break
 	Run.recompute()
+
+
+## Pot d'encre : on retouche le perso avec de l'encre en plus, puis on range armes et amulettes.
+func _ink_pot(i: int) -> void:
+	var o: Dictionary = Run.shop_offers[i]
+	if o.sold or Run.gold < o.price:
+		return
+	var add := int(Run.HEALS[o.id].ink)
+	var cfg := DrawCfg.character()
+	cfg.base = Run.character
+	cfg.ink = int(cfg.ink) + Run.char_ink_bonus + add
+	cfg.effect = Run.char_effect
+	cfg.outline = Run.char_outline
+	cfg.title = "Retouche ton perso (+%d d'encre)" % add
+	cfg.sub = "Ajoute (ou gomme) ce que tu veux : tes stats changent. Ensuite, replace tes armes et amulettes."
+	cfg.cancel = true
+	cfg.cancel_label = "Annuler"
+	var r = await _paint(cfg)
+	if r == null:
+		return   # rien payé
+	Run.gold -= o.price
+	o.sold = true
+	Run.char_ink_bonus += add
+	Run.set_character(r.image, r.effect, r.outline)
+	Run.log_event("buy", "Pot d'encre : perso retouché (+%d d'encre, ● %d)" % [add, o.price])
+	var p = await _ask(ArrangeScreen.new("", 0))
+	Run.apply_weapon_moves(p.moves)
+	Run.apply_amulet_moves(p.get("amulet_moves", []))
 
 
 ## Fusion : 2 exemplaires du même type et de même rareté -> 1 exemplaire de rareté +1.

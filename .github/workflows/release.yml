@@ -40,6 +40,12 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           mv templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
 
+      - name: Numéro de version du jeu (affiché sur l'écran titre)
+        run: |
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          sed -i "s/^config\/version=.*/config\/version=\"${VERSION#v}\"/" project.godot
+          grep "config/version" project.godot
+
       - name: Importer le projet
         run: timeout 300 "$RUNNER_TEMP/godot" --headless --path . --import || true
 

@@ -74,11 +74,7 @@ func _ready() -> void:
 
 	var y := 60.0
 	if mode == "amulet":
-		var info := ""
-		for z in AmuletDB.ZONES:
-			info += "%s : %s\n" % [z, AmuletDB.ZONES[z].desc]
-		UI.put(self, UI.label("ZONES", 10, Pal.DIM), Vector2(370, y))
-		UI.put(self, UI.label(info, 10, Pal.TEXT), Vector2(370, y + 16), Vector2(260, 70))
+		UI.put(self, UI.label("Pose-la où tu veux sur ton perso.", 10, Pal.TEXT), Vector2(370, y), Vector2(260, 14))
 		UI.put(self, UI.label("EFFET", 10, Pal.DIM), Vector2(370, y + 94))
 		var am_a: Dictionary = Run.amulet_art[def.id].a
 		var eff := UI.label(AmuletDB.describe(def, Stats.amulet_mag(am_a, def)), 10, Pal.TEXT)
@@ -89,8 +85,6 @@ func _ready() -> void:
 		UI.put(self, row, Vector2(370, y + 156), Vector2(260, 18))
 		row.add_child(UI.button("Tourner (R)", _rotate))
 		row.add_child(UI.button("Miroir (M)", _mirror))
-		zone_label = UI.label("Zone : -", 20, Pal.ACCENT)
-		UI.put(self, zone_label, Vector2(370, y + 190), Vector2(260, 24))
 	elif mode == "mark":
 		var info := UI.label(def.desc + "\n\nPose ta marque où tu veux : elle décore ton perso sans le rendre plus gros ni plus lent.", 10, Pal.TEXT)
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -109,8 +103,6 @@ func _ready() -> void:
 		UI.put(self, row, Vector2(370, y + 140), Vector2(260, 18))
 		row.add_child(UI.button("Tourner (R)", _rotate))
 		row.add_child(UI.button("Miroir (M)", _mirror))
-	if mode == "amulet":
-		Tips.show(self, "amulet_zones")
 	ok_btn = UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER])
 	ok_btn.disabled = true
 	UI.put(self, ok_btn, Vector2(496, 330), Vector2(136, 18))

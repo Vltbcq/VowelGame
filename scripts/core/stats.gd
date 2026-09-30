@@ -99,8 +99,6 @@ static func player(run: Node) -> Dictionary:
 			s[pv[0]] += float(pv[1]) * am.mag
 		for mv in def.get("minus", []):   # défauts en plus
 			s[mv[0]] += float(mv[1])
-		var z: Dictionary = AmuletDB.ZONES[am.zone]
-		s[z.stat] += z.v
 		# La couleur d'une amulette donne un peu de résistance à son élément.
 		var af: Array = am.a.frac
 		for e in range(1, Pal.COUNT):

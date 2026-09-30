@@ -1156,17 +1156,17 @@ func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 			mat.set_shader_parameter("alpha", 1.0)
 			contact = true
 			state = "walk"
-			_ring(20 if _enraged() else 16, randf() * TAU, 0.9)
+			_ring(16 if _enraged() else 12, randf() * TAU, 0.9)
 		return Vector2.ZERO
 	cd -= delta
 	cd2 -= delta
 	if cd2 <= 0.0:
-		cd2 = 1.1 if _enraged() else 1.6
+		cd2 = 1.6 if _enraged() else 2.3   # (le 1er boss tire moins souvent)
 		for k in range(-2, 3):
 			_shoot(dirp.rotated(k * 0.2), 1.1)
 		Sfx.play("enemy_shot")
 	if cd <= 0.0:
-		cd = 3.5 if _enraged() else 4.5
+		cd = 4.5 if _enraged() else 5.5
 		state = "fade"
 		st_t = 0.5
 		contact = false

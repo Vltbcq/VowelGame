@@ -31,6 +31,10 @@ func _ready() -> void:
 	UI.fill_bg(self)
 	for k in FRAME_KINDS + ["bullet"]:
 		entries += Meta.gallery(k)
+	# Version du jeu (en bas à droite) : écrite par la pipeline de Release à partir du tag
+	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "?")), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT)
+	ver.z_index = 10
+	UI.put(self, ver, Vector2(480, 346), Vector2(154, 12))
 
 	# Mur de l'expo (papier) derrière les cadres et le défilé
 	var rail := ColorRect.new()

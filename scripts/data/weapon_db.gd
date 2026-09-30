@@ -113,7 +113,7 @@ const TYPES := {
 		"desc": "Légendaire. Tire un orbe par COULEUR de son dessin, chacun avec son effet élémentaire garanti. Pas de balles à dessiner."},
 	"retouche": {"name": "Retouche", "kind": "ranged", "style": "homing", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "dmg": 1.0, "cd": 1.0, "speed": 0.9,
-		"desc": "Légendaire. Chaque ennemi tué a 15% de chances d'être REDESSINÉ dans ton camp : il se bat pour toi 10 s (pas les boss)."},
+		"desc": "Légendaire. Chaque ennemi tué a 5% de chances d'être REDESSINÉ dans ton camp : il se bat pour toi 10 s (pas les boss)."},
 	"miroir_deformant": {"name": "Miroir déformant", "kind": "ranged", "style": "mirror", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 1.2, "cd": 1.0, "speed": 1.0,
 		"desc": "Légendaire. N'attaque pas : toutes les 2 s, une onde RENVOIE les projectiles ennemis proches, qui deviennent tes tirs."},

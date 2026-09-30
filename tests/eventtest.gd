@@ -105,7 +105,7 @@ func _ready() -> void:
 	Run.roll_shop()
 	var only_cases := Run.shop_offers.filter(func(o): return o.type in ["weapon", "amulet"]).is_empty() 		and Run.shop_offers.any(func(o): return o.type == "case")
 	_check(only_cases, "Case opening : la boutique ne vend que des caisses")
-	for tier in 3:
+	for tier in 4:
 		for kind in ["weapon", "amulet"]:
 			var c := Run.make_case(tier, kind)
 			var val := 0.0
