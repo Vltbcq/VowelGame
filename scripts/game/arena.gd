@@ -237,7 +237,7 @@ func _tick_spyglass(delta: float) -> void:
 	if spy_t <= 0.0:
 		spy_t = 2.0
 		spy_zoom = randf_range(1.0, 3.0)
-	var z := lerpf(cam.zoom.x, spy_zoom, 1.0 - exp(-2.2 * delta))
+	var z := lerpf(cam.zoom.x, spy_zoom, 1.0 - exp(-3.5 * delta))   # (arrive en ~1 s, avant le changement suivant)
 	cam.zoom = Vector2(z, z)
 
 
