@@ -15,7 +15,7 @@ const TEXT := {
 	"draw_bullet": ["Dessine tes balles",
 		"• Chaque MORCEAU séparé devient un projectile : 5 petits points = une rafale de 5 balles !\n• La forme des balles change leurs stats : regarde l'APERÇU."],
 	"draw_enemy": ["Dessine un ennemi",
-		"Oui, tu dessines aussi tes ennemis !\n\n• Sa couleur dominante devient son élément : il te fait des dégâts de cet élément et y résiste.\n\nIl est gardé dans ton CARNET pour les prochaines parties. « Au hasard » dessine un monstre pour toi."],
+		"Oui, tu dessines aussi tes ennemis !\n\n• Sa couleur dominante devient son élément : il te fait des dégâts de cet élément et y résiste.\n\nIl est gardé dans le BESTIAIRE pour les prochaines parties. « Au hasard » dessine un monstre pour toi."],
 	"draw_amulet": ["Dessine ton amulette",
 		"Chaque amulette a ses bonus et ses défauts : choisis-les selon ton build.\n\nEnsuite tu la poseras où tu veux sur ton perso : l'endroit donne un bonus en plus."],
 	"draw_mark": ["Dessine une marque",

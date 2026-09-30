@@ -272,10 +272,10 @@ func _pre_wave(w: int) -> void:
 ## dessin par défaut du Bestiaire, ou un dessin compatible de la galerie, ou de dessiner.
 ## « < Choix » dans l'écran de dessin ramène à cette sélection.
 ## Retourne {image, effect, outline}, ou null si le joueur annule (quand c'est permis).
-func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET"):
+func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON DESSIN DE BASE"):
 	var existing = Meta.bestiary_get(key)
 	if existing != null:
-		caption = "TON DESSIN DU BESTIAIRE"
+		caption = "TON DESSIN DE BASE"
 	while true:
 		var r = await _ask(BestiaryPrompt.new(cfg, existing, reward, caption))
 		match r.a:

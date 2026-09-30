@@ -12,7 +12,7 @@ signal done(result)
 var cfg: Dictionary
 var existing          # {image, effect, outline} ou null
 var reward := 0
-var caption := "TON CARNET"
+var caption := "TON DESSIN DE BASE"
 
 var sel_img: Image
 var sel_effect := ""
@@ -29,7 +29,7 @@ var bord_btn: Button
 var gallery_btns := []
 
 
-func _init(draw_cfg: Dictionary, current, pigments_reward := 0, featured_caption := "TON CARNET") -> void:
+func _init(draw_cfg: Dictionary, current, pigments_reward := 0, featured_caption := "TON DESSIN DE BASE") -> void:
 	cfg = draw_cfg
 	existing = current
 	reward = pigments_reward
@@ -115,13 +115,13 @@ func _ready() -> void:
 	if fits.is_empty():
 		UI.put(self, UI.label("Aucun dessin de ta galerie ne convient (taille ou encre).", 10, Pal.DIM), Vector2(248, 82))
 	if existing != null:
-		UI.put(self, UI.button("< Revenir à mon carnet", func():
+		UI.put(self, UI.button("< Remettre le dessin de base", func():
 			from_carnet = true
 			frame_cap.text = caption
 			outline = existing.outline
 			_select(existing.image, existing.effect)
 			for o in gallery_btns:
-				_style_thumb(o, false)), Vector2(248, 338), Vector2(170, 18))
+				_style_thumb(o, false)), Vector2(248, 338), Vector2(200, 18))
 	if cfg.get("cancel", false):
 		UI.put(self, UI.hotkey(UI.button(String(cfg.get("cancel_label", "Retour")), func(): done.emit({"a": "cancel"})), [KEY_ESCAPE]), Vector2(528, 338), Vector2(100, 18))
 	Tips.show(self, "carnet")
