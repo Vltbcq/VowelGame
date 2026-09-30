@@ -11,9 +11,7 @@ func _ready() -> void:
 	res.append(["Accueil N", await _press(TitleScreen.new(), KEY_N)])
 	res.append(["Accueil Entrée", await _press(TitleScreen.new(), KEY_ENTER)])
 	res.append(["Accueil G", await _press(TitleScreen.new(), KEY_G)])
-	res.append(["Difficulté 1 (touche physique)", await _press(ChoiceScreens.difficulty(), KEY_1, true)])
 	res.append(["Difficulté Échap", await _press(ChoiceScreens.difficulty(), KEY_ESCAPE)])
-	res.append(["Arme pavé num 2", await _press(ChoiceScreens.weapon_kind(), KEY_KP_2)])
 	res.append(["Fin Espace", await _press(ChoiceScreens.end_run(true, 1), KEY_SPACE)])
 	res.append(["Options Échap", await _press(OptionsPanel.new(), KEY_ESCAPE)])
 	Run.start(0)
@@ -22,7 +20,6 @@ func _ready() -> void:
 	Run.set_character(img, "")
 	Run.wave = 2
 	Run.recompute()
-	res.append(["Niveau 3", await _press(LevelUpScreen.new(), KEY_3, true)])
 	Run.new_shop()
 	res.append(["Boutique Entrée", await _press(ShopScreen.new(), KEY_ENTER)])
 	res.append(["Boutique A", await _press(ShopScreen.new(), KEY_A)])

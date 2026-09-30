@@ -18,10 +18,9 @@ Pour dessiner : clic gauche pour peindre et clic droit pour gommer. Raccourcis B
 | Partout | **Entrée** = valider / continuer, **Échap** = retour / fermer (rappelés dans l'infobulle des boutons) |
 | En jeu | **Échap** ou **P** = pause · molette ou **+ / -** = zoom · dans la pause : **Entrée** reprendre, **O** options |
 | Accueil | **Entrée** / **N** nouvelle partie, **A** atelier, **G** galerie, **B** bestiaire, **O** options |
-| Difficulté, 1re arme, niveau | **1 à 5** (touches du haut, sans Maj, ou pavé numérique) |
-| Boutique | **1 à 9** acheter l'œuvre n°, **R** nouvel accrochage, **A** ranger mes armes, **Entrée** salle suivante |
+| Boutique | **R** nouvel accrochage, **A** ranger mes armes, **Entrée** salle suivante |
 | Choix du dessin | **Entrée** utiliser, **M** modifier, **N** nouveau, **C** bord, **Échap** retour |
-| Dessin | **B E L R O F** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
+| Dessin | **B E L R O F S** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
 | Pose / rangement | **R** tourner, **M** miroir, **Entrée** valider |
 | Galerie | clic = voir le dessin en grand ; **Suppr** supprimer (avec confirmation, **Échap** = garder) |
 | Conseils | **Entrée**, **Espace** ou **Échap** = compris |

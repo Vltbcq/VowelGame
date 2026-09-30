@@ -313,8 +313,6 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		return
 	var btxt: String = {"roulette": "Miser", "auction": "Enchérir", "restorer": "Choisir", "patron": "Écouter"}.get(o.type, "● %d" % o.price)
 	var b := UI.button(btxt, func(): _buy(i))
-	if i < 9:
-		UI.hotkey(b, [KEY_1 + i])
 	_style_price(b)
 	b.disabled = Run.gold < o.price or full or (o.type == "roulette" and Run.gold < 1)
 	if o.type == "auction":

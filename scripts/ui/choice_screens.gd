@@ -20,7 +20,7 @@ static func map_choice() -> Control:
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.put(p, l, Vector2(14, 48), Vector2(212, 130))
 			var mid: int = id
-			var b := UI.hotkey(UI.button("Jouer ici (%d)" % (i + 1), func(): root.done.emit(mid)), [KEY_1 + i])
+			var b := UI.button("Jouer ici", func(): root.done.emit(mid))
 			b.disabled = not open
 			UI.put(p, b, Vector2(50, 192), Vector2(140, 22))
 			i += 1
@@ -48,8 +48,8 @@ static func slots() -> Control:
 			var l := UI.label(txt, 10, Pal.TEXT if not sm.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.put(p, l, Vector2(8, 44), Vector2(160, 100))
-			UI.put(p, UI.hotkey(UI.button(("Jouer (%d)" if not sm.is_empty() else "Commencer (%d)") % n,
-				func(): root.done.emit({"a": "play", "n": n})), [KEY_1 + i]), Vector2(28, 148), Vector2(120, 20))
+			UI.put(p, UI.button("Jouer" if not sm.is_empty() else "Commencer",
+				func(): root.done.emit({"a": "play", "n": n})), Vector2(28, 148), Vector2(120, 20))
 			if not sm.is_empty():
 				UI.put(p, UI.button("Supprimer", func(): root.done.emit({"a": "delete", "n": n})), Vector2(48, 174), Vector2(80, 16))
 		UI.put(root, UI.button("Quitter le jeu", func(): root.done.emit({"a": "quit"})), Vector2(20, 330), Vector2(110, 18))
@@ -86,7 +86,7 @@ static func difficulty(map_id := 1) -> Control:
 			var d: Dictionary = Meta.DIFFICULTIES[i]
 			var idx := i
 			var y := 80 + i * 44
-			var b := UI.hotkey(UI.button(d.name, func(): root.done.emit(idx), 20), [KEY_1 + i])
+			var b := UI.button(d.name, func(): root.done.emit(idx), 20)
 			UI.put(root, b, Vector2(150, y), Vector2(160, 30))
 			var txt: String = d.desc + "\nRécompense : ×%.2f pigments" % d.reward
 			if i > maxd:
@@ -124,7 +124,7 @@ static func weapon_kind() -> Control:
 			var l := UI.label(def.desc + "\n\n" + ink, 10, Pal.TEXT)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.put(p, l, Vector2(12, 62), Vector2(152, 110))
-			UI.put(p, UI.hotkey(UI.button("Choisir (%d)" % (i + 1), func(): root.done.emit(id)), [KEY_1 + i]), Vector2(38, 186), Vector2(100, 20))
+			UI.put(p, UI.button("Choisir", func(): root.done.emit(id)), Vector2(38, 186), Vector2(100, 20))
 	return s
 
 

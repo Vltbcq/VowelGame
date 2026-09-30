@@ -33,4 +33,4 @@ func _ready() -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		UI.put(p, l, Vector2(8, 44), Vector2(144, 66))
 		var up: Dictionary = u
-		UI.put(p, UI.hotkey(UI.button("Choisir (%d)" % (i + 1), func(): done.emit(up)), [KEY_1 + i]), Vector2(30, 116), Vector2(100, 20))
+		UI.put(p, UI.button("Choisir", func(): done.emit(up)), Vector2(30, 116), Vector2(100, 20))
