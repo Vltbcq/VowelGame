@@ -13,6 +13,7 @@ const TOOLS := [
 	["rect", "Rectangle", "tool_rect", KEY_R],
 	["ellipse", "Ellipse", "tool_ellipse", KEY_O],
 	["fill", "Remplir", "", KEY_F],
+	["select", "Sélection", "", KEY_S],
 ]
 
 var cfg: Dictionary
@@ -34,6 +35,15 @@ var rmb := false
 var stroke_len := 0.0
 var last_cell := Vector2i.ZERO
 var start_cell := Vector2i.ZERO
+# Sélection : "" | "making" (rectangle en cours) | "floating" (zone levée) | "drag" (on la déplace)
+var sel_state := ""
+var sel_a := Vector2i.ZERO
+var sel_b := Vector2i.ZERO
+var sel_img: Image          # les pixels sélectionnés
+var sel_base: Image         # le dessin SANS ces pixels
+var sel_pos := Vector2i.ZERO
+var drag_from := Vector2i.ZERO
+var drag_pos0 := Vector2i.ZERO
 var undo_stack: Array[Image] = []
 var redo_stack: Array[Image] = []
 
@@ -98,21 +108,40 @@ func _build_ui() -> void:
 	left.add_theme_constant_override("separation", 2)
 	UI.put(self, left, Vector2(8, 62), Vector2(116, 290))
 	left.add_child(UI.label("OUTILS", 10, Pal.DIM))
+	# outils sur 2 colonnes (tout tient même quand tout est débloqué)
+	var tgrid := GridContainer.new()
+	tgrid.columns = 2
+	tgrid.add_theme_constant_override("h_separation", 2)
+	tgrid.add_theme_constant_override("v_separation", 2)
+	left.add_child(tgrid)
 	for t in TOOLS:
 		if not Meta.has(t[2]):
 			continue
 		var id: String = t[0]
-		var b := UI.button(t[1], func(): _set_tool(id))
-		b.tooltip_text = "Raccourci : %s" % OS.get_keycode_string(t[3])
-		left.add_child(b)
+		var short: String = {"rect": "Rect.", "select": "Sélect."}.get(id, t[1])
+		var b := UI.button(short, func(): _set_tool(id))
+		b.clip_text = true
+		b.custom_minimum_size.x = 56
+		b.tooltip_text = "%s · raccourci : %s" % [t[1], OS.get_keycode_string(t[3])]
+		if id == "select":
+			b.tooltip_text = "Sélection (S) : trace un rectangle, glisse-le pour le déplacer,
+Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tgrid.add_child(b)
 		tool_btns[id] = b
 	if Meta.has("tool_mirror"):
 		toggle_btns.mirror = UI.button("Symétrie", func(): _toggle("mirror"))
-		left.add_child(toggle_btns.mirror)
+		toggle_btns.mirror.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle_btns.mirror.clip_text = true
+		toggle_btns.mirror.custom_minimum_size.x = 56
+		tgrid.add_child(toggle_btns.mirror)
 	if Meta.has("gradient"):
 		toggle_btns.gradient = UI.button("Dégradé", func(): _toggle("gradient"))
 		toggle_btns.gradient.tooltip_text = "Clic gauche : couleur A, clic droit : couleur B"
-		left.add_child(toggle_btns.gradient)
+		toggle_btns.gradient.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle_btns.gradient.clip_text = true
+		toggle_btns.gradient.custom_minimum_size.x = 56
+		tgrid.add_child(toggle_btns.gradient)
 	if Meta.has("tool_big"):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 2)
@@ -289,6 +318,8 @@ func _mark(b: Button, on: bool) -> void:
 
 
 func _set_tool(t: String) -> void:
+	if t != "select":
+		_sel_commit()
 	tool = t
 	_refresh_buttons()
 
@@ -397,6 +428,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 	# Défaire / refaire (maintenir la touche répète)
 	if ev is InputEventKey and ev.pressed and ev.ctrl_pressed:
 		if ev.keycode == KEY_Z and not ev.shift_pressed:
+			_sel_commit()
 			_undo()
 			return
 		if ev.keycode == KEY_Y or (ev.keycode == KEY_Z and ev.shift_pressed):
@@ -404,6 +436,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 			return
 	if ev is InputEventKey and ev.pressed and not ev.echo:
 		var k: int = ev.keycode
+		if (k == KEY_DELETE or k == KEY_BACKSPACE) and sel_state == "floating":
+			_sel_delete()
+			return
 		for t in TOOLS:
 			if k == t[3] and tool_btns.has(t[0]):
 				_set_tool(t[0])
@@ -435,6 +470,12 @@ func _cur_tool() -> String:
 
 
 func begin_stroke(cell: Vector2i, right: bool) -> void:
+	if tool == "select":
+		if right:
+			_sel_commit()   # clic droit : poser la sélection
+		else:
+			_sel_press(cell)
+		return
 	_push_undo()
 	drawing = true
 	rmb = right
@@ -456,6 +497,10 @@ func begin_stroke(cell: Vector2i, right: bool) -> void:
 func continue_stroke(cell: Vector2i) -> void:
 	if not drawing or cell == last_cell:
 		return
+	if tool == "select":
+		_sel_move(cell)
+		last_cell = cell
+		return
 	match _cur_tool():
 		"brush", "eraser":
 			var pts := _line_cells(last_cell, cell)
@@ -470,6 +515,9 @@ func continue_stroke(cell: Vector2i) -> void:
 
 func end_stroke() -> void:
 	if not drawing:
+		return
+	if tool == "select":
+		_sel_release()
 		return
 	drawing = false
 	shape_base = null
@@ -638,6 +686,7 @@ func _push_undo() -> void:
 
 
 func _undo() -> void:
+	_sel_commit()
 	if undo_stack.is_empty():
 		_warn("Rien à défaire")
 		return
@@ -657,6 +706,7 @@ func _redo() -> void:
 
 
 func _clear() -> void:
+	_sel_commit()
 	_push_undo()
 	img.fill(Color(0, 0, 0, 0))
 	used = 0
@@ -682,7 +732,100 @@ func _changed() -> void:
 	stats_label.text = Stats.preview(cfg, img, effect)
 
 
+# ------------------------------------------------------------------ Sélection (rectangle)
+
+func _sel_rect() -> Rect2i:
+	if sel_state == "making":
+		return Rect2i(Vector2i(mini(sel_a.x, sel_b.x), mini(sel_a.y, sel_b.y)), (sel_a - sel_b).abs() + Vector2i.ONE)
+	if sel_img == null:
+		return Rect2i()
+	return Rect2i(sel_pos, sel_img.get_size())
+
+
+func _sel_press(cell: Vector2i) -> void:
+	drawing = true
+	last_cell = cell
+	if sel_state == "floating" and _sel_rect().has_point(cell):
+		sel_state = "drag"   # on attrape la zone pour la déplacer
+		drag_from = cell
+		drag_pos0 = sel_pos
+		return
+	_sel_commit()
+	sel_state = "making"
+	sel_a = cell.clamp(Vector2i.ZERO, img.get_size() - Vector2i.ONE)
+	sel_b = sel_a
+	view.queue_redraw()
+
+
+func _sel_move(cell: Vector2i) -> void:
+	match sel_state:
+		"making":
+			sel_b = cell.clamp(Vector2i.ZERO, img.get_size() - Vector2i.ONE)
+			view.queue_redraw()
+		"drag":
+			sel_pos = drag_pos0 + (cell - drag_from)
+			_sel_compose()
+
+
+## Le dessin = le fond + la zone sélectionnée à sa position (ce qui sort de la toile est coupé).
+func _sel_compose() -> void:
+	img.copy_from(sel_base)
+	img.blit_rect_mask(sel_img, sel_img, Rect2i(Vector2i.ZERO, sel_img.get_size()), sel_pos)
+	_recount()
+	_changed()
+
+
+func _sel_release() -> void:
+	drawing = false
+	match sel_state:
+		"making":
+			var r := _sel_rect().intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+			var region := img.get_region(r) if r.has_area() else null
+			if region == null or region.is_invisible():
+				sel_state = ""   # rien dedans : pas de sélection
+				view.queue_redraw()
+				return
+			_push_undo()
+			sel_img = region
+			sel_base = img.duplicate()
+			sel_base.fill_rect(r, Color(0, 0, 0, 0))
+			sel_pos = r.position
+			sel_state = "floating"
+			_warn("Glisse : déplacer · Suppr : effacer · clic à côté : poser")
+		"drag":
+			sel_state = "floating"
+			if used > eff_budget():
+				sel_pos = drag_pos0   # pas assez d'encre à cet endroit : on revient
+				_sel_compose()
+				_warn("Pas assez d'encre pour la poser là")
+			else:
+				Sfx.play("paint")
+	view.queue_redraw()
+
+
+## Pose la sélection (elle fait déjà partie du dessin) et arrête de la déplacer.
+func _sel_commit() -> void:
+	if sel_state == "":
+		return
+	sel_state = ""
+	sel_img = null
+	sel_base = null
+	drawing = false
+	if view:
+		view.queue_redraw()
+
+
+## Suppr : la zone sélectionnée disparaît (son encre revient).
+func _sel_delete() -> void:
+	img.copy_from(sel_base)
+	_sel_commit()
+	_recount()
+	_changed()
+	Sfx.play("paint")
+
+
 func _validate() -> void:
+	_sel_commit()
 	if Analyzer.count_pixels(img) < int(cfg.get("min", 1)):
 		_warn("Dessine un peu plus !")
 		return

@@ -53,6 +53,14 @@ func _draw() -> void:
 	if screen.mirror:
 		var mx := s.x * px / 2.0
 		draw_line(Vector2(mx, 0), Vector2(mx, size.y), Color(Pal.BAD, 0.6), 1.0)
+	# Sélection : rectangle en pointillés
+	if screen.sel_state != "":
+		var r := screen._sel_rect()
+		var rr := Rect2(Vector2(r.position * px), Vector2(r.size * px))
+		_dashed(rr)
+		return
+	if screen.tool == "select":
+		return
 	if hover.x >= 0 and hover.y >= 0 and hover.x < s.x and hover.y < s.y:
 		var b := screen.brush
 		@warning_ignore("integer_division")
@@ -60,6 +68,18 @@ func _draw() -> void:
 		var r := Rect2((hover.x + off) * px, (hover.y + off) * px, b * px, b * px)
 		draw_rect(r, Color(Pal.INK, 0.8), false, 1.0)
 		draw_rect(r.grow(-1), Color(1, 1, 1, 0.6), false, 1.0)
+
+
+func _dashed(r: Rect2) -> void:
+	var pts := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y), r.position]
+	for i in 4:
+		var a: Vector2 = pts[i]
+		var b: Vector2 = pts[i + 1]
+		var n := int(a.distance_to(b) / 4.0)
+		for k in n:
+			var p0: Vector2 = a.lerp(b, float(k) / n)
+			var p1: Vector2 = a.lerp(b, float(k + 1) / n)
+			draw_line(p0, p1, Pal.INK if k % 2 == 0 else Color.WHITE, 2.0)
 
 
 ## Repère des armes (sous le dessin) : le manche à gauche, la pointe / le canon à droite.

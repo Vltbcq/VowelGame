@@ -50,14 +50,15 @@ func tick(delta: float, arena: Arena) -> bool:
 	var p := arena.player
 	var to_p := p.position - position
 	var d := to_p.length()
-	if magnet or d < p.st.pickup:
+	# Le butin jaillit de l'ennemi, puis file tout de suite vers toi (où que tu sois)
+	if magnet or d < p.st.pickup or t > 0.25:
 		magnet = true
-		vel = vel.lerp(to_p.normalized() * 320.0, 0.15)
+		vel = vel.lerp(to_p.normalized() * (300.0 + 500.0 * t), 0.18)
 	else:
 		vel = vel.move_toward(Vector2.ZERO, 300.0 * delta)
-	position += vel * delta
-	if d < p.radius + 6.0:
+	if d < p.radius + 6.0 or (magnet and vel.length() * delta >= d):   # (rapide : ne pas le dépasser)
 		arena.collect(self)
 		return false
+	position += vel * delta
 	queue_redraw()
 	return true
