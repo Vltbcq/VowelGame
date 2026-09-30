@@ -1,5 +1,5 @@
 extends Node
-## Test : La Banane (peaux toutes les 15 éliminations, glissade, collisions, musique).
+## Test : La Banane (peaux toutes les 15 éliminations, glissade, collisions).
 ## Godot --path . res://tests/bananetest.tscn [-- <capture.png>]
 
 var fails := 0
@@ -36,7 +36,6 @@ func _ready() -> void:
 		arena.kill_enemy(e)
 	arena.time_left = 999.0
 	await get_tree().process_frame
-	_check(Sfx.music_player != null and Sfx.music_player.playing, "musique de La Banane lancée pendant la vague")
 	# 15 éliminations → 1 peau
 	var n0 := arena.peels.size()
 	for k in 15:
@@ -62,8 +61,6 @@ func _ready() -> void:
 	_check(bs.slip_t == 0.0, "les boss ne glissent pas")
 	arena.queue_free()
 	Run.amulets = []
-	Sfx.update_music()
-	_check(not Sfx.music_player.playing, "sans La Banane : pas de musique")
 	Run.active = false
 	print("BANANE : %d échec(s)" % fails)
 	get_tree().quit(1 if fails else 0)

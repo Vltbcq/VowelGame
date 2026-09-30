@@ -174,7 +174,6 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.arena = self
 	add_child(hud)
-	Sfx.update_music()   # La Banane : sa musique pendant les vagues
 	# Extasie : la vision se trouble (le jeu ondule et change de couleur ; le HUD reste lisible)
 	if Run.amulet_count("extasie") > 0:
 		var fx_layer := CanvasLayer.new()

@@ -472,7 +472,6 @@ func _upgrade_weapon(i: int) -> void:
 
 
 func _end(win: bool) -> void:
-	Sfx.stop_music()
 	Meta.clear_run()
 	var earned := Run.pigments_earned(win)
 	var new_map := Meta.record_run(Run.wave, win, Run.difficulty, earned, Run.kills, Run.map)
