@@ -148,21 +148,21 @@ func _build() -> void:
 
 	# --- Actions (plaques de musée)
 	var rp := Run.reroll_price()
-	var rb := UI.hotkey(UI.button("Nouvel accrochage (%s)" % ("gratuit" if rp == 0 else "● %d" % rp), _reroll), [KEY_R])
+	var rb := UI.hotkey(UI.button("Actualiser la galerie (%s)" % ("gratuit" if rp == 0 else "● %d" % rp), _reroll), [KEY_R])
 	_style_museum(rb)
 	rb.disabled = Run.gold < rp
 	var odds := Run.rarity_odds()
 	rb.tooltip_text = "Relancer : de nouvelles œuvres (de plus en plus cher)
 Chances par œuvre : rare %d%% · épique %d%% · légendaire %d%%" % [roundi(odds[0]), roundi(odds[1]), roundi(odds[2])]
-	UI.put(self, rb, Vector2(12, 336), Vector2(170, 18))
+	UI.put(self, rb, Vector2(12, 336), Vector2(192, 18))
 	var ab := UI.hotkey(UI.button("Ranger mes armes", func(): done.emit({"a": "arrange"})), [KEY_A])
 	_style_museum(ab)
 	ab.tooltip_text = "Déplace, tourne ou retourne tes armes sur ton perso"
-	UI.put(self, ab, Vector2(188, 336), Vector2(124, 18))
+	UI.put(self, ab, Vector2(208, 336), Vector2(112, 18))
 	var sq := UI.button("Sauvegarder et quitter", func(): done.emit({"a": "suspend"}))
 	_style_museum(sq)
 	sq.tooltip_text = "Retour au menu : tu reprendras ici, dans cette boutique."
-	UI.put(self, sq, Vector2(318, 336), Vector2(160, 18))
+	UI.put(self, sq, Vector2(324, 336), Vector2(158, 18))
 	var nb := UI.hotkey(UI.button("Salle suivante →", func(): done.emit({"a": "next"})), [KEY_ENTER, KEY_KP_ENTER])
 	_style_museum(nb)
 	UI.put(self, nb, Vector2(488, 334), Vector2(142, 22))

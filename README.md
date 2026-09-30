@@ -18,7 +18,7 @@ Pour dessiner : clic gauche pour peindre et clic droit pour gommer. Raccourcis B
 | Partout | **Entrée** = valider / continuer, **Échap** = retour / fermer (rappelés dans l'infobulle des boutons) |
 | En jeu | **Échap** ou **P** = pause · molette ou **+ / -** = zoom · dans la pause : **Entrée** reprendre, **O** options |
 | Accueil | **Entrée** / **N** nouvelle partie, **A** atelier, **G** galerie, **B** bestiaire, **O** options |
-| Boutique | **R** nouvel accrochage, **A** ranger mes armes, **Entrée** salle suivante |
+| Boutique | **R** actualiser la galerie, **A** ranger mes armes, **Entrée** salle suivante |
 | Choix du dessin | **Entrée** utiliser, **M** modifier, **N** nouveau, **C** bord, **Échap** retour |
 | Dessin | **B E L R O F S** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
 | Pose / rangement | **R** tourner, **M** miroir, **Entrée** valider |
@@ -92,7 +92,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 
 **Sens des armes** : dessine le manche (ou la crosse) à gauche et la pointe (ou le canon) à droite ; un repère est affiché sur la toile. En combat, c'est toujours le côté droit du dessin d'origine qui vise l'ennemi et d'où partent les tirs. R (tourner) et M (miroir) au rangement ne changent que la **pose au repos**, qui passe en miroir quand le perso se retourne.
 
-**Rareté** (boutique et bonus de niveau) : épique à partir de la vague 6 (6 %, puis +2 % par vague), légendaire seulement sur les 5 dernières vagues (3 %, puis +2 % par vague). Couleurs : commun gris, rare **bleu**, épique violet, légendaire or. La chance avance ces paliers de 2 vagues au plus. Les chances actuelles sont affichées dans l'infobulle de « Nouvel accrochage ». Mesure : `res://tests/raritytable.tscn`.
+**Rareté** (boutique et bonus de niveau) : épique à partir de la vague 6 (6 %, puis +2 % par vague), légendaire seulement sur les 5 dernières vagues (3 %, puis +2 % par vague). Couleurs : commun gris, rare **bleu**, épique violet, légendaire or. La chance avance ces paliers de 2 vagues au plus. Les chances actuelles sont affichées dans l'infobulle de « Actualiser la galerie ». Mesure : `res://tests/raritytable.tscn`.
 
 Pendant le dessin d'une arme, de ses balles ou d'une amulette, l'aperçu **« sur le perso »** (touche V) montre l'objet à côté de ton perso, à la même échelle. Les **boss** ont de grandes toiles et doivent utiliser **au moins 95 % de leur encre**.
 
