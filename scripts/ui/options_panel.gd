@@ -62,6 +62,9 @@ func _ready() -> void:
 	rb.tooltip_text = "Tous les conseils réapparaîtront au bon moment"
 	UI.put(self, rb, Vector2(366, y), Vector2(140, 16))
 
+	# Crédits (licence Creative Commons : attribution obligatoire)
+	var cr := UI.label("Musique (La Banane) : « Plastic and Flashing Lights » — Professor Kliq, licence CC BY-NC-SA", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	UI.put(self, cr, Vector2(0, 296), Vector2(640, 12))
 	UI.put(self, UI.hotkey(UI.button("Fermer", func(): done.emit(null), 20), [KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER]), Vector2(260, 316), Vector2(120, 26))
 
 

@@ -67,6 +67,34 @@ func _tone(segs: Array, wave: String, vol: float) -> AudioStreamWAV:
 	return st
 
 
+var music_player: AudioStreamPlayer
+const BANANA_MUSIC := "res://audio/plastic_and_flashing_lights.mp3"
+
+
+## Musique : « Plastic and Flashing Lights » (Professor Kliq, CC BY-NC-SA) tant que tu as La Banane,
+## en boutique et pendant les vagues. Sinon, pas de musique (en attendant celle du jeu).
+func update_music() -> void:
+	var want := Run.active and Run.amulet_count("banane") > 0
+	if want:
+		if music_player == null:
+			music_player = AudioStreamPlayer.new()
+			music_player.volume_db = -6.0
+			add_child(music_player)
+		if not music_player.playing:
+			var st = load(BANANA_MUSIC)
+			if st is AudioStreamMP3:
+				st.loop = true
+			music_player.stream = st
+			music_player.play()
+	else:
+		stop_music()
+
+
+func stop_music() -> void:
+	if music_player and music_player.playing:
+		music_player.stop()
+
+
 func play(snd: String, pitch_var := 0.08) -> void:
 	if not sounds.has(snd):
 		return

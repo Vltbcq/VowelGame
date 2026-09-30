@@ -77,6 +77,8 @@ var stop_t := 0.0         # Horloge : temps arrêté
 var wave_len := 0.0       # durée de la vague (Cadran solaire)
 var patron_mult := 1.0    # Mécène : ennemis en plus
 var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
+var peels: Array = []     # La Banane : peaux au sol {pos, t, a}
+var banana_kills := 0
 var spy_zoom := 1.5       # Longue-vue : zoom visé
 var void_f := 0.0         # Toile Blanche : part effacée de chaque bord (0 = rien, 0.113 = zone à 60 %)
 var void_target := 0.0
@@ -172,6 +174,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.arena = self
 	add_child(hud)
+	Sfx.update_music()   # La Banane : sa musique pendant les vagues
 	# Extasie : la vision se trouble (le jeu ondule et change de couleur ; le HUD reste lisible)
 	if Run.amulet_count("extasie") > 0:
 		var fx_layer := CanvasLayer.new()
@@ -714,6 +717,12 @@ func kill_enemy(e: Enemy) -> void:
 		return
 	e.dead = true
 	Run.kills += 1
+	# La Banane : une peau toutes les 15 éliminations
+	if Run.amulet_count("banane") > 0:
+		banana_kills += 1
+		if banana_kills >= 15:
+			banana_kills = 0
+			peels.append({"pos": e.position, "t": 20.0, "a": randf() * TAU})
 	if e.elite:
 		Run.elite_kills += 1
 	if e.is_boss:
@@ -1022,8 +1031,28 @@ func _tick_void(delta: float) -> void:
 		void_acc = 0.0
 
 
+func _tick_peels(delta: float) -> void:
+	if peels.is_empty():
+		return
+	var keep := []
+	for pl in peels:
+		pl.t -= delta
+		var used := false
+		for e in near(pl.pos, 8.0):
+			if not e.is_boss and e.slip_t <= 0.0:
+				var dir: Vector2 = (player.position - e.position)   # il allait vers toi : il file dans ce sens
+				e.slip(dir if dir.length() > 1.0 else Vector2.RIGHT)
+				used = true
+				break
+		if not used and pl.t > 0.0:
+			keep.append(pl)
+	peels = keep
+	marks.queue_redraw()
+
+
 func _tick_effects(delta: float) -> void:
 	_tick_void(delta)
+	_tick_peels(delta)
 	for h in hazards:
 		h.t -= delta
 	hazards = hazards.filter(func(h): return h.t > 0.0)
@@ -1764,6 +1793,15 @@ class _Marks extends Node2D:
 			draw_rect(Rect2(Vector2(0, r.position.y), Vector2(r.position.x, r.size.y)), vc)
 			draw_rect(Rect2(Vector2(r.end.x, r.position.y), Vector2(full.end.x - r.end.x, r.size.y)), vc)
 			draw_rect(r, Color(Pal.BAD, 0.4 + 0.4 * sin(arena.elapsed * 8.0)), false, 2.0)
+		for pl in arena.peels:
+			# peau de banane : 3 lanières jaunes autour d'un petit centre
+			var c: Vector2 = pl.pos
+			for k in 3:
+				var d := Vector2.from_angle(pl.a + TAU * k / 3.0)
+				draw_line(c, c + d * 6.0, Color("5a4a10"), 4.0)
+				draw_line(c, c + d * 5.5, Color("f2d23a"), 2.5)
+			draw_circle(c, 2.5, Color("e8c020"))
+			draw_circle(c + Vector2(0, -1), 1.0, Color("6a5010"))
 		for h in arena.hazards:
 			var a: float = clampf(h.t / minf(h.life, 0.6), 0.0, 1.0)
 			var c: Color = h.col

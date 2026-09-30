@@ -29,6 +29,7 @@ var hero: TextureRect
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
+	Sfx.stop_music()
 	for k in FRAME_KINDS + ["bullet"]:
 		entries += Meta.gallery(k)
 	# Version du jeu (en bas à droite) : écrite par la pipeline de Release à partir du tag

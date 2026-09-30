@@ -61,6 +61,9 @@ var crumple := 0             # Brouillon : nombre de fois froissé
 var hit_ids := {}
 # Effets des armes épiques / légendaires
 var pin_t := 0.0             # Agrafeuse : épinglé au sol
+var slip_t := 0.0            # La Banane : assommé après avoir glissé
+var slide := Vector2.ZERO    # La Banane : glissade (ralentit doucement)
+var slide_hits := {}         # ennemis déjà percutés pendant cette glissade
 var wet_t := 0.0             # Brumisateur : mouillé
 var gust_t := 0.0            # Éventail : projeté (choc contre un bord)
 var gust_dmg := 0.0
@@ -137,6 +140,31 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	cd2 = randf_range(3.0, 6.0)
 	st_t = 2.0
 	mirror_mode = randi_range(1, 2) if small else 0
+
+
+## La Banane : glisse sur une peau (assommé 2 s, part en patinant dans la direction où il allait).
+func slip(dir: Vector2) -> void:
+	if is_boss or dead:
+		return
+	slip_t = 2.0
+	slide = dir.normalized() * 260.0
+	slide_hits = {}
+	arena.float_text(position + Vector2(0, -14), "OUPS !", Color("f2d23a"))
+	Sfx.play("swing")
+
+
+## En glissant, il percute les autres ennemis : dégâts aux deux (une fois par ennemi).
+func _slide_hits() -> void:
+	if slide.length() < 60.0:
+		return
+	for o in arena.near(position, radius + 6.0):
+		if o == self or o.dead or slide_hits.has(o.get_instance_id()):
+			continue
+		slide_hits[o.get_instance_id()] = true
+		var d: float = (6.0 + Run.wave * 2.0) * (1.0 + Run.stats.dmg / 100.0)
+		o.hurt(d, false, slide.normalized() * 120.0)
+		hurt(d * 0.5, false, Vector2.ZERO)
+		arena.burst(o.position, Color("f2d23a"), 6, 80.0)
 
 
 ## Pouvoirs des élites (Huile et plus) : [nom affiché, couleur de l'aura]
@@ -237,6 +265,9 @@ func tick(delta: float) -> void:
 		mult = 0.0
 	if freeze_t > 0.0:
 		mult = 0.0
+	if slip_t > 0.0:
+		slip_t -= delta
+		mult = 0.0   # assommé par la peau de banane
 	hop_h = 0.0
 
 	# Chef-d'œuvre : boss en fureur = attaques plus rapprochées
@@ -314,7 +345,10 @@ func tick(delta: float) -> void:
 			if dd > 0.01 and dd < radius + o.radius:
 				v += push / dd * 45.0
 
-	position += (v * mult + knock) * delta
+	position += (v * mult + knock + slide) * delta
+	if slide.length() > 5.0:
+		slide = slide.move_toward(Vector2.ZERO, 170.0 * delta)
+		_slide_hits()
 	knock = knock.move_toward(Vector2.ZERO, 700.0 * delta)
 	var hit_wall := Vector2.ZERO
 	if position.x <= radius or position.x >= Arena.W - radius:
@@ -340,6 +374,8 @@ func tick(delta: float) -> void:
 	else:
 		body.rotation = sin(t * 9.0 + phase) * 0.08 * mult
 		body.position.y = -absf(sin(t * 9.0 + phase)) * 1.5 * mult
+	if slip_t > 0.0:
+		body.rotation = t * (14.0 if slide.length() > 20.0 else 4.0)   # il tourne en glissant, puis titube
 
 	if squash > 0.0:
 		squash = maxf(0.0, squash - delta * 7.0)

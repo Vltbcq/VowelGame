@@ -39,6 +39,7 @@ var default_cache := {}
 
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
+	Sfx.update_music()   # La Banane : sa musique en boutique
 	_build()
 	(func(): Tips.show(self, "shop")).call_deferred()
 
