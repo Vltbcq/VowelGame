@@ -1376,10 +1376,14 @@ func _kind_icon(kind: String) -> Image:
 		img.fill_rect(Rect2i(5, 9, 2, 2), Color("8a5a2b"))  # poignée
 		img.fill_rect(Rect2i(4, 11, 4, 1), GOLD_DARK)       # pommeau
 	else:
-		for x in range(3, 9):
-			img.set_pixel(x, 1 + absi(x - 6) / 2, Pal.INK)
-		for y in 12:
-			for x in 12:
-				if Vector2(x - 5.5, y - 7.5).length() < 3.3:
-					img.set_pixel(x, y, GOLD if Vector2(x - 5.5, y - 7.5).length() < 2.2 else Pal.INK)
+		# petit collier : une chaîne dorée en U et un pendentif rouge en bas
+		var chain := [Vector2i(1, 0), Vector2i(1, 1), Vector2i(1, 2), Vector2i(2, 3), Vector2i(2, 4), Vector2i(3, 5), Vector2i(4, 6),
+			Vector2i(10, 0), Vector2i(10, 1), Vector2i(10, 2), Vector2i(9, 3), Vector2i(9, 4), Vector2i(8, 5), Vector2i(7, 6)]
+		for k in chain.size():
+			img.set_pixelv(chain[k], GOLD if k % 2 == 0 else GOLD_DARK)
+		img.fill_rect(Rect2i(5, 6, 2, 1), GOLD_DARK)       # attache
+		img.fill_rect(Rect2i(4, 7, 4, 4), Pal.INK)         # pendentif (contour)
+		img.fill_rect(Rect2i(5, 11, 2, 1), Pal.INK)
+		img.fill_rect(Rect2i(5, 8, 2, 3), Color("e0443a")) # pierre
+		img.set_pixel(5, 8, Color("ff9a8a"))               # reflet
 	return img
