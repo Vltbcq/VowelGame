@@ -118,6 +118,16 @@ func has_run() -> bool:
 	return FileAccess.file_exists(run_path())
 
 
+## Fichier texte lisible (journal de partie). Jamais pendant les tests.
+func write_text(path: String, text: String) -> void:
+	if no_save:
+		return
+	DirAccess.make_dir_recursive_absolute(path.get_base_dir())
+	var f := FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(text)
+
+
 func save_run(state: Dictionary) -> void:
 	if no_save:
 		return

@@ -152,6 +152,7 @@ func _ready() -> void:
 		_after(1.2, func(): float_text(player.position + Vector2(0, -44), txt, Pal.BAD))
 		Run.patron = ""
 
+	Run.snapshot_wave_stats()   # journal : stats au début de la vague
 	cam = Camera2D.new()
 	var z: float = Meta.setting("zoom")
 	cam.zoom = Vector2(z, z)

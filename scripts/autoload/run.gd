@@ -90,6 +90,8 @@ var star_buff := 0.0        # Grattage (étoile) : +X % dégâts à la vague sui
 var wave_dmg := 0.0         # ... actif pendant la vague en cours
 var patron := ""            # Mécène : contrat signé pour la vague suivante ("more" / "elites")
 var event_used := false     # un événement a déjà été joué dans cette boutique
+var journal: Array = []     # ce que le joueur a fait dans la partie : {w (vague), k (type), t (texte)}
+var wave_stats := {}        # stats au début de la dernière vague : {wave, text}
 var elite_kills := 0        # élites effacées dans la partie
 var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
@@ -129,6 +131,8 @@ func start(d: int, map_id := 1) -> void:
 	elite_kills = 0
 	boss_ids = {}
 	regen_boost = 0.0
+	journal = []
+	wave_stats = {}
 	star_buff = 0.0
 	wave_dmg = 0.0
 	patron = ""
@@ -446,7 +450,8 @@ func to_save(stage: String) -> Dictionary:
 		"pending_levels": pending_levels, "shop_offers": shop_offers.duplicate(true), "rerolls": rerolls,
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
 		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
-		"star_buff": star_buff, "patron": patron, "event_used": event_used}
+		"star_buff": star_buff, "patron": patron, "event_used": event_used,
+		"journal": journal.duplicate(true), "wave_stats": wave_stats.duplicate()}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -517,6 +522,8 @@ func from_save(d: Dictionary) -> bool:
 	star_buff = float(d.get("star_buff", 0.0))
 	patron = String(d.get("patron", ""))
 	event_used = bool(d.get("event_used", false))
+	journal = d.get("journal", [])
+	wave_stats = d.get("wave_stats", {})
 	boss_ids = d.get("boss_ids", {})
 	recompute()
 	hp = clampf(float(d.hp), 1.0, stats.max_hp)
@@ -588,7 +595,47 @@ func _num(v: float) -> String:
 	return str(int(v)) if is_equal_approx(v, roundf(v)) else str(v)
 
 
+## Journal de la partie : une ligne (achat, bonus de niveau, événement...). Réécrit aussi le fichier
+## texte de la sauvegarde (écrasé à chaque nouvelle partie).
+func log_event(kind: String, text: String) -> void:
+	journal.append({"w": wave, "k": kind, "t": text})
+	write_journal()
+
+
+## Stats au début de la vague (appelé au lancement de chaque vague).
+func snapshot_wave_stats() -> void:
+	wave_stats = {"wave": wave, "text": Stats.describe_player(stats)}
+	write_journal()
+
+
+func item_label(type: String, id: String, rar: int) -> String:
+	var n: String = String(WeaponDB.get_def(id).name) if type == "weapon" else String(AmuletDB.get_def(id).name)
+	return "%s %s" % [n, Pal.RARITY_NAMES_F[rar].to_lower()]
+
+
+func write_journal() -> void:
+	var L := ["VOWEL — Journal de la dernière partie", "",
+		"Carte : %s · Difficulté : %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[difficulty].name],
+		"Vague %d / %d · Niveau %d · Or %d · Ennemis effacés %d" % [wave, WAVES, level, gold, kills], ""]
+	if not wave_stats.is_empty():
+		L.append("== Stats au début de la vague %d ==" % int(wave_stats.wave))
+		L.append(String(wave_stats.text))
+		L.append("")
+	L.append("== Armes ==")
+	for w in weapons:
+		L.append("- " + item_label("weapon", w.type, int(w.rar)))
+	L.append("== Amulettes ==")
+	for am in amulets:
+		L.append("- %s (%s)" % [AmuletDB.get_def(am.id).name, am.zone])
+	L.append("")
+	L.append("== Journal ==")
+	for e in journal:
+		L.append("[V%d] %s" % [int(e.w), e.t])
+	Meta.write_text(Meta.slot_dir() + "journal_derniere_partie.txt", "\n".join(L))
+
+
 func apply_upgrade(u: Dictionary) -> void:
+	log_event("level", "Niveau %d : %s" % [level - pending_levels, String(u.get("text", "")).replace("\n", " · ")])
 	bonus[u.stat] = float(bonus.get(u.stat, 0.0)) + u.v
 	if u.has("malus"):
 		bonus[u.malus[0]] = float(bonus.get(u.malus[0], 0.0)) + u.malus[1]

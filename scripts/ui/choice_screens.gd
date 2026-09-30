@@ -151,6 +151,12 @@ static func end_run(win: bool, earned: int, unlocked: Array = []) -> Control:
 		if not unlocked.is_empty():
 			_recap_panel(root, unlocked, Vector2(330, 96))
 		UI.put(root, UI.hotkey(UI.button("Continuer", func(): root.done.emit(true), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_ESCAPE]), Vector2(250, 310), Vector2(140, 26))
+		var jb := UI.hotkey(UI.button("Journal", func():
+			var j := RunLogScreen.new("view")
+			root.add_child(j)
+			j.done.connect(func(_r): j.queue_free())), [KEY_J])
+		jb.tooltip_text = "Tout ce que tu as fait pendant la partie (J)"
+		UI.put(root, jb, Vector2(400, 314), Vector2(80, 18))
 		Tips.show(root, "end")
 	return s
 

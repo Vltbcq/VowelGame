@@ -499,6 +499,7 @@ func _buy(i: int) -> void:
 	if Run.gold < o.price:
 		return
 	Run.gold -= o.price
+	Run.log_event("buy", "Achat : %s (● %d)" % [Run.HEALS[o.id].name, o.price])
 	if Run.HEALS[o.id].has("regen"):
 		Run.regen_boost = float(Run.HEALS[o.id].regen)   # Élixir de sève : vague suivante
 	else:
@@ -525,6 +526,7 @@ func _refund(w: Dictionary) -> int:
 
 
 func _sell(i: int) -> void:
+	Run.log_event("sell", "Revendu : %s (+● %d)" % [Run.item_label("weapon", Run.weapons[i].type, int(Run.weapons[i].rar)), _refund(Run.weapons[i])])
 	Run.gold += _refund(Run.weapons[i])
 	Run.weapons.remove_at(i)
 	Sfx.play("buy")
@@ -655,6 +657,7 @@ func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) 
 	var win := res == color
 	var gain: int = bet * int(Run.ROULETTE_PAY[color]) if win else 0
 	Run.gold += gain
+	Run.log_event("event", "Roulette : ● %d sur %s → %s, %s" % [bet, color, res, ("gagné ● %d" % gain) if win else "perdu"])
 	info.add_theme_color_override("font_color", Pal.GOOD if win else Color("f06a5d"))
 	info.text = ("%s ! Gagné : ● %d" % [res.to_upper(), gain]) if win else ("%s... Perdu ● %d" % [res.to_upper(), bet])
 	Sfx.play("level" if win else "hurt")
@@ -883,6 +886,7 @@ func _scratch_done(syms: Array, info: Label, close: Button, all_b: Button) -> vo
 	all_b.disabled = true
 	close.disabled = false
 	var win: bool = syms[0] == syms[1] and syms[1] == syms[2]
+	Run.log_event("event", "Ticket à gratter : %s" % (("3 × " + String(syms[0])) if win else "perdu"))
 	if not win:
 		info.text = "Perdu... Pas de chance !"
 		info.add_theme_color_override("font_color", Color("f06a5d"))
@@ -1077,6 +1081,7 @@ func _open_auction(i: int) -> void:
 		b.set_meta("add", add)
 		btns.append(b)
 	var quit := _ev_button(inner, "Se retirer", Vector2(284, 200), Vector2(84, 20), func():
+		Run.log_event("event", "Enchère : retiré (%s à ● %d)" % [_item_name(it), st.bid])
 		o.sold = true
 		_ev_close())
 	quit.tooltip_text = "Tu ne paies rien, mais l'œuvre part chez le collectionneur."
@@ -1161,6 +1166,7 @@ func _open_patron(i: int) -> void:
 		var amount: int = deal[1]
 		var sb := UI.button("Signer", func():
 			Run.gold += amount
+			Run.log_event("event", "Mécène : +● %d contre « %s »" % [amount, String(deal[2])])
 			Run.patron = did
 			o.sold = true
 			Sfx.play("buy")
@@ -1208,6 +1214,7 @@ func _open_case(i: int) -> void:
 		return
 	Run.gold -= o.price
 	o.sold = true
+	Run.log_event("event", "%s (%s) ouverte (● %d) : %s" % [Run.CASE_NAMES[o.tier], "armes" if o.kind == "weapon" else "amulettes", o.price, Run.item_label(won.type, won.get("wtype", won.get("id", "")), int(won.rar))])
 	var inner := _ev_window("%s · %s" % [Run.CASE_NAMES[o.tier].to_upper(), "ARMES" if o.kind == "weapon" else "AMULETTES"], CASE_FRAME[o.tier], 220.0)
 	# La bande : objets au hasard de la caisse, le gagnant à la case WIN
 	var items := []

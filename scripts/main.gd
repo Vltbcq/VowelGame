@@ -107,6 +107,7 @@ func _new_run() -> void:
 		_title()
 		return
 	Run.start(d, map)
+	Run.log_event("wave", "Nouvelle partie : %s, %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[int(d)].name])
 	var r = await _obtain("perso", DrawCfg.character(), 0, "TON DERNIER PERSO")
 	if r == null:
 		_title()
@@ -114,6 +115,7 @@ func _new_run() -> void:
 	Run.set_character(r.image, r.effect, r.outline)
 	var type = await _ask(ChoiceScreens.weapon_kind())
 	await _get_weapon(type, 0, 0, false)
+	Run.log_event("buy", "Arme de départ : " + Run.item_label("weapon", type, 0))
 	_game_loop()
 
 
@@ -205,6 +207,12 @@ func _resume() -> void:
 		Meta.clear_run()
 		_title()
 		return
+	# Écran de reprise : ton perso, tes stats, ton journal... et tu choisis de reprendre ou non
+	var go = await _ask(RunLogScreen.new("resume"))
+	if not go:
+		Run.active = false
+		_title()
+		return
 	_game_loop(String(d.stage), int(d.wave))
 
 
@@ -226,8 +234,10 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				_title()   # la partie reprendra au début de cette vague
 				return
 			if res != "cleared":
+				Run.log_event("wave", "Effacé à la vague %d" % w)
 				await _end(false)
 				return
+			Run.log_event("wave", "Vague %d terminée (PV %d / %d, ● %d)" % [w, ceili(Run.hp), int(Run.stats.max_hp), Run.gold])
 			if w == Run.WAVES:
 				await _end(true)
 				return
@@ -381,6 +391,13 @@ func _buy(i: int) -> void:
 		Run.gold += o.price
 		return
 	o.sold = true
+	var what := Run.item_label(o.type, o.wtype if o.type == "weapon" else o.id, int(o.rar))
+	if o.has("replace"):
+		Run.log_event("event", "Restaurateur : %s → %s (● %d)" % [AmuletDB.get_def(o.replace.id).name, what, o.price])
+	elif o.get("gift", false):
+		Run.log_event("event", "Obtenu : %s%s" % [what, (" (● %d)" % o.price) if o.price > 0 else ""])
+	else:
+		Run.log_event("buy", "Achat : %s (● %d)" % [what, o.price])
 	Run.apply_capital()   # Le Capital vient d'être acheté : toute la boutique passe au prix moyen
 	if o.has("replace"):
 		# Restaurateur : l'amulette donnée disparaît
@@ -400,6 +417,7 @@ func _fuse(type: String, rar: int) -> void:
 			idx.append(i)
 	if idx.size() < 2 or rar >= 3:
 		return
+	Run.log_event("buy", "Fusion : 2× %s → %s" % [Run.item_label("weapon", type, rar), Pal.RARITY_NAMES_F[rar + 1].to_lower()])
 	var gone: Dictionary = Run.weapons[idx[1]]
 	Run.weapons[idx[0]].price = int(Run.weapons[idx[0]].price) + int(gone.price)
 	Run.weapons.remove_at(idx[1])

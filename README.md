@@ -99,6 +99,12 @@ Pendant le dessin d'une arme, de ses balles ou d'une amulette, l'aperçu **« su
 
 Le pot de peinture (Remplir, touche F) est disponible dès le départ. En jeu, la caméra zoome ×1,5 par défaut : molette ou + / - pour régler (sauvegardé).
 
+**Outil Sélection** (de base, touche **S**) : trace un rectangle autour d'une zone, glisse-la pour la **déplacer**, **Suppr** pour l'**effacer** (l'encre revient), clic à côté ou clic droit pour la poser ; Ctrl+Z annule.
+
+**Journal de partie** : tout ce que tu fais est noté (achats, fusions, reventes, bonus de niveau, événements, vagues) avec les stats au début de la dernière vague et la difficulté. « Reprendre » ouvre d'abord un écran avec ton perso, ses armes et amulettes, ses stats et le journal (Reprendre / Retour) ; l'écran de fin a un bouton **Journal** (J). Le journal est aussi écrit en texte dans le dossier de la sauvegarde (`journal_derniere_partie.txt`), écrasé à chaque nouvelle partie.
+
+**Lisibilité** : les tirs ennemis ont un halo rouge qui pulse ; le butin des ennemis file tout de suite vers toi (plus besoin d'attendre la fin de la vague).
+
 Chaque dessin validé va dans la **Galerie** et se réutilise dans les parties suivantes. La galerie s'ouvre sur l'onglet **Tout** (ou par catégorie) ; clique un dessin pour le voir en grand. Les nouveaux dessins sont **sans bord** par défaut (bouton « Bord » pour l'ajouter).
 
 **Pourboire** (stat) : or gagné automatiquement à chaque fin de vague (amulettes Pièce, Trèfle et Tirelire, bonus de niveau).

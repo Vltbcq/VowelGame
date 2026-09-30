@@ -60,7 +60,10 @@ func _ready() -> void:
 	for i in 10:
 		await get_tree().process_frame
 		var cur: Node = main.current
-		if cur is ShopScreen and not seen.has("boutique"):
+		if cur is RunLogScreen:
+			seen.append("reprise")
+			cur.done.emit(true)
+		elif cur is ShopScreen and not seen.has("boutique"):
 			seen.append("boutique")
 			cur.done.emit({"a": "suspend"})
 		elif cur is TitleScreen:
@@ -74,7 +77,9 @@ func _ready() -> void:
 	for i in 30:
 		await get_tree().process_frame
 		var cur: Node = main.current
-		if cur is BestiaryPrompt:
+		if cur is RunLogScreen:
+			cur.done.emit(true)
+		elif cur is BestiaryPrompt:
 			cur._keep()
 		elif cur is DrawScreen:
 			cur._validate()
@@ -121,7 +126,9 @@ func _ready() -> void:
 	for i in 30:
 		await get_tree().process_frame
 		var cur: Node = main.current
-		if cur is Arena and not screens2.has("vague"):
+		if cur is RunLogScreen:
+			cur.done.emit(true)
+		elif cur is Arena and not screens2.has("vague"):
 			screens2.append("vague")
 			cur.done.emit("quit")   # Abandonner la partie
 		elif cur is ChoiceScreens._Screen and not screens2.has("fin"):
