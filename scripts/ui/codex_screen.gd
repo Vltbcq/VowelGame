@@ -398,7 +398,7 @@ func _open_picker(key: String, cfg: Dictionary) -> void:
 			var t := Analyzer.trim(gi)
 			@warning_ignore("integer_division")
 			out.blit_rect(t, Rect2i(Vector2i.ZERO, t.get_size()), Vector2i((s.x - t.get_width()) / 2, (s.y - t.get_height()) / 2))
-			Meta.bestiary_set(key, out, fx, true)
+			Meta.bestiary_set(key, out, fx, false)   # sans bord, comme tous les dessins par défaut
 			Sfx.play("buy")
 			_build())
 		grid.add_child(b)
