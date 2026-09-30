@@ -229,13 +229,13 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 # ------------------------------------------------------------------ Boucle
 
-## Longue-vue : toutes les 3 à 6 s, la caméra glisse vers un zoom au hasard (très près ↔ très loin).
+## Longue-vue : toutes les 2 s, la caméra glisse vers un zoom au hasard (très près ↔ très loin).
 func _tick_spyglass(delta: float) -> void:
 	if Run.amulet_count("longue_vue") == 0:
 		return
 	spy_t -= delta
 	if spy_t <= 0.0:
-		spy_t = randf_range(3.0, 6.0)
+		spy_t = 2.0
 		spy_zoom = randf_range(1.0, 3.0)
 	var z := lerpf(cam.zoom.x, spy_zoom, 1.0 - exp(-2.2 * delta))
 	cam.zoom = Vector2(z, z)
