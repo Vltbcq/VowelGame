@@ -10,7 +10,7 @@ func _ready() -> void:
 	Run.set_character(Image.create_empty(32, 32, false, Image.FORMAT_RGBA8), "")
 	var base := Stats.player(Run)
 	var bad := 0
-	for id in ["metre_ruban", "coeur", "tampon", "fusain", "gouache", "plume", "piece", "chevalet", "colle", "encre_sympathique", "trefle", "lame", "gomme", "mine_plomb", "sceau"]:
+	for id in ["extasie", "metre_ruban", "coeur", "tampon", "fusain", "gouache", "plume", "piece", "chevalet", "colle", "encre_sympathique", "trefle", "lame", "gomme", "mine_plomb", "sceau"]:
 		Run.amulets = []
 		Run.set_amulet_art(id, img, "")
 		Run.add_amulet(id, img, Vector2i(-99, -99))
