@@ -1,5 +1,5 @@
 extends Node
-## Test : un dessin différent choisi en partie → on demande s'il devient le dessin par défaut.
+## Test : le dessin choisi / dessiné en partie devient toujours le dessin par défaut (sans question).
 ## Dossier TEMPORAIRE (jamais les vraies sauvegardes). Godot --headless --path . res://tests/defaulttest.tscn
 
 var fails := 0
@@ -26,10 +26,10 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var old := _blob(24, 60, Pal.SHADES[1][1])
 	var neu := _blob(24, 90, Pal.SHADES[2][1])
-	for answer in [false, true]:
-		Meta.bestiary_set("amulette_coeur", old, "", false)
-		var res = [null]
-		var run := func(): res[0] = await main._obtain("amulette_coeur", DrawCfg.amulet(AmuletDB.get_def("coeur")))
+	for key in ["perso", "amulette_coeur"]:
+		Meta.bestiary_set(key, old, "", false)
+		var cfg: Dictionary = DrawCfg.character() if key == "perso" else DrawCfg.amulet(AmuletDB.get_def("coeur"))
+		var run := func(): await main._obtain(key, cfg)
 		run.call()
 		var asked := false
 		for i in 20:
@@ -37,30 +37,11 @@ func _ready() -> void:
 			var cur: Node = main.current
 			if cur is BestiaryPrompt:
 				cur.done.emit({"a": "keep", "image": neu, "effect": "", "outline": false, "from_carnet": false})
-			elif cur is ChoiceScreens._Screen and not asked:
+			elif cur is ChoiceScreens._Screen:
 				asked = true
-				cur.done.emit(answer)
-				break
-		for i in 3:
-			await get_tree().process_frame
-		var now = Meta.bestiary_get("amulette_coeur")
-		var is_new: bool = now != null and (now.image as Image).get_data() == neu.get_data()
-		_check(asked, "question posée (dessin différent)")
-		_check(is_new == answer, "réponse %s → dessin par défaut %s" % [answer, "remplacé" if is_new else "gardé"])
-	# même dessin : pas de question
-	Meta.bestiary_set("amulette_coeur", old, "", false)
-	var asked2 := false
-	var run2 := func(): await main._obtain("amulette_coeur", DrawCfg.amulet(AmuletDB.get_def("coeur")))
-	run2.call()
-	for i in 20:
-		await get_tree().process_frame
-		var cur: Node = main.current
-		if cur is BestiaryPrompt:
-			cur.done.emit({"a": "keep", "image": old, "effect": "", "outline": false, "from_carnet": true})
-		elif cur is ChoiceScreens._Screen:
-			asked2 = true
-			break
-	_check(not asked2, "même dessin : pas de question")
+		var now = Meta.bestiary_get(key)
+		_check(not asked and now != null and (now.image as Image).get_data() == neu.get_data(),
+			"%s : le dernier choisi devient le dessin par défaut, sans question" % key)
 	Meta.no_save = true
 	Meta.root = "user://"
 	print("DEFAULT : %d échec(s)" % fails)

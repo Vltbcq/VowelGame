@@ -302,17 +302,12 @@ func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON CARNET")
 		return {"image": d.image, "effect": d.effect, "outline": d.outline}
 
 
-## Le dessin choisi en partie devient le dessin par défaut s'il n'y en avait pas ; s'il y en avait
-## déjà un et que le nouveau est différent, on demande au joueur s'il veut le remplacer.
+## Le dessin choisi ou dessiné en partie devient TOUJOURS le dessin par défaut (le perso, les armes,
+## les balles... reprennent le dernier sélectionné la fois suivante).
 func _remember(key: String, existing, r: Dictionary) -> void:
-	if existing == null:
-		Meta.bestiary_set(key, r.image, r.effect, r.outline)
-		return
-	var same: bool = (existing.image as Image).get_data() == (r.image as Image).get_data() 		and existing.effect == r.effect and existing.outline == r.outline
-	if same:
-		return
-	if await _ask(ChoiceScreens.default_prompt(existing.image, r.image)):
-		Meta.bestiary_set(key, r.image, r.effect, r.outline)
+	if existing != null and (existing.image as Image).get_data() == (r.image as Image).get_data() 			and existing.effect == r.effect and existing.outline == r.outline:
+		return   # déjà le même
+	Meta.bestiary_set(key, r.image, r.effect, r.outline)
 
 
 ## Bestiaire : régler le dessin par défaut de chaque arme / amulette / ennemi.
