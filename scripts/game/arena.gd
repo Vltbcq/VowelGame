@@ -76,6 +76,8 @@ var stop_t := 0.0         # Horloge : temps arrêté
 # Amulettes
 var wave_len := 0.0       # durée de la vague (Cadran solaire)
 var patron_mult := 1.0    # Mécène : ennemis en plus
+var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
+var spy_zoom := 1.5       # Longue-vue : zoom visé
 var void_f := 0.0         # Toile Blanche : part effacée de chaque bord (0 = rien, 0.113 = zone à 60 %)
 var void_target := 0.0
 var void_dmg := 0.0
@@ -204,6 +206,8 @@ func _exit_tree() -> void:
 
 ## Molette ou +/- : zoom de la caméra (sauvegardé).
 func _unhandled_input(ev: InputEvent) -> void:
+	if Run.amulet_count("longue_vue") > 0:
+		return   # Longue-vue : c'est elle qui décide du zoom
 	var dz := 0.0
 	if ev is InputEventMouseButton and ev.pressed:
 		if ev.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -225,8 +229,21 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 # ------------------------------------------------------------------ Boucle
 
+## Longue-vue : toutes les 3 à 6 s, la caméra glisse vers un zoom au hasard (très près ↔ très loin).
+func _tick_spyglass(delta: float) -> void:
+	if Run.amulet_count("longue_vue") == 0:
+		return
+	spy_t -= delta
+	if spy_t <= 0.0:
+		spy_t = randf_range(3.0, 6.0)
+		spy_zoom = randf_range(1.0, 3.0)
+	var z := lerpf(cam.zoom.x, spy_zoom, 1.0 - exp(-2.2 * delta))
+	cam.zoom = Vector2(z, z)
+
+
 func _process(delta: float) -> void:
 	elapsed += delta
+	_tick_spyglass(delta)
 	numbers.tick(delta)
 	shake_amt = move_toward(shake_amt, 0.0, delta * 25.0)
 	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake_amt
