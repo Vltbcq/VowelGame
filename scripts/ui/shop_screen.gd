@@ -1366,11 +1366,15 @@ class _CaseStrip extends Control:
 func _kind_icon(kind: String) -> Image:
 	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
 	if kind == "weapon":
-		for k in 8:
-			img.fill_rect(Rect2i(3 + k, 8 - k, 1, 1), Pal.INK)
-			img.fill_rect(Rect2i(4 + k, 8 - k, 1, 1), Color("9aa0a8"))
-		img.fill_rect(Rect2i(1, 7, 4, 1), Color("8a5a2b"))
-		img.fill_rect(Rect2i(2, 8, 2, 3), Color("8a5a2b"))
+		# petite épée droite : lame, garde dorée, poignée, pommeau
+		img.fill_rect(Rect2i(4, 1, 4, 7), Pal.INK)          # contour de la lame
+		img.fill_rect(Rect2i(5, 0, 2, 1), Pal.INK)          # pointe
+		img.fill_rect(Rect2i(5, 1, 2, 6), Color("d6dbe2"))  # lame
+		img.fill_rect(Rect2i(5, 1, 1, 6), Color.WHITE)      # reflet
+		img.fill_rect(Rect2i(1, 7, 10, 2), Pal.INK)         # garde (contour)
+		img.fill_rect(Rect2i(2, 7, 8, 1), GOLD)             # garde
+		img.fill_rect(Rect2i(5, 9, 2, 2), Color("8a5a2b"))  # poignée
+		img.fill_rect(Rect2i(4, 11, 4, 1), GOLD_DARK)       # pommeau
 	else:
 		for x in range(3, 9):
 			img.set_pixel(x, 1 + absi(x - 6) / 2, Pal.INK)

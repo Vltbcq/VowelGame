@@ -24,6 +24,7 @@ var pic: TextureRect
 var pic_mat: ShaderMaterial
 var keep_btn: Button
 var mod_btn: Button
+var alt_row: Control      # « Modifier » / « Nouveau » : cachés quand il n'y a encore aucun dessin
 var why_label: Label
 var bord_btn: Button
 var gallery_btns := []
@@ -63,6 +64,7 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 	UI.put(self, row, Vector2(24, 302), Vector2(200, 16))
+	alt_row = row
 	mod_btn = UI.hotkey(UI.button("Modifier", _redraw), [KEY_M])
 	mod_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(mod_btn)
@@ -146,6 +148,7 @@ func _select(img: Image, effect: String) -> void:
 	var why := _usable(sel_img) if sel_img else "Rien pour l'instant : dessine-le !"
 	keep_btn.disabled = why != ""
 	mod_btn.disabled = sel_img == null
+	alt_row.visible = sel_img != null   # pas de dessin : seul « Dessiner » (Nouveau ferait pareil)
 	mod_btn.text = "Modifier" + ("  (+%d ◆)" % reward if reward > 0 and from_carnet else "")
 	why_label.text = why if sel_img else ""
 	keep_btn.text = "Utiliser ce dessin" if sel_img else "Dessiner"
