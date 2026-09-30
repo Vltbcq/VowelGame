@@ -490,6 +490,43 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 	check_achievements({})
 
 
+## Galerie : à quoi ce dessin sert-il de dessin de base dans le Bestiaire ? (noms lisibles)
+func gallery_uses(img: Image) -> Array:
+	var out := []
+	var target := Analyzer.trim(img).get_data()
+	var b: Dictionary = data.get("bestiary", {})
+	for key in b:
+		var e = bestiary_get(key)
+		if e != null and Analyzer.trim(e.image).get_data() == target:
+			out.append(bestiary_label(String(key)))
+	return out
+
+
+## Nom lisible d'une case du Bestiaire (« Épée (rare) », « Balles : Arc », « Ton perso »...).
+func bestiary_label(key: String) -> String:
+	if key == "perso":
+		return "Ton perso"
+	if key.begins_with("amulette_"):
+		return "Amulette : " + String(AmuletDB.get_def(key.substr(9)).get("name", key))
+	if key.begins_with("balle_"):
+		return "Balles : " + String(WeaponDB.get_def(key.substr(6)).get("name", key))
+	if key.begins_with("arme_"):
+		var rest := key.substr(5)
+		var rar := -1
+		var m := rest.rfind("_r")
+		if m > 0 and rest.substr(m + 2).is_valid_int():
+			rar = int(rest.substr(m + 2))
+			rest = rest.substr(0, m)
+		var wd := WeaponDB.get_def(rest)
+		if rar < 0:
+			rar = int(wd.get("min_rar", 0))
+		return "%s (%s)" % [wd.get("name", rest), Pal.RARITY_NAMES_F[rar].to_lower()]
+	var elite := key.ends_with("_elite")
+	var id := key.trim_suffix("_elite")
+	var ed := EnemyDB.get_def(id)
+	return ("Élite : " if elite else ("Boss : " if ed.has("boss") else "Ennemi : ")) + String(ed.get("name", id))
+
+
 ## Galerie : active / désactive le bord d'un dessin (utilisé quand on le réutilise).
 func gallery_set_outline(entry: Dictionary, on: bool) -> void:
 	for e in data.gallery:

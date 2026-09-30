@@ -98,10 +98,10 @@ func _view(e: Dictionary) -> void:
 			cat = k[1]
 	UI.put(p, UI.label(cat.to_upper(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(420, 12))
 	var fr := UI.panel(Pal.PAPER, Pal.BORDER, 2)
-	UI.put(p, fr, Vector2(70, 26), Vector2(280, 256))
+	UI.put(p, fr, Vector2(70, 26), Vector2(280, 240))
 	var t := Analyzer.trim(img)
-	var big := UI.thumb(Gfx.baked_outline(t) if e.get("outline", false) else t, Vector2(264, 240))
-	UI.put(fr, big, Vector2(8, 8), Vector2(264, 240))
+	var big := UI.thumb(Gfx.baked_outline(t) if e.get("outline", false) else t, Vector2(264, 224))
+	UI.put(fr, big, Vector2(8, 8), Vector2(264, 224))
 	var ob := UI.button("Bord : %s" % ("oui" if e.get("outline", false) else "non"), func(): pass)
 	ob.tooltip_text = "Contour noir quand tu réutilises ce dessin (touche C)"
 	ob.pressed.connect(func():
@@ -111,7 +111,15 @@ func _view(e: Dictionary) -> void:
 		Sfx.play("click"))
 	UI.hotkey(ob, [KEY_C])
 	UI.put(p, ob, Vector2(330, 8), Vector2(80, 14))
-	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 286), Vector2(420, 12))
+	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
+	# À quoi ce dessin sert dans le Bestiaire (dessin de base de...)
+	var uses := Meta.gallery_uses(img)
+	var ut := ("Dessin de base de : " + ", ".join(uses)) if not uses.is_empty() else "Pas utilisé comme dessin de base"
+	var ul := UI.label(ut, 10, Pal.GOOD if not uses.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	ul.clip_text = true
+	ul.tooltip_text = "\n".join(uses) if not uses.is_empty() else ""
+	ul.mouse_filter = Control.MOUSE_FILTER_STOP
+	UI.put(p, ul, Vector2(8, 285), Vector2(404, 12))
 	UI.put(p, UI.hotkey(UI.button("Fermer", func():
 		viewer.queue_free()
 		viewer = null
