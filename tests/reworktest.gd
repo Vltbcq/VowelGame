@@ -28,9 +28,9 @@ func _ready() -> void:
 	shots = args[0] if args.size() > 0 else ""
 	await get_tree().process_frame
 
-	# --- Raturé : les 4 attaques tournent, jamais deux fois de suite
+	# --- Muse (hachures) : les 4 attaques tournent, jamais deux fois de suite
 	_setup(5)
-	Run.boss_plan = {5: "rature", 10: "critique", 15: "toile"}
+	Run.boss_plan = {5: "muse", 10: "critique", 15: "toile"}   # (les hachures sont à la Muse)
 	var arena := Arena.new()
 	add_child(arena)
 	var seen := {}
@@ -55,9 +55,9 @@ func _ready() -> void:
 			await _shot("rature_hachures")
 		if f % 120 == 0:
 			await get_tree().process_frame
-	_check(seen.size() == 4, "Raturé : les 4 attaques utilisées %s" % [seen.keys()])
-	_check(repeats == 0, "Raturé : jamais deux fois la même attaque de suite")
-	_check(strokes_max >= 8, "Raturé : hachures tracées (%d traits en même temps)" % strokes_max)
+	_check(seen.size() == 4, "Muse (hachures) : les 4 attaques utilisées %s" % [seen.keys()])
+	_check(repeats == 0, "Muse (hachures) : jamais deux fois la même attaque de suite")
+	_check(strokes_max >= 8, "Muse (hachures) : hachures tracées (%d traits en même temps)" % strokes_max)
 	arena.queue_free()
 	await get_tree().process_frame
 

@@ -273,12 +273,12 @@ func tick(delta: float) -> void:
 			v = _mine(delta, dirp, dist)
 			if dead:
 				return
-		"b_rature":
-			v = _boss_rature(bd, dirp, dist)
+		"b_hatch":
+			v = _boss_hatch(bd, dirp, dist)
 		"b_critique":
 			v = _boss_critique(bd, dirp)
-		"b_muse":
-			v = _boss_muse(bd, dirp, dist)
+		"b_orbit":
+			v = _boss_orbit(bd, dirp, dist)
 		"b_toile":
 			v = _boss_toile(bd, dirp, dist)
 		"pin":
@@ -984,12 +984,12 @@ func _enraged() -> bool:
 	return hp < max_hp * 0.5
 
 
-## Le Raturé : il RATURE la page. Enchaîne ses 4 attaques dans un ordre mélangé (toutes avant de recommencer) :
+## Hachures (La Muse, vague 10) : elle RATURE la page. Enchaîne ses 4 attaques dans un ordre mélangé (toutes avant de recommencer) :
 ## - Zigzag : 3 petites charges (5 enragé), chacune annoncée à la règle, qui laissent un trait d'encre.
 ## - Hachures : des lignes parallèles barrent la page (on se glisse ENTRE elles) ; enragé : en croisillon.
 ## - Croix : il barre ta position d'un X (3 de suite), le centre explose.
 ## - Gribouillage : il griffonne sur place, crachant de l'encre au hasard, et libère des Gribouillis.
-func _boss_rature(delta: float, dirp: Vector2, dist: float) -> Vector2:
+func _boss_hatch(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	var rage := _enraged()
 	st_t -= delta
 	match state:
@@ -1142,7 +1142,7 @@ func _boss_critique(delta: float, dirp: Vector2) -> Vector2:
 	return dirp * speed * (0.4 if state == "spiral" else 1.0)
 
 
-func _boss_muse(delta: float, dirp: Vector2, dist: float) -> Vector2:
+func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if state == "fade":
 		st_t -= delta
 		mat.set_shader_parameter("alpha", clampf(st_t / 0.5, 0.15, 1.0))
