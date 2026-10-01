@@ -70,6 +70,7 @@ var amulet_art := {}        # id -> {image, effect, a}
 var amulets: Array = []     # {id, image, pos, zone, mag, a, outline}
 var familiar_art := {}      # id -> {image, effect, outline}
 var familiars: Array = []   # ids des familiers possédés (uniques)
+var dev_jump := 0           # outil de dev : prochaine vague forcée (0 = non)
 var enemy_art := {}         # type -> {image, effect, a, mods}
 var elite_art := {}         # type -> version élite redessinée (difficultés hautes)
 var eproj_art := {}         # type -> {image, a, mods}
@@ -117,6 +118,7 @@ func start(d: int, map_id := 1) -> void:
 	amulets = []
 	familiar_art = {}
 	familiars = []
+	dev_jump = 0
 	enemy_art = {}
 	elite_art = {}
 	eproj_art = {}

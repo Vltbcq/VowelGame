@@ -79,7 +79,7 @@ var patron_mult := 1.0    # Mécène : ennemis en plus
 var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
 var peels: Array = []     # La Banane : peaux au sol {pos, t, a}
 var familiars: Array = [] # familiers sur la page
-var shrooms: Array = []   # Teemeo : champignons invisibles {pos, dmg}
+var shrooms: Array = []   # Teemeo : champignons {pos, dmg}
 var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
 var whip_stacks := 0
 var fam_dealt := {}       # dégâts infligés par familier (id -> total), pour les mesures
@@ -1855,7 +1855,18 @@ class _Marks extends Node2D:
 			draw_rect(Rect2(Vector2(r.end.x, r.position.y), Vector2(full.end.x - r.end.x, r.size.y)), vc)
 			draw_rect(r, Color(Pal.BAD, 0.4 + 0.4 * sin(arena.elapsed * 8.0)), false, 2.0)
 		for sh in arena.shrooms:
-			draw_circle(sh.pos, 3.0, Color(0.4, 0.6, 0.2, 0.25))   # invisibles pour eux, à peine visibles pour toi
+			# champignon de Teemeo : chapeau rouge à pois blancs sur un petit pied
+			var c: Vector2 = sh.pos
+			draw_rect(Rect2(c + Vector2(-2.5, -1), Vector2(5, 5)), Pal.INK)
+			draw_rect(Rect2(c + Vector2(-1.5, -1), Vector2(3, 4)), Color("f0e6d0"))
+			var cap := PackedVector2Array()
+			for k in 9:
+				cap.append(c + Vector2(0, -1) + Vector2.from_angle(PI + PI * k / 8.0) * Vector2(6.0, 5.0))
+			draw_colored_polygon(cap, Color("d8402a"))
+			draw_polyline(cap + PackedVector2Array([cap[0]]), Pal.INK, 1.0)
+			draw_rect(Rect2(c + Vector2(-3, -4), Vector2(1.5, 1.5)), Color.WHITE)
+			draw_rect(Rect2(c + Vector2(1, -5), Vector2(1.5, 1.5)), Color.WHITE)
+			draw_rect(Rect2(c + Vector2(3, -3), Vector2(1, 1)), Color.WHITE)
 		for pl in arena.peels:
 			# peau de banane : 3 lanières jaunes autour d'un petit centre
 			var c: Vector2 = pl.pos

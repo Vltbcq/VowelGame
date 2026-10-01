@@ -236,7 +236,8 @@ func _checkpoint(stage: String) -> void:
 
 ## stage "wave" : la vague `start` commence ; "after" : elle est finie (niveaux + boutique).
 func _game_loop(stage := "wave", start := 1) -> void:
-	for w in range(start, Run.WAVES + 1):
+	var w := start
+	while w <= Run.WAVES:
 		if not (w == start and stage == "after"):
 			Run.wave = w
 			await _pre_wave(w)
@@ -250,6 +251,12 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				await _end(false)
 				return
 			Run.log_event("wave", "Vague %d terminée (PV %d / %d, ● %d)" % [w, ceili(Run.hp), int(Run.stats.max_hp), Run.gold])
+			# Outil de dev : saut direct à une vague (sans niveaux ni boutique)
+			if Run.dev_jump > 0:
+				w = Run.dev_jump
+				Run.dev_jump = 0
+				stage = "wave"
+				continue
 			if w == Run.WAVES:
 				await _end(true)
 				return
@@ -259,12 +266,18 @@ func _game_loop(stage := "wave", start := 1) -> void:
 		if await _shop():
 			_title()
 			return
+		w += 1
 
 
 ## Premier contact avec un nouvel ennemi ou boss : on reprend le dessin du carnet
 ## (ou un de la galerie), ou on le dessine. Les projectiles ennemis sont automatiques.
 func _pre_wave(w: int) -> void:
-	for id in EnemyDB.intro_at(w):
+	var ids := []
+	for k in range(1, w + 1):   # (toutes les vagues jusqu'ici : utile si l'outil de dev en a sauté)
+		for id in EnemyDB.intro_at(k):
+			if k == w or not EnemyDB.get_def(id).has("boss"):
+				ids.append(id)
+	for id in ids:
 		if Run.enemy_art.has(id):
 			continue
 		var def := EnemyDB.get_def(id)

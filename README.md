@@ -31,7 +31,7 @@ Armes spéciales et nouvelles amulettes : `Godot --headless --path . res://tests
 
 ## Outil de dev (Ctrl+P en pleine vague)
 
-Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, or, niveaux, tuer tout, finir la vague ; faire apparaître **n'importe quel ennemi ou boss devant soi** (élite ou non) ; donner n'importe quelle **arme** (toute rareté) ou **amulette**. Les dessins manquants sont pris dans le Bestiaire, sinon remplacés par des formes provisoires.
+Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, or, niveaux, tuer tout, finir la vague, **aller directement à une vague** (−/+ puis « Y aller », sans boutique) ; faire apparaître **n'importe quel ennemi ou boss devant soi** (élite ou non) ; donner n'importe quelle **arme** (toute rareté) ou **amulette**, ajouter ou retirer des **familiers**. Les dessins manquants sont pris dans le Bestiaire, sinon remplacés par des formes provisoires.
 **À retirer avant de publier le jeu** : `ENABLED := false` dans `scripts/dev/dev_panel.gd` (ou supprimer le dossier `scripts/dev/`).
 
 ## Publier une version (GitHub)
@@ -188,7 +188,7 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 - Communs : **Moustique** (pique l'ennemi le plus proche et te rend 1 PV), **Taupe** (surgit sous un ennemi toutes les 4 s : petits dégâts de zone autour, la cible est étourdie 1 s), **Pie voleuse** (15 % des gouttes d'or font briller une pièce : elle va la chercher et te rapporte 1 ou 2 or).
 - Rares : **Hérisson-pelote** (roule et rebondit, frappe les ennemis percutés), **Luciole** (aura au-dessus des ennemis : +33 % de dégâts subis), **Perroquet** (vole partout sur la page et répète une de tes armes toutes les 2 s).
 - Épiques : **Corbeau** (plonge sur l'ennemi le plus fort toutes les 1,5 s), **Grenouille** (coup de langue circulaire toutes les 4 s), **Fantôme de papier** (traverse la page : dégâts et aveugle 2 s).
-- Légendaires : **Yuki** (chat collé à toi : soin 5 % toutes les 8 s, bloque un coup toutes les 12 s, +30 % de vitesse sous 25 % de PV), **Pavel** (le chien de Theorus, tank de poche : les ennemis proches l'attaquent lui ; K.O., il revient 10 s plus tard), **Teemeo** (champignons de poison invisibles, fléchette aveuglante).
+- Légendaires : **Yuki** (chat collé à toi : soin 5 % toutes les 8 s, bloque un coup toutes les 12 s, +30 % de vitesse sous 25 % de PV), **Pavel** (le chien de Theorus, tank de poche : les ennemis proches l'attaquent lui ; K.O., il revient 10 s plus tard), **Teemeo** (champignons de poison, 16 max, et fléchettes aveuglantes qui s'arrêtent sur le premier ennemi touché).
 - Amulettes de familiers (proposées seulement si tu en as un) : Laisse (+25 % de vitesse des familiers), Croquettes (agissent 15 % plus souvent), Collier à grelot (1 PV par action), Niche (+20 % dégâts des familiers), Carnet du dresseur (+25 % par familier possédé), **Meute** (légendaire : quand un familier tue, le délai de capacité de tous tes familiers est réduit de 50 %).
 - Armes de familiers (idem) : **Sifflet** (commun+, l'ennemi touché devient la cible de Corbeau, Taupe, Luciole et Teemeo), **Fouet de dresseur** (épique+, chaque coup donne +10 % de dégâts aux familiers pendant 3 s, jusqu'à +50 %), **Cage à oiseaux** (légendaire, libère un oiseau — ton dessin de balle — qui pique pendant 6 s, 5 max).
 

@@ -253,6 +253,30 @@ func _ready() -> void:
 	e_off.hurt(50.0, false, Vector2.ZERO)
 	var ratio: float = (h_lit - e_lit.hp) / maxf(0.01, h_off - e_off.hp)
 	_check(e_lit.firefly and not e_off.firefly and absf(ratio - 1.33) < 0.02, "Luciole : +33%% de dégâts dans l'aura (×%.2f)" % ratio)
+	# Teemeo : la fléchette s'arrête sur le premier ennemi touché
+	var tm: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "teemeo":
+			tm = fm
+	for e in arena.enemies.duplicate():
+		arena.kill_enemy(e)
+	tm.position = arena.player.position + Vector2(0, 80)
+	var d1: Enemy = arena.spawn_enemy_now("colosse", tm.position + Vector2(50, 0), false)
+	var d2: Enemy = arena.spawn_enemy_now("colosse", tm.position + Vector2(80, 0), false)
+	arena.player.inv = 999.0
+	arena._process(1.0 / 60.0)
+	var dh1 := d1.hp
+	var dh2 := d2.hp
+	var base := tm.position
+	d1.pin_t = 99.0
+	d2.pin_t = 99.0
+	tm.darts = [{"pos": base, "vel": Vector2(260, 0), "life": 1.2}]
+	for f in 40:
+		tm.cd = 99.0
+		d1.position = base + Vector2(50, 0)
+		d2.position = base + Vector2(80, 0)
+		arena._process(1.0 / 60.0)
+	_check(d1.hp < dh1 and d2.hp == dh2 and tm.darts.is_empty(), "Teemeo : la fléchette touche le 1er ennemi et s'arrête (%.0f→%.0f, 2e : %.0f→%.0f)" % [dh1, d1.hp, dh2, d2.hp])
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")
 	Run.add_amulet("meute", img, Vector2i(20, 20))

@@ -29,6 +29,7 @@ const LUCIOLE_R := 48.0
 const GRENOUILLE_R := 58.0
 var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
 var carry := false      # Pie : elle rapporte une pièce
+var darts: Array = []   # Teemeo : fléchettes en vol {pos, vel, life}
 var lit: Array = []     # Luciole : ennemis dans son aura
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
 var bird_dmg := 0.0
@@ -206,6 +207,10 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if line_t > 0.0:
 		draw_line(Vector2.ZERO, line_to - position, line_col, 2.0)
+	for dt in darts:
+		var dp: Vector2 = dt.pos - position
+		draw_line(dp, dp - dt.vel.normalized() * 6.0, Color("3a5a1a"), 2.0)
+		draw_circle(dp, 1.5, Color("c8e070"))
 	if id == "luciole":
 		var glow := 0.5 + 0.5 * sin(t * 4.0)
 		draw_circle(Vector2.ZERO, LUCIOLE_R, Color(1.0, 0.95, 0.4, 0.07 + 0.04 * glow))
@@ -465,16 +470,28 @@ func _teemeo(delta: float) -> void:
 		if arena.shrooms.size() < 16:
 			var sp := (arena.player.position + Vector2.from_angle(randf() * TAU) * randf_range(40.0, 160.0)).clamp(Vector2(10, 10), Vector2(Arena.W - 10, Arena.H - 10))
 			arena.shrooms.append({"pos": sp, "dmg": fdmg(4.0, 1.5)})
+	# fléchettes : vraies balles, elles s'arrêtent sur le premier ennemi touché
+	for dt in darts.duplicate():
+		dt.pos += dt.vel * delta
+		dt.life -= delta
+		var hitme: Enemy = null
+		for o in arena.near(dt.pos, 6.0):
+			if not o.dead:
+				hitme = o
+				break
+		if hitme:
+			hitme.blind_t = maxf(hitme.blind_t, 2.0)
+			hit(hitme, fdmg(6.0, 1.5))
+			arena.burst(dt.pos, Color("c8e070"), 4, 50.0)
+			darts.erase(dt)
+		elif dt.life <= 0.0:
+			darts.erase(dt)
 	if cd <= 0.0:
-		cd = fcd(5.0)
+		cd = fcd(2.5)
 		var e: Enemy = _called() if _called() else arena.nearest(position, 260.0)
 		if e:
-			e.blind_t = maxf(e.blind_t, 2.0)
-			line_to = e.position
-			line_t = 0.15
-			line_col = Color("c8e070")
-			hit(e, fdmg(5.0, 1.0))
-			arena.float_text(e.position + Vector2(0, -14), "AVEUGLÉ", Color("c8e070"))
+			darts.append({"pos": position, "vel": (e.position - position).normalized() * 260.0, "life": 1.2})
+			Sfx.play("shoot")
 
 
 func _oiseau(delta: float) -> void:

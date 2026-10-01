@@ -7,32 +7,32 @@ extends RefCounted
 const LIST := [
 	# Communs
 	{"id": "moustique", "name": "Moustique", "rar": 0, "ink": 40,
-		"desc": "Vole piquer l'ennemi le plus proche toutes les 1,5 s : dégâts, et te rend 1 PV."},
+		"desc": "Pique les ennemis et te rend un peu de PV."},
 	{"id": "taupe", "name": "Taupe", "rar": 0, "ink": 50,
-		"desc": "Creuse, puis surgit sous un ennemi (toutes les 4 s) : DÉGÂTS DE ZONE autour de lui, et la cible est étourdie 1 s."},
+		"desc": "Surgit sous les ennemis : dégâts de zone, et sa cible est étourdie."},
 	{"id": "pie", "name": "Pie voleuse", "rar": 0, "ink": 45,
-		"desc": "Chaque goutte d'or a 15% de chances de faire briller une pièce : la Pie va la chercher et te rapporte 1 ou 2 or."},
+		"desc": "Va chercher des pièces d'or bonus et te les rapporte."},
 	# Rares
 	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
-		"desc": "Roule au hasard sur la page et rebondit sur les bords : chaque ennemi percuté prend des dégâts."},
+		"desc": "Roule partout sur la page et blesse les ennemis qu'il percute."},
 	{"id": "luciole", "name": "Luciole", "rar": 1, "ink": 40,
-		"desc": "Plane au-dessus des ennemis avec une AURA : tous les ennemis dedans prennent +33% de dégâts."},
+		"desc": "Son aura fait subir +33% de dégâts aux ennemis."},
 	{"id": "perroquet", "name": "Perroquet", "rar": 1, "ink": 50,
-		"desc": "Vole partout sur la page et RÉPÈTE tes armes : toutes les 2 s, il refait le tir (ou le coup) d'une de tes armes sur l'ennemi le plus proche de lui."},
+		"desc": "Se balade sur la page et répète les attaques de tes armes."},
 	# Épiques
 	{"id": "corbeau", "name": "Corbeau", "rar": 2, "ink": 60,
-		"desc": "Plane au-dessus de toi et plonge sur l'ennemi le plus fort (élites et boss en priorité), toutes les 1,5 s."},
+		"desc": "Plonge sur les ennemis les plus forts."},
 	{"id": "grenouille", "name": "Grenouille", "rar": 2, "ink": 60,
-		"desc": "Saute partout et donne un COUP DE LANGUE CIRCULAIRE toutes les 4 s : touche tous les ennemis autour d'elle."},
+		"desc": "Coup de langue circulaire qui touche tous les ennemis autour d'elle."},
 	{"id": "fantome", "name": "Fantôme de papier", "rar": 2, "ink": 55,
-		"desc": "Traverse la page en ligne droite toutes les 5 s : les ennemis traversés prennent des dégâts et sont aveuglés 2 s."},
+		"desc": "Traverse la page : blesse et aveugle les ennemis sur son passage."},
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,
-		"desc": "Petit chat magique collé à toi : te soigne de 5% de tes PV toutes les 8 s, bloque un coup toutes les 12 s, et sous 25% de PV te donne +30% de vitesse 3 s."},
+		"desc": "Reste sur toi : te soigne, bloque des coups et t'accélère quand tu es en danger."},
 	{"id": "pavel", "name": "Pavel", "rar": 3, "ink": 80,
-		"desc": "Gros chien qui encaisse : les ennemis proches de lui l'attaquent lui plutôt que toi. K.O., il revient 10 s plus tard."},
+		"desc": "Tank de poche : les ennemis proches l'attaquent lui. Revient après un K.O."},
 	{"id": "teemeo", "name": "Teemeo", "rar": 3, "ink": 70,
-		"desc": "Plante des champignons invisibles (16 au plus) qui explosent en nuage de poison, et lance une fléchette aveuglante toutes les 5 s."},
+		"desc": "Plante des champignons empoisonnés et tire des fléchettes aveuglantes."},
 ]
 
 const PRICE := [16, 30, 52, 88]

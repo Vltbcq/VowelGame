@@ -18,6 +18,7 @@ const STATS := [
 var arena: Arena
 var unlock_armed := false   # « Tout débloquer » : 2 clics pour confirmer
 var tab := "perso"
+var jump_to := 0             # « Aller à la vague »
 var elite := false
 var rar := 0
 var body: Control
@@ -144,6 +145,29 @@ func _perso(area: Control) -> void:
 	col.add_child(UI.button("Finir la vague", func():
 		_close()
 		arena._end_wave()))
+	# Aller directement à une vague (sans boutique) : -/+ puis « Y aller »
+	if jump_to <= 0:
+		jump_to = mini(Run.WAVES, Run.wave + 1)
+	var jr := HBoxContainer.new()
+	jr.add_theme_constant_override("separation", 2)
+	jr.add_child(UI.button("-", func():
+		jump_to = maxi(1, jump_to - 1)
+		_build()))
+	var jl := UI.label("Vague %d" % jump_to, 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	jl.custom_minimum_size = Vector2(56, 14)
+	jr.add_child(jl)
+	jr.add_child(UI.button("+", func():
+		jump_to = mini(Run.WAVES, jump_to + 1)
+		_build()))
+	var go := UI.button("Y aller", func():
+		Run.dev_jump = jump_to
+		jump_to = 0
+		_close()
+		arena._end_wave())
+	go.tooltip_text = "Termine la vague en cours et lance directement la vague choisie (sans boutique)"
+	go.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	jr.add_child(go)
+	col.add_child(jr)
 
 
 func _bonus(key: String, v: float) -> void:
