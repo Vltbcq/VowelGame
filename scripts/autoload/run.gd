@@ -815,7 +815,7 @@ func roll_shop() -> void:
 	for i in n:
 		var rar := roll_rarity()
 		# Familiers : de temps en temps (uniques : jamais un déjà possédé ni deux fois le même)
-		if randf() < 0.07:
+		if randf() < 0.05:
 			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id))
 			if not fpool.is_empty():
 				var fd: Dictionary = fpool.pick_random()
