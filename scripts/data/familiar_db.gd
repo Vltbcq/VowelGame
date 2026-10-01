@@ -16,7 +16,7 @@ const LIST := [
 	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
 		"desc": "Roule partout sur la page et blesse les ennemis qu'il percute."},
 	{"id": "luciole", "name": "Luciole", "rar": 1, "ink": 40,
-		"desc": "Son aura fait subir +33% de dégâts aux ennemis."},
+		"desc": "Son aura fait subir +15% de dégâts aux ennemis."},
 	{"id": "perroquet", "name": "Perroquet", "rar": 1, "ink": 50,
 		"desc": "Se balade sur la page et répète les attaques de tes armes."},
 	# Épiques

@@ -239,7 +239,7 @@ func _ready() -> void:
 	for k in 4:
 		all_hit = all_hit and ring[k].hp < rh[k]
 	_check(all_hit, "Grenouille : le coup de langue touche les 4 ennemis autour")
-	# Luciole : aura +33 % sur tous les ennemis dedans
+	# Luciole : aura +15 % sur tous les ennemis dedans
 	lc.position = ring[0].position
 	lc.target = ring[0]
 	lc.tick(1.0 / 60.0)
@@ -252,7 +252,7 @@ func _ready() -> void:
 	e_lit.hurt(50.0, false, Vector2.ZERO)
 	e_off.hurt(50.0, false, Vector2.ZERO)
 	var ratio: float = (h_lit - e_lit.hp) / maxf(0.01, h_off - e_off.hp)
-	_check(e_lit.firefly and not e_off.firefly and absf(ratio - 1.33) < 0.02, "Luciole : +33%% de dégâts dans l'aura (×%.2f)" % ratio)
+	_check(e_lit.firefly and not e_off.firefly and absf(ratio - 1.15) < 0.02, "Luciole : +15%% de dégâts dans l'aura (×%.2f)" % ratio)
 	# Teemeo : la fléchette s'arrête sur le premier ennemi touché
 	var tm: Familiar = null
 	for fm in arena.familiars:

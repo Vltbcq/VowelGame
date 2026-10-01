@@ -62,7 +62,7 @@ var hit_ids := {}
 # Effets des armes épiques / légendaires
 var pin_t := 0.0             # Agrafeuse : épinglé au sol
 var slip_t := 0.0            # La Banane : assommé après avoir glissé
-var firefly := false         # aura de la Luciole : +33 % de dégâts subis
+var firefly := false         # aura de la Luciole : +15 % de dégâts subis
 var slide := Vector2.ZERO    # La Banane : glissade (ralentit doucement)
 var slide_hits := {}         # ennemis déjà percutés pendant cette glissade
 var wet_t := 0.0             # Brumisateur : mouillé
@@ -461,8 +461,8 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if mark_t > 0.0:
 		amount *= (1.5 if arena.syn.has(Pal.ARCANE) else 1.25) + 0.15 * Run.amulet_count("grimoire")
 	if firefly:
-		arena.fam_credit("luciole", minf(hp, amount * 0.33))
-		amount *= 1.33   # Luciole
+		arena.fam_credit("luciole", minf(hp, amount * 0.15))
+		amount *= 1.15   # Luciole
 	if state == "jam":
 		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
 	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
