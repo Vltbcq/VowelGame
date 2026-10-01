@@ -14,25 +14,25 @@ const LIST := [
 		"desc": "Chaque goutte d'or a 15% de chances de faire briller une pièce : la Pie va la chercher et te rapporte 1 ou 2 or."},
 	# Rares
 	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
-		"desc": "Roule au hasard sur la page : les ennemis touchés prennent tes épines (au moins 3)."},
+		"desc": "Roule au hasard sur la page et rebondit sur les bords : chaque ennemi percuté prend des dégâts."},
 	{"id": "luciole", "name": "Luciole", "rar": 1, "ink": 40,
-		"desc": "Se pose sur un ennemi : il prend +25% de dégâts. Passe au suivant quand il meurt."},
+		"desc": "Plane au-dessus des ennemis avec une AURA : tous les ennemis dedans prennent +33% de dégâts."},
 	{"id": "perroquet", "name": "Perroquet", "rar": 1, "ink": 50,
-		"desc": "Vole partout sur la page et RÉPÈTE tes armes : toutes les 3 s, il refait le tir (ou le coup) d'une de tes armes sur l'ennemi le plus proche de lui."},
+		"desc": "Vole partout sur la page et RÉPÈTE tes armes : toutes les 2 s, il refait le tir (ou le coup) d'une de tes armes sur l'ennemi le plus proche de lui."},
 	# Épiques
 	{"id": "corbeau", "name": "Corbeau", "rar": 2, "ink": 60,
-		"desc": "Plane au-dessus de toi et plonge sur l'ennemi le plus fort (élites et boss en priorité), toutes les 3 s."},
+		"desc": "Plane au-dessus de toi et plonge sur l'ennemi le plus fort (élites et boss en priorité), toutes les 1,5 s."},
 	{"id": "grenouille", "name": "Grenouille", "rar": 2, "ink": 60,
-		"desc": "Saute partout et avale d'un coup de langue un petit ennemi (pas les élites ni les boss), toutes les 6 s."},
+		"desc": "Saute partout et donne un COUP DE LANGUE CIRCULAIRE toutes les 4 s : touche tous les ennemis autour d'elle."},
 	{"id": "fantome", "name": "Fantôme de papier", "rar": 2, "ink": 55,
-		"desc": "Traverse la page en ligne droite toutes les 5 s : les ennemis traversés prennent de gros dégâts et sont aveuglés 2 s."},
+		"desc": "Traverse la page en ligne droite toutes les 5 s : les ennemis traversés prennent des dégâts et sont aveuglés 2 s."},
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,
 		"desc": "Petit chat magique collé à toi : te soigne de 5% de tes PV toutes les 8 s, bloque un coup toutes les 12 s, et sous 25% de PV te donne +30% de vitesse 3 s."},
 	{"id": "pavel", "name": "Pavel", "rar": 3, "ink": 80,
 		"desc": "Gros chien qui encaisse : les ennemis proches de lui l'attaquent lui plutôt que toi. K.O., il revient 10 s plus tard."},
 	{"id": "teemeo", "name": "Teemeo", "rar": 3, "ink": 70,
-		"desc": "Plante des champignons invisibles (8 au plus) qui explosent en nuage de poison, et lance une fléchette aveuglante toutes les 5 s."},
+		"desc": "Plante des champignons invisibles (16 au plus) qui explosent en nuage de poison, et lance une fléchette aveuglante toutes les 5 s."},
 ]
 
 const PRICE := [16, 30, 52, 88]

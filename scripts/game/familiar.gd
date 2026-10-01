@@ -25,8 +25,11 @@ var line_to := Vector2.ZERO   # langue de la grenouille / fléchette de Teemeo
 var line_t := 0.0
 var line_col := Color.WHITE
 var shroom_n := 0       # Teemeo : champignons posés
+const LUCIOLE_R := 48.0
+const GRENOUILLE_R := 58.0
 var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
 var carry := false      # Pie : elle rapporte une pièce
+var lit: Array = []     # Luciole : ennemis dans son aura
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
 var bird_dmg := 0.0
 
@@ -89,7 +92,9 @@ func _leash() -> float:
 func hit(e: Enemy, dmg: float, kb := Vector2.ZERO) -> void:
 	if e == null or e.dead:
 		return
+	var h0: float = e.hp
 	e.hurt(dmg, false, kb)
+	arena.fam_credit(id, h0 - maxf(0.0, e.hp))
 	_action()
 	if e.dead:
 		on_kill()
@@ -201,6 +206,14 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if line_t > 0.0:
 		draw_line(Vector2.ZERO, line_to - position, line_col, 2.0)
+	if id == "luciole":
+		var glow := 0.5 + 0.5 * sin(t * 4.0)
+		draw_circle(Vector2.ZERO, LUCIOLE_R, Color(1.0, 0.95, 0.4, 0.07 + 0.04 * glow))
+		draw_arc(Vector2.ZERO, LUCIOLE_R, 0.0, TAU, 40, Color(1.0, 0.9, 0.3, 0.25 + 0.15 * glow), 1.0)
+	if id == "grenouille" and state == "tongue":
+		var a := (1.0 - st_t / 0.35) * TAU + ang
+		draw_line(Vector2.ZERO, Vector2.from_angle(a) * GRENOUILLE_R, Color("e85a8a"), 3.0)
+		draw_arc(Vector2.ZERO, GRENOUILLE_R, ang, a, 24, Color(0.9, 0.35, 0.55, 0.35), 2.0)
 	if id == "pie":
 		# pièces qui brillent au sol, et celle qu'elle tient dans le bec
 		for k in fetch.size():
@@ -244,9 +257,9 @@ func _taupe(delta: float) -> void:
 					position = target.position
 					target.pin_t = maxf(target.pin_t, 1.0)
 					# la terre jaillit : tous les ennemis autour prennent des dégâts
-					for o in arena.near(position, 34.0):
-						hit(o, fdmg(8.0, 2.5), (o.position - position).normalized() * 60.0)
-					arena.explosion(position, 34.0, Color(0.55, 0.35, 0.17, 0.6), true)
+					for o in arena.near(position, 28.0):
+						hit(o, fdmg(6.0, 1.8), (o.position - position).normalized() * 60.0)
+					arena.explosion(position, 28.0, Color(0.55, 0.35, 0.17, 0.6), true)
 					arena.burst(position, Color("8a5a2b"), 16, 110.0)
 					arena.float_text(position + Vector2(0, -16), "SURPRISE !", Color("c08040"))
 				sprite.modulate.a = 1.0
@@ -276,28 +289,36 @@ func _herisson(delta: float) -> void:
 		var k: int = e.get_instance_id()
 		if not hit_cd.has(k):
 			hit_cd[k] = 0.6
-			hit(e, maxf(3.0, Run.stats.thorns * 2.0) * (1.0 + 0.1 * Run.wave), vel.normalized() * 60.0)
+			hit(e, fdmg(7.0, 2.0), vel.normalized() * 60.0)
 
 
 func _luciole(delta: float) -> void:
+	# plane au-dessus de l'ennemi le plus proche de toi (ou de la cible du Sifflet)
 	var w := _called()
-	if w and w != target:
-		if target and is_instance_valid(target):
-			target.firefly = false
+	if w:
 		target = w
-		target.firefly = true
-	if target == null or not is_instance_valid(target) or target.dead:
-		if target and is_instance_valid(target):
-			target.firefly = false
+	elif target == null or not is_instance_valid(target) or target.dead or t - st_t > 2.0:
 		target = arena.nearest(arena.player.position, 400.0)
-		if target:
-			target.firefly = true
-			_action()
+		st_t = t
 	if target:
-		position = position.move_toward(target.position + Vector2(sin(t * 5.0) * 6.0, -14.0 + cos(t * 4.0) * 3.0), 220.0 * _speed() * delta)
-		sprite.modulate = Color(1, 1, 0.6, 0.6 + 0.4 * sin(t * 10.0))
+		position = position.move_toward(target.position + Vector2(sin(t * 3.0) * 10.0, -8.0 + cos(t * 2.0) * 6.0), 160.0 * _speed() * delta)
 	else:
 		_wander(delta)
+	sprite.modulate = Color(1, 1, 0.6, 0.7 + 0.3 * sin(t * 10.0))
+	# l'aura : +33 % de dégâts pour tous les ennemis dedans
+	for e in lit:
+		if is_instance_valid(e):
+			e.firefly = false
+	lit = arena.near(position, LUCIOLE_R)
+	for e in lit:
+		e.firefly = true
+
+
+func _exit_tree_luciole() -> void:
+	for e in lit:
+		if is_instance_valid(e):
+			e.firefly = false
+	lit.clear()
 
 
 func _corbeau(delta: float) -> void:
@@ -322,12 +343,17 @@ func _corbeau(delta: float) -> void:
 	position = arena.player.position + Vector2(sin(t * 1.5) * 18.0, -30.0 + sin(t * 3.0) * 3.0)
 	if cd <= 0.0:
 		target = _called() if _called() else _strongest(350.0)
-		cd = fcd(3.0)
+		cd = fcd(1.5)
 		if target:
 			state = "dive"
 
 
 func _grenouille(delta: float) -> void:
+	if state == "tongue":
+		st_t -= delta
+		if st_t <= 0.0:
+			state = "walk"
+		return
 	# petits sauts
 	cd2 -= delta
 	if cd2 <= 0.0:
@@ -336,22 +362,16 @@ func _grenouille(delta: float) -> void:
 	position = position.move_toward(goal, 140.0 * _speed() * delta)
 	if position.distance_to(goal) > 2.0:
 		sprite.position.y = -absf(sin(t * 12.0)) * 6.0
-	if cd <= 0.0:
-		cd = fcd(6.0)
-		var best: Enemy = null
-		var bd := 150.0
-		for e in arena.near(position, 150.0):
-			if not e.dead and not e.elite and not e.is_boss and position.distance_to(e.position) < bd:
-				bd = position.distance_to(e.position)
-				best = e
-		if best:
-			line_to = best.position
-			line_t = 0.25
-			line_col = Color("e85a8a")
-			_action()
-			arena.float_text(best.position + Vector2(0, -14), "GLOUP !", Color("6ac04a"))
-			arena.kill_enemy(best)
-			on_kill()
+	if cd <= 0.0 and arena.nearest(position, GRENOUILLE_R) != null:
+		# coup de langue circulaire : tous les ennemis autour
+		cd = fcd(4.0)
+		state = "tongue"
+		st_t = 0.35
+		ang = randf() * TAU
+		_action()
+		for e in arena.near(position, GRENOUILLE_R):
+			hit(e, fdmg(10.0, 3.0), (e.position - position).normalized() * 70.0)
+		arena.float_text(position + Vector2(0, -16), "SLURP !", Color("e85a8a"))
 
 
 func _fantome(delta: float) -> void:
@@ -363,7 +383,7 @@ func _fantome(delta: float) -> void:
 				if not hit_cd.has(k):
 					hit_cd[k] = 3.0
 					e.blind_t = maxf(e.blind_t, 2.0)
-					hit(e, fdmg(14.0, 4.0))
+					hit(e, fdmg(8.0, 2.5))
 			if position.x < -30.0 or position.x > Arena.W + 30.0 or position.y < -30.0 or position.y > Arena.H + 30.0:
 				state = "walk"
 				position = arena.player.position + Vector2(0, -20)
@@ -442,7 +462,7 @@ func _teemeo(delta: float) -> void:
 	cd2 -= delta
 	if cd2 <= 0.0:
 		cd2 = fcd(2.5)
-		if arena.shrooms.size() < 8:
+		if arena.shrooms.size() < 16:
 			var sp := (arena.player.position + Vector2.from_angle(randf() * TAU) * randf_range(40.0, 160.0)).clamp(Vector2(10, 10), Vector2(Arena.W - 10, Arena.H - 10))
 			arena.shrooms.append({"pos": sp, "dmg": fdmg(4.0, 1.5)})
 	if cd <= 0.0:
@@ -511,6 +531,7 @@ func _give(v: int) -> void:
 
 ## Fin de vague : la Pie te donne les pièces qu'elle n'a pas eu le temps de rapporter.
 func _exit_tree() -> void:
+	_exit_tree_luciole()
 	for f in fetch:
 		Run.gold += int(f.v)
 	fetch.clear()
@@ -528,7 +549,7 @@ func _perroquet(delta: float) -> void:
 	var e := arena.nearest(position, 220.0)
 	if wns.is_empty() or e == null:
 		return
-	cd = fcd(3.0)
+	cd = fcd(2.0)
 	var wn: WeaponNode = wns.pick_random()
 	var st: Dictionary = wn.st
 	var dir := (e.position - position).normalized()
@@ -546,7 +567,9 @@ func _perroquet(delta: float) -> void:
 		line_to = e.position
 		line_t = 0.12
 		line_col = Color("5ec04a")
+		var h0: float = e.hp
 		arena.hit_enemy(e, float(st.get("damage", 5.0)), st, dir, float(st.get("knock", 30.0)))
+		arena.fam_credit(id, h0 - maxf(0.0, e.hp))
 		arena.burst(e.position, Color("5ec04a"), 6, 70.0)
 		if e.dead:
 			on_kill()

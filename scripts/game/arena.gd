@@ -82,6 +82,7 @@ var familiars: Array = [] # familiers sur la page
 var shrooms: Array = []   # Teemeo : champignons invisibles {pos, dmg}
 var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
 var whip_stacks := 0
+var fam_dealt := {}       # dégâts infligés par familier (id -> total), pour les mesures
 var whistle: Enemy        # Sifflet : cible désignée aux familiers
 var whistle_t := 0.0
 var banana_kills := 0
@@ -1132,7 +1133,10 @@ func _tick_effects(delta: float) -> void:
 		if cl.acc >= 0.5:
 			cl.acc = 0.0
 			for e in near(cl.pos, cl.r):
+				var h0: float = e.hp
 				e.hurt(cl.dps * 0.5, false, Vector2.ZERO, int(cl.get("el", Pal.POISON)))
+				if cl.get("src", "") != "":
+					fam_credit(cl.src, h0 - maxf(0.0, e.hp))
 		if cl.t > 0.0:
 			keep.append(cl)
 	clouds = keep
@@ -1374,7 +1378,7 @@ func _tick_pets(delta: float) -> void:
 					boom = true
 					break
 			if boom:
-				add_zone(sh.pos, 40.0, 3.0, sh.dmg, Pal.POISON)
+				add_zone(sh.pos, 40.0, 3.0, sh.dmg, Pal.POISON, "teemeo")
 				burst(sh.pos, Pal.main_color(Pal.POISON), 14, 90.0)
 				Sfx.play("explode")
 			else:
@@ -1689,11 +1693,11 @@ func explosion(pos: Vector2, r: float, color: Color, quiet := false) -> void:
 
 
 ## Zone d'encre AMIE (Pinceau) : brûle les ennemis qui marchent dedans.
-func add_zone(pos: Vector2, r: float, life: float, dps: float, el: int) -> void:
+func add_zone(pos: Vector2, r: float, life: float, dps: float, el: int, src := "") -> void:
 	if clouds.size() > 160:
 		clouds.pop_front()
 	var col: Color = Pal.main_color(el) if el > 0 else Pal.INK
-	clouds.append({"pos": pos, "r": r, "t": life, "acc": randf() * 0.5, "dps": dps, "el": el, "col": col})
+	clouds.append({"pos": pos, "r": r, "t": life, "acc": randf() * 0.5, "dps": dps, "el": el, "col": col, "src": src})
 	_splat(pos, r * 0.35, col)
 
 
@@ -2069,3 +2073,9 @@ func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float) -> void
 	world.add_child(fm)
 	fm.setup_bird(self, tex, effect, outline, dmg)
 	familiars.append(fm)
+
+
+## Mesure : dégâts infligés par chaque familier.
+func fam_credit(id: String, amount: float) -> void:
+	if amount > 0.0:
+		fam_dealt[id] = float(fam_dealt.get(id, 0.0)) + amount

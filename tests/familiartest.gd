@@ -122,14 +122,14 @@ func _ready() -> void:
 	var t: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(120, 40), false)
 	arena.hit_enemy(t, 1.0, {"type": "sifflet", "style": "shot"}, Vector2.RIGHT, 0.0)
 	_check(arena.whistle == t, "Sifflet : l'ennemi touché devient la cible")
-	for f in 30:
+	for f in 120:
 		arena.player.inv = 999.0
 		arena._process(1.0 / 60.0)
 	var lu := false
 	for fm in arena.familiars:
 		if fm.id == "luciole":
 			lu = fm.target == t
-	_check(lu and t.firefly, "la Luciole éclaire la cible du Sifflet")
+	_check(lu and t.firefly, "la Luciole met son aura sur la cible du Sifflet")
 
 	# Fouet : bonus de dégâts qui se cumule
 	var fm0: Familiar = arena.familiars[0]
@@ -216,6 +216,43 @@ func _ready() -> void:
 	tp.st_t = 0.0
 	tp.tick(1.0 / 60.0)
 	_check(c0.hp < h0 and c1.hp < h1 and c2.hp < h2 and c0.pin_t > 0.0, "Taupe : dégâts de zone (3 ennemis touchés) et cible étourdie")
+	# Grenouille : coup de langue circulaire, touche tout autour
+	var gr: Familiar = null
+	var lc: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "grenouille":
+			gr = fm
+		if fm.id == "luciole":
+			lc = fm
+	for e in arena.enemies.duplicate():
+		arena.kill_enemy(e)
+	var ring := []
+	for k in 4:
+		ring.append(arena.spawn_enemy_now("colosse", gr.position + Vector2.from_angle(k * TAU / 4.0) * 40.0, false))
+	arena.player.inv = 999.0
+	arena._process(1.0 / 60.0)
+	var rh := ring.map(func(e): return e.hp)
+	gr.cd = 0.0
+	gr.state = "walk"
+	gr.tick(1.0 / 60.0)
+	var all_hit := true
+	for k in 4:
+		all_hit = all_hit and ring[k].hp < rh[k]
+	_check(all_hit, "Grenouille : le coup de langue touche les 4 ennemis autour")
+	# Luciole : aura +33 % sur tous les ennemis dedans
+	lc.position = ring[0].position
+	lc.target = ring[0]
+	lc.tick(1.0 / 60.0)
+	var inside: int = ring.filter(func(e): return e.firefly).size()
+	_check(inside >= 1 and lc.lit.size() == inside, "Luciole : aura sur %d ennemi(s)" % inside)
+	var e_lit: Enemy = ring[0]
+	var e_off: Enemy = ring[2]
+	var h_lit: float = e_lit.hp
+	var h_off: float = e_off.hp
+	e_lit.hurt(50.0, false, Vector2.ZERO)
+	e_off.hurt(50.0, false, Vector2.ZERO)
+	var ratio: float = (h_lit - e_lit.hp) / maxf(0.01, h_off - e_off.hp)
+	_check(e_lit.firefly and not e_off.firefly and absf(ratio - 1.33) < 0.02, "Luciole : +33%% de dégâts dans l'aura (×%.2f)" % ratio)
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")
 	Run.add_amulet("meute", img, Vector2i(20, 20))
