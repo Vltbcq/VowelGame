@@ -46,7 +46,7 @@ func _build() -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(p, tabs, Vector2(10, 30), Vector2(600, 16))
-	for t in [["perso", "Perso"], ["ennemis", "Ennemis"], ["armes", "Armes"], ["amulettes", "Amulettes"]]:
+	for t in [["perso", "Perso"], ["ennemis", "Ennemis"], ["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers", "Familiers"]]:
 		var tid: String = t[0]
 		var b := UI.button(t[1], func():
 			tab = tid
@@ -66,6 +66,8 @@ func _build() -> void:
 			_weapons(area)
 		"amulettes":
 			_amulets(area)
+		"familiers":
+			_familiars(area)
 
 
 # ------------------------------------------------------------------ Perso
@@ -309,6 +311,57 @@ func _give_amulet(id: String) -> void:
 	Run.add_amulet(id, img, pos)
 	_refresh_stats()
 	arena.player.refresh_image()
+	arena.float_text(arena.player.position + Vector2(0, -26), "DEV : " + String(def.name), Pal.GOOD)
+	_build()
+
+
+# ------------------------------------------------------------------ Familiers
+
+func _familiars(area: Control) -> void:
+	UI.put(area, UI.button("Retirer tous les familiers", func():
+		Run.familiars.clear()
+		for fm in arena.familiars:
+			fm.queue_free()
+		arena.familiars.clear()
+		_build()), Vector2(0, 0), Vector2(180, 16))
+	UI.put(area, UI.label("Familiers : %d. Clique pour en ajouter un (ou le retirer s'il est déjà là)." % Run.familiars.size(), 10, Pal.DIM), Vector2(190, 3))
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	UI.put(area, grid, Vector2(0, 22), Vector2(600, 262))
+	for d in FamiliarDB.LIST:
+		var fid: String = d.id
+		var owned: bool = fid in Run.familiars
+		var b := UI.button(("✓ " if owned else "") + String(d.name), func(): _toggle_familiar(fid))
+		b.custom_minimum_size = Vector2(144, 18)
+		b.clip_text = true
+		b.add_theme_color_override("font_color", Pal.RARITY[int(d.rar)])
+		b.tooltip_text = d.desc
+		if owned:
+			UI.selected(b)
+		grid.add_child(b)
+
+
+func _toggle_familiar(id: String) -> void:
+	var def := FamiliarDB.get_def(id)
+	if id in Run.familiars:
+		Run.familiars.erase(id)
+		for fm in arena.familiars.duplicate():
+			if fm.id == id:
+				arena.familiars.erase(fm)
+				fm.queue_free()
+		_build()
+		return
+	if not Run.familiar_art.has(id):
+		var d = Meta.bestiary_get("familier_" + id)
+		var s := FamiliarDB.canvas(def)
+		Run.set_familiar_art(id, d.image if d != null else _blob(s, int(FamiliarDB.ink(def)), Pal.SHADES[3][1]), d.effect if d != null else "")
+	Run.add_familiar(id)
+	var fm := Familiar.new()
+	arena.world.add_child(fm)
+	fm.setup(arena, id)
+	arena.familiars.append(fm)
 	arena.float_text(arena.player.position + Vector2(0, -26), "DEV : " + String(def.name), Pal.GOOD)
 	_build()
 

@@ -25,6 +25,8 @@ var line_to := Vector2.ZERO   # langue de la grenouille / fléchette de Teemeo
 var line_t := 0.0
 var line_col := Color.WHITE
 var shroom_n := 0       # Teemeo : champignons posés
+var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
+var carry := false      # Pie : elle rapporte une pièce
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
 var bird_dmg := 0.0
 
@@ -169,13 +171,13 @@ func tick(delta: float) -> void:
 		"taupe":
 			_taupe(delta)
 		"pie":
-			_wander(delta, 110.0)
+			_pie(delta)
 		"herisson_f":
 			_herisson(delta)
 		"luciole":
 			_luciole(delta)
-		"escargot":
-			_escargot(delta)
+		"perroquet":
+			_perroquet(delta)
 		"corbeau":
 			_corbeau(delta)
 		"grenouille":
@@ -199,6 +201,14 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if line_t > 0.0:
 		draw_line(Vector2.ZERO, line_to - position, line_col, 2.0)
+	if id == "pie":
+		# pièces qui brillent au sol, et celle qu'elle tient dans le bec
+		for k in fetch.size():
+			if k == 0 and carry:
+				continue
+			_coin(fetch[k].pos - position, k)
+		if carry:
+			_coin(Vector2(5, -3), 0)
 	if id == "pavel" and hp < max_hp:
 		draw_rect(Rect2(-10, 12, 20, 3), Color(0, 0, 0, 0.5))
 		draw_rect(Rect2(-10, 12, 20 * hp / max_hp, 3), Pal.GOOD)
@@ -285,14 +295,6 @@ func _luciole(delta: float) -> void:
 		sprite.modulate = Color(1, 1, 0.6, 0.6 + 0.4 * sin(t * 10.0))
 	else:
 		_wander(delta)
-
-
-func _escargot(delta: float) -> void:
-	_wander(delta, 30.0)
-	cd2 -= delta
-	if cd2 <= 0.0:
-		cd2 = 0.25
-		arena.add_slime(position)
 
 
 func _corbeau(delta: float) -> void:
@@ -465,3 +467,83 @@ func _oiseau(delta: float) -> void:
 		hit(target, fdmg(bird_dmg, 0.0), (target.position - position).normalized() * 40.0)
 		arena.burst(position, Pal.INK, 5, 60.0)
 		target = null
+
+
+func _coin(at: Vector2, k: int) -> void:
+	var glow := 0.5 + 0.5 * sin(t * 8.0 + k)
+	draw_circle(at, 4.0 + glow, Color(Pal.ACCENT, 0.25))
+	draw_circle(at, 2.6, Pal.INK)
+	draw_circle(at, 2.0, Pal.ACCENT)
+	if glow > 0.7:
+		draw_line(at + Vector2(-4, 0), at + Vector2(4, 0), Color(1, 1, 1, 0.8), 1.0)
+		draw_line(at + Vector2(0, -4), at + Vector2(0, 4), Color(1, 1, 1, 0.8), 1.0)
+
+
+## Pie : va chercher les pièces brillantes et te les rapporte.
+func _pie(delta: float) -> void:
+	if fetch.is_empty():
+		_wander(delta, 110.0)
+		return
+	var p := arena.player
+	var dest: Vector2 = p.position + Vector2(0, -6) if carry else fetch[0].pos
+	position = position.move_toward(dest, 190.0 * _speed() * delta)
+	_sitflip(dest.x - position.x)
+	if position.distance_to(dest) > 5.0:
+		return
+	if not carry:
+		carry = true
+		arena.burst(position, Pal.ACCENT, 4, 40.0)
+		return
+	_give(fetch.pop_front().v)
+	carry = false
+
+
+func _give(v: int) -> void:
+	Run.gold += v
+	arena.burst(arena.player.position, Pal.ACCENT, 12, 110.0)
+	arena.float_text(arena.player.position + Vector2(0, -22), "+%d OR" % v, Pal.ACCENT)
+	Sfx.play("coin")
+	_action()
+
+
+## Fin de vague : la Pie te donne les pièces qu'elle n'a pas eu le temps de rapporter.
+func _exit_tree() -> void:
+	for f in fetch:
+		Run.gold += int(f.v)
+	fetch.clear()
+
+
+## Perroquet : se balade partout sur la page et répète une de tes armes.
+func _perroquet(delta: float) -> void:
+	if position.distance_to(goal) < 8.0:
+		goal = Vector2(randf_range(30.0, Arena.W - 30.0), randf_range(30.0, Arena.H - 30.0))
+	position = position.move_toward(goal, 85.0 * _speed() * delta)
+	_sitflip(goal.x - position.x)
+	if cd > 0.0:
+		return
+	var wns: Array = arena.player.weapons.filter(func(w): return is_instance_valid(w))
+	var e := arena.nearest(position, 220.0)
+	if wns.is_empty() or e == null:
+		return
+	cd = fcd(3.0)
+	var wn: WeaponNode = wns.pick_random()
+	var st: Dictionary = wn.st
+	var dir := (e.position - position).normalized()
+	arena.float_text(position + Vector2(0, -14), "COPIÉ !", Color("5ec04a"))
+	_action()
+	if st.kind == "ranged" and not st.get("bullets", []).is_empty() and not wn.bullet_tex.is_empty():
+		var b: Dictionary = st.bullets[0]
+		var sp: float = maxf(120.0, float(b.speed))
+		arena.spawn_bullet(position + dir * 6.0, dir * sp, b, st, wn.bullet_tex[0], wn.art.get("beffect", ""),
+			280.0 / sp, wn.art.get("boutline", false))
+		Sfx.play("shoot")
+	else:
+		# arme de mêlée : il fonce donner un coup de bec avec
+		position = e.position - dir * 8.0
+		line_to = e.position
+		line_t = 0.12
+		line_col = Color("5ec04a")
+		arena.hit_enemy(e, float(st.get("damage", 5.0)), st, dir, float(st.get("knock", 30.0)))
+		arena.burst(e.position, Color("5ec04a"), 6, 70.0)
+		if e.dead:
+			on_kill()

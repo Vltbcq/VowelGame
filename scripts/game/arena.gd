@@ -79,7 +79,6 @@ var patron_mult := 1.0    # Mécène : ennemis en plus
 var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
 var peels: Array = []     # La Banane : peaux au sol {pos, t, a}
 var familiars: Array = [] # familiers sur la page
-var slimes: Array = []    # Escargot : bave {pos, t}
 var shrooms: Array = []   # Teemeo : champignons invisibles {pos, dmg}
 var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
 var whip_stacks := 0
@@ -793,6 +792,10 @@ func kill_enemy(e: Enemy) -> void:
 		pk.vel = Vector2.from_angle(randf() * TAU) * randf_range(20, 90 if e.is_boss else 50)
 		loot_layer.add_child(pk)
 		pickups.append(pk)
+		if pk.value > 0:
+			for fm in familiars:
+				if fm.id == "pie" and fm.fetch.size() < 6 and randf() < 0.15:
+					fm.fetch.append({"pos": pk.position, "v": randi_range(1, 2)})
 	# Synergie Glace : un ennemi gelé (ou ralenti) éclate en éclats de glace
 	if syn.has(Pal.GLACE) and (e.freeze_t > 0.0 or e.slow_t > 0.0):
 		for k in 6:
@@ -887,13 +890,6 @@ func kill_enemy(e: Enemy) -> void:
 func collect(p: Pickup) -> void:
 	if p.heal > 0.0:
 		player.heal(p.heal)
-	# Pie voleuse : 15 % de chances de +1 ou +2 or par goutte d'or
-	for fm in familiars:
-		if fm.id == "pie" and p.value > 0 and randf() < 0.15:
-			var bonus := randi_range(1, 2)
-			Run.gold += bonus
-			float_text(fm.position + Vector2(0, -14), "+%d" % bonus, Pal.ACCENT)
-			fm._action()
 	Run.gold += p.value
 	Sfx.play("pickup", 0.2)
 	if p.value > 0:
@@ -1361,20 +1357,6 @@ func target_pos(from := Vector2.INF) -> Vector2:
 	return player.position
 
 
-## Escargot : bave sur la page (ralentit les ennemis).
-func add_slime(pos: Vector2) -> void:
-	slimes.append({"pos": pos, "t": 4.0})
-	if slimes.size() > 120:
-		slimes.pop_front()
-
-
-func slime_at(pos: Vector2) -> bool:
-	for s in slimes:
-		if pos.distance_squared_to(s.pos) < 100.0:
-			return true
-	return false
-
-
 ## Bave qui sèche, champignons de Teemeo qui explosent, Fouet de dresseur qui retombe.
 func _tick_pets(delta: float) -> void:
 	whip_t -= delta
@@ -1383,10 +1365,6 @@ func _tick_pets(delta: float) -> void:
 	whistle_t -= delta
 	if whistle_t <= 0.0:
 		whistle = null
-	if not slimes.is_empty():
-		for s in slimes:
-			s.t -= delta
-		slimes = slimes.filter(func(s): return s.t > 0.0)
 	if not shrooms.is_empty():
 		var keep := []
 		for sh in shrooms:
@@ -1872,8 +1850,6 @@ class _Marks extends Node2D:
 			draw_rect(Rect2(Vector2(0, r.position.y), Vector2(r.position.x, r.size.y)), vc)
 			draw_rect(Rect2(Vector2(r.end.x, r.position.y), Vector2(full.end.x - r.end.x, r.size.y)), vc)
 			draw_rect(r, Color(Pal.BAD, 0.4 + 0.4 * sin(arena.elapsed * 8.0)), false, 2.0)
-		for s in arena.slimes:
-			draw_circle(s.pos, 6.0, Color(0.6, 0.85, 0.5, 0.25 * clampf(s.t, 0.0, 1.0)))
 		for sh in arena.shrooms:
 			draw_circle(sh.pos, 3.0, Color(0.4, 0.6, 0.2, 0.25))   # invisibles pour eux, à peine visibles pour toi
 		for pl in arena.peels:

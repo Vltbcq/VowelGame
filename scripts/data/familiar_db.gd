@@ -11,14 +11,14 @@ const LIST := [
 	{"id": "taupe", "name": "Taupe", "rar": 0, "ink": 50,
 		"desc": "Creuse, puis surgit sous un ennemi : dégâts et étourdi 1 s (toutes les 4 s)."},
 	{"id": "pie", "name": "Pie voleuse", "rar": 0, "ink": 45,
-		"desc": "Chaque goutte d'or ramassée : 15% de chances de te rapporter 1 ou 2 or en plus."},
+		"desc": "Chaque goutte d'or a 15% de chances de faire briller une pièce : la Pie va la chercher et te rapporte 1 ou 2 or."},
 	# Rares
 	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
 		"desc": "Roule au hasard sur la page : les ennemis touchés prennent tes épines (au moins 3)."},
 	{"id": "luciole", "name": "Luciole", "rar": 1, "ink": 40,
 		"desc": "Se pose sur un ennemi : il prend +25% de dégâts. Passe au suivant quand il meurt."},
-	{"id": "escargot", "name": "Escargot", "rar": 1, "ink": 50,
-		"desc": "Laisse une traînée de bave qui ralentit les ennemis de 50%."},
+	{"id": "perroquet", "name": "Perroquet", "rar": 1, "ink": 50,
+		"desc": "Vole partout sur la page et RÉPÈTE tes armes : toutes les 3 s, il refait le tir (ou le coup) d'une de tes armes sur l'ennemi le plus proche de lui."},
 	# Épiques
 	{"id": "corbeau", "name": "Corbeau", "rar": 2, "ink": 60,
 		"desc": "Plane au-dessus de toi et plonge sur l'ennemi le plus fort (élites et boss en priorité), toutes les 3 s."},

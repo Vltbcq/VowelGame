@@ -105,7 +105,6 @@ func _ready() -> void:
 		if not is_instance_valid(e) or e.dead or e.hp < e.max_hp:
 			dealt += 1
 	_check(dealt >= 6, "les familiers frappent (%d ennemis touchés)" % dealt)
-	_check(not arena.slimes.is_empty(), "l'Escargot laisse de la bave (%d)" % arena.slimes.size())
 	_check(not arena.shrooms.is_empty() or Run.kills > 0, "Teemeo plante des champignons")
 	_check(arena.player.hp > arena.player.max_hp * 0.2, "Yuki soigne (%.0f / %.0f PV)" % [arena.player.hp, arena.player.max_hp])
 
@@ -165,23 +164,37 @@ func _ready() -> void:
 	var php := prey.hp
 	mq.tick(1.0 / 60.0)
 	_check(prey.hp < php and arena.player.hp >= 4.0, "Moustique : pique (%.0f → %.0f) et rend 1 PV (%.0f)" % [php, prey.hp, arena.player.hp])
-	# Pie : ~15 % de chances de +1/+2 or par goutte d'or
+	# Pie : va chercher la pièce brillante et te la rapporte
 	var g0 := Run.gold
-	for k in 400:
-		var pk := Pickup.new()
-		pk.value = 0
-		arena.collect(pk)
-		pk.free()
-	_check(Run.gold == g0, "Pie : rien sur les gouttes sans or")
-	var extra := 0
-	for k in 400:
-		var pk := Pickup.new()
-		pk.value = 1
-		var before_g := Run.gold
-		arena.collect(pk)
-		extra += Run.gold - before_g - 1
-		pk.free()
-	_check(extra > 60 and extra < 180, "Pie : %d or en plus sur 400 gouttes (≈ 90 attendu)" % extra)
+	pie.fetch = [{"pos": arena.player.position + Vector2(90, 30), "v": 2}, {"pos": arena.player.position + Vector2(-70, 50), "v": 1}, {"pos": arena.player.position + Vector2(40, -60), "v": 1}]
+	pie.carry = false
+	var went := false
+	for f in 480:
+		arena.player.inv = 999.0
+		arena._process(1.0 / 60.0)
+		went = went or pie.carry
+		if f == 50 and args.size() > 2:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png(args[2])
+	_check(went and pie.fetch.is_empty() and Run.gold >= g0 + 4, "Pie : va chercher les pièces et rapporte l'or (+%d)" % (Run.gold - g0))
+	var drops := 0
+	for k in 300:
+		arena.kill_enemy(arena.spawn_enemy_now("tache", arena.player.position + Vector2(200, 0), false))
+		drops += pie.fetch.size()
+		pie.fetch.clear()
+	_check(drops > 10, "Pie : des pièces brillent quand l'or tombe (%d sur 300 éliminations)" % drops)
+	# Perroquet : répète ton épée sur l'ennemi le plus proche de lui
+	var par: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "perroquet":
+			par = fm
+	for e in arena.enemies.duplicate():
+		arena.kill_enemy(e)
+	var pv: Enemy = arena.spawn_enemy_now("colosse", par.position + Vector2(40, 0), false)
+	var pvh := pv.hp
+	par.cd = 0.0
+	par.tick(1.0 / 60.0)
+	_check(pv.hp < pvh, "Perroquet : copie le coup d'épée (%.0f → %.0f)" % [pvh, pv.hp])
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")
 	Run.add_amulet("meute", img, Vector2i(20, 20))
@@ -196,10 +209,12 @@ func _ready() -> void:
 	arena.queue_free()
 
 	# --- Boutique : capture avec un familier en vitrine
-	Run.familiars = ["yuki"]
+	Run.familiars = ["yuki", "pie", "moustique"]
+	Run.set_amulet_art("niche", img, "")
+	Run.add_amulet("niche", img, Vector2i(20, 20))
 	Run.roll_shop()
 	Run.shop_offers[0] = {"type": "familiar", "id": "teemeo", "rar": 3, "price": 88, "sold": false}
-	Run.shop_offers[1] = {"type": "familiar", "id": "moustique", "rar": 0, "price": 16, "sold": false}
+	Run.shop_offers[1] = {"type": "familiar", "id": "perroquet", "rar": 1, "price": 30, "sold": false}
 	var shop := ShopScreen.new()
 	add_child(shop)
 	await get_tree().process_frame

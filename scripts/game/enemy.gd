@@ -269,8 +269,6 @@ func tick(delta: float) -> void:
 	if slip_t > 0.0:
 		slip_t -= delta
 		mult = 0.0   # assommé par la peau de banane
-	if not arena.slimes.is_empty() and arena.slime_at(position):
-		mult *= 0.5   # bave de l'Escargot
 	hop_h = 0.0
 
 	# Chef-d'œuvre : boss en fureur = attaques plus rapprochées

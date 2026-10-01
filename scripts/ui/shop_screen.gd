@@ -117,8 +117,8 @@ func _build() -> void:
 	# Vitrine des amulettes
 	var vit := UI.panel(Color(0.75, 0.85, 1.0, 0.12), Color(0.8, 0.9, 1.0, 0.5), 1)
 	UI.put(self, vit, Vector2(12, 307), Vector2(300, 22))
-	if Run.amulets.is_empty():
-		UI.put(vit, UI.label("vitrine des amulettes (vide)", 10, CARTEL_DIM), Vector2(6, 5))
+	if Run.amulets.is_empty() and Run.familiars.is_empty():
+		UI.put(vit, UI.label("vitrine des amulettes et familiers (vide)", 10, CARTEL_DIM), Vector2(6, 5))
 	var ax := 4
 	for am in Run.amulets:
 		var th := UI.thumb(am.image, Vector2(16, 16))
@@ -127,6 +127,19 @@ func _build() -> void:
 		th.tooltip_text = "%s (%s)\n%s" % [def.name, am.zone, AmuletDB.describe(def, am.mag)]
 		UI.put(vit, th, Vector2(ax, 3), Vector2(16, 16))
 		ax += 18
+	# Familiers : à la suite, dans un petit cadre brun (patte)
+	if not Run.familiars.is_empty() and not Run.amulets.is_empty():
+		ax += 4
+	for fid in Run.familiars:
+		var fdef := FamiliarDB.get_def(fid)
+		var fr := UI.panel(Color(0.55, 0.35, 0.17, 0.25), Pal.RARITY[int(fdef.rar)], 1)
+		fr.mouse_filter = Control.MOUSE_FILTER_STOP
+		fr.tooltip_text = "Familier : %s (%s)\n%s" % [fdef.name, Pal.RARITY_NAMES[int(fdef.rar)].to_lower(), fdef.desc]
+		UI.put(vit, fr, Vector2(ax - 1, 2), Vector2(18, 18))
+		var fth := UI.thumb(Run.familiar_art[fid].image if Run.familiar_art.has(fid) else _kind_icon("familiar"), Vector2(16, 16))
+		fth.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.put(fr, fth, Vector2(1, 1), Vector2(16, 16))
+		ax += 20
 
 	# --- Ton portrait + cartel de stats
 	var pf := _frame_panel(FRAME[3], 5)

@@ -26,6 +26,7 @@ func _ready() -> void:
 	sounds.wave = _tone([[392, 392, 0.1], [523, 523, 0.1], [659, 784, 0.2]], "tri", 0.4)
 	sounds.boss = _tone([[110, 70, 0.9]], "square", 0.35)
 	sounds.explode = _tone([[160, 40, 0.3]], "noise", 0.45)
+	sounds.coin = _tone([[1318, 1318, 0.05], [1976, 1976, 0.14]], "square", 0.2)
 	sounds.buy = _tone([[800, 800, 0.05], [1200, 1200, 0.08]], "square", 0.22)
 	sounds.enemy_shot = _tone([[500, 300, 0.07]], "tri", 0.25)
 	sounds.zap = _tone([[1500, 600, 0.08]], "noise", 0.2)
