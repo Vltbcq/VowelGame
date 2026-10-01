@@ -445,7 +445,7 @@ func _fire(target: Enemy) -> void:
 		return
 	if st.style == "cage":
 		var bc: Dictionary = st.bullets[0]
-		arena.add_bird(bullet_tex[0], art.beffect, art.get("boutline", false), bc.damage)
+		arena.add_bird(bullet_tex[0], art.beffect, art.get("boutline", false), bc.damage, st.get("frac", []))
 		recoil = 3.0
 		Sfx.play("shoot")
 		return

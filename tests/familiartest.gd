@@ -276,7 +276,20 @@ func _ready() -> void:
 		d1.position = base + Vector2(50, 0)
 		d2.position = base + Vector2(80, 0)
 		arena._process(1.0 / 60.0)
+	_check(d1.poison > 0, "Teemeo : la fléchette empoisonne")
 	_check(d1.hp < dh1 and d2.hp == dh2 and tm.darts.is_empty(), "Teemeo : la fléchette touche le 1er ennemi et s'arrête (%.0f→%.0f, 2e : %.0f→%.0f)" % [dh1, d1.hp, dh2, d2.hp])
+	# Couleurs = éléments : un familier dessiné tout en couleur Poison empoisonne
+	var pimg := Image.create_empty(16, 16, false, Image.FORMAT_RGBA8)
+	pimg.fill_rect(Rect2i(2, 2, 12, 12), Pal.main_color(Pal.POISON))
+	Run.set_familiar_art("corbeau", pimg, "")
+	var pc := Familiar.new()
+	arena.world.add_child(pc)
+	pc.setup(arena, "corbeau")
+	var pe: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(0, -90), false)
+	for k in 6:
+		pc.hit(pe, 1.0)
+	_check(pe.poison > 0, "couleurs du familier : un dessin vert empoisonne (frac poison %.2f)" % float(pc.frac[Pal.POISON]))
+	pc.queue_free()
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")
 	Run.add_amulet("meute", img, Vector2i(20, 20))

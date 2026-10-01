@@ -29,6 +29,7 @@ const LUCIOLE_R := 48.0
 const GRENOUILLE_R := 58.0
 var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
 var carry := false      # Pie : elle rapporte une pièce
+var frac: Array = []    # part de chaque couleur du dessin : chances d'effet élémentaire
 var darts: Array = []   # Teemeo : fléchettes en vol {pos, vel, life}
 var lit: Array = []     # Luciole : ennemis dans son aura
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
@@ -42,6 +43,7 @@ func setup(a: Arena, fid: String) -> void:
 	var art: Dictionary = Run.familiar_art[id]
 	sprite = Gfx.sprite(Gfx.texture(Analyzer.trim(art.image)), Gfx.material(art.effect, art.get("outline", false)))
 	add_child(sprite)
+	frac = Analyzer.analyze(art.image).get("frac", [])
 	position = arena.player.position + Vector2.from_angle(randf() * TAU) * 30.0
 	goal = position
 	ang = randf() * TAU
@@ -54,7 +56,8 @@ func setup(a: Arena, fid: String) -> void:
 
 
 ## Oiseau de la Cage : vit 6 s, pique l'ennemi le plus proche.
-func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: float) -> void:
+func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: float, fr: Array = []) -> void:
+	frac = fr
 	arena = a
 	id = "oiseau"
 	def = {}
@@ -97,8 +100,23 @@ func hit(e: Enemy, dmg: float, kb := Vector2.ZERO) -> void:
 	e.hurt(dmg, false, kb)
 	arena.fam_credit(id, h0 - maxf(0.0, e.hp))
 	_action()
+	_elements(e, dmg)
 	if e.dead:
 		on_kill()
+
+
+## Couleurs du dessin = éléments, comme les armes : chaque couleur a sa chance d'effet
+## (selon sa part du dessin, × puissance élémentaire).
+func _elements(e: Enemy, dmg: float) -> void:
+	if frac.is_empty() or e.dead:
+		return
+	var power: float = 1.0 + Run.stats.el_power / 100.0
+	for el in range(1, mini(frac.size(), Pal.COUNT)):
+		var chance: float = float(frac[el]) * power
+		if el == e.element:
+			chance *= 0.3   # un ennemi résiste à son propre élément
+		if chance > 0.0 and randf() < chance:
+			arena._apply_el(e, el, dmg)
 
 
 ## Meute : quand un familier tue, tous les familiers ont leur délai de capacité réduit de 50 %.
@@ -482,6 +500,8 @@ func _teemeo(delta: float) -> void:
 		if hitme:
 			hitme.blind_t = maxf(hitme.blind_t, 2.0)
 			hit(hitme, fdmg(6.0, 1.5))
+			if not hitme.dead:
+				arena._apply_el(hitme, Pal.POISON, fdmg(6.0, 1.5))   # toujours empoisonnées
 			arena.burst(dt.pos, Color("c8e070"), 4, 50.0)
 			darts.erase(dt)
 		elif dt.life <= 0.0:

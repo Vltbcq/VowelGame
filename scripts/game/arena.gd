@@ -2073,7 +2073,7 @@ class _Ring extends Node2D:
 
 
 ## Cage à oiseaux : un familier temporaire (le dessin de balle) qui pique les ennemis.
-func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float) -> void:
+func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float, fr: Array = []) -> void:
 	var n := 0
 	for fm in familiars:
 		if fm.id == "oiseau":
@@ -2082,7 +2082,7 @@ func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float) -> void
 		return
 	var fm := Familiar.new()
 	world.add_child(fm)
-	fm.setup_bird(self, tex, effect, outline, dmg)
+	fm.setup_bird(self, tex, effect, outline, dmg, fr)
 	familiars.append(fm)
 
 

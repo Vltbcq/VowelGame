@@ -32,7 +32,7 @@ const LIST := [
 	{"id": "pavel", "name": "Pavel", "rar": 3, "ink": 80,
 		"desc": "Tank de poche : les ennemis proches l'attaquent lui. Revient après un K.O."},
 	{"id": "teemeo", "name": "Teemeo", "rar": 3, "ink": 70,
-		"desc": "Plante des champignons empoisonnés et tire des fléchettes aveuglantes."},
+		"desc": "Plante des champignons empoisonnés et tire des fléchettes qui aveuglent et empoisonnent."},
 ]
 
 const PRICE := [16, 30, 52, 88]
