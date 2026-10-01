@@ -10,10 +10,10 @@ const LIST := [
 		"desc": "Pique les ennemis et te rend un peu de PV."},
 	{"id": "taupe", "name": "Taupe", "rar": 0, "ink": 50,
 		"desc": "Surgit sous les ennemis : dégâts de zone, et sa cible est étourdie."},
-	{"id": "pie", "name": "Pie voleuse", "rar": 0, "ink": 45,
+	{"id": "pie", "name": "Pie", "rar": 0, "ink": 45,
 		"desc": "Va chercher des pièces d'or bonus et te les rapporte."},
 	# Rares
-	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
+	{"id": "herisson_f", "name": "Hérisson", "rar": 1, "ink": 55,
 		"desc": "Roule partout sur la page et blesse les ennemis qu'il percute."},
 	{"id": "luciole", "name": "Luciole", "rar": 1, "ink": 40,
 		"desc": "Son aura fait subir +15% de dégâts aux ennemis."},
@@ -24,7 +24,7 @@ const LIST := [
 		"desc": "Plonge sur les ennemis les plus forts."},
 	{"id": "grenouille", "name": "Grenouille", "rar": 2, "ink": 60,
 		"desc": "Coup de langue circulaire qui touche tous les ennemis autour d'elle."},
-	{"id": "fantome", "name": "Fantôme de papier", "rar": 2, "ink": 55,
+	{"id": "fantome", "name": "Fantôme", "rar": 2, "ink": 55,
 		"desc": "Traverse la page : blesse et aveugle les ennemis sur son passage."},
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,

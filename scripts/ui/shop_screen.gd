@@ -1388,16 +1388,34 @@ class _CaseStrip extends Control:
 func _kind_icon(kind: String) -> Image:
 	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
 	if kind == "familiar":
-		var paw := Color("8a5a2b")
+		# trace de patte : 4 doigts + coussinet, en noir avec un liseré blanc
+		const PAW := [
+			"............",
+			"...##..##...",
+			"...##..##...",
+			".##......##.",
+			".##.####.##.",
+			"...######...",
+			"..########..",
+			"..########..",
+			"..########..",
+			"...##..##...",
+			"............",
+			"............"]
 		for y in 12:
 			for x in 12:
-				if Vector2(x - 5.5, y - 8.0).length() < 3.0:   # coussinet
-					img.set_pixel(x, y, paw)
-		for toe in [Vector2(2.0, 4.5), Vector2(4.5, 2.5), Vector2(7.0, 2.5), Vector2(9.5, 4.5)]:
-			for y in 12:
-				for x in 12:
-					if Vector2(x + 0.5, y + 0.5).distance_to(toe) < 1.5:
-						img.set_pixel(x, y, paw)
+				if PAW[y][x] == "#":
+					img.set_pixel(x, y, Pal.INK)
+		for y in 12:
+			for x in 12:
+				if PAW[y][x] == "#":
+					continue
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var nx: int = x + d.x
+					var ny: int = y + d.y
+					if nx >= 0 and ny >= 0 and nx < 12 and ny < 12 and PAW[ny][nx] == "#":
+						img.set_pixel(x, y, Color.WHITE)
+						break
 		return img
 	if kind == "weapon":
 		# petite épée droite : lame, garde dorée, poignée, pommeau
