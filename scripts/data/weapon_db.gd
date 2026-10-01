@@ -67,6 +67,13 @@ const TYPES := {
 	"nuancier": {"name": "Nuancier", "kind": "ranged", "style": "shot", "ink": 70, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"dmg": 0.6, "cd": 0.9, "speed": 1.0, "scale": "colors",
 		"desc": "+35% de dégâts par COULEUR différente sur ton perso."},
+	# --- Familiers ("pet" : proposées seulement si tu as au moins un familier)
+	"sifflet": {"name": "Sifflet", "kind": "ranged", "style": "shot", "ink": 50, "bink": 20, "canvas": 24, "bcanvas": 12, "pet": true,
+		"dmg": 0.8, "cd": 0.8, "speed": 1.1,
+		"desc": "Tir simple. L'ennemi touché devient la CIBLE de tes familiers (Corbeau, Taupe, Luciole, Teemeo) pendant 3 s."},
+	"fouet": {"name": "Fouet de dresseur", "kind": "melee", "style": "thrust", "ink": 80, "canvas": 40, "min_rar": 2, "pet": true,
+		"dmg": 0.7, "cd": 0.9, "reach": 1.6,
+		"desc": "Épique+. Long coup de fouet. Chaque coup EXCITE tes familiers : +10% de dégâts pendant 3 s (jusqu'à +50%)."},
 	"pipette": {"name": "Pipette", "kind": "melee", "style": "thrust", "ink": 45, "canvas": 24,
 		"dmg": 0.5, "cd": 0.6, "reach": 0.9, "scale": "lifesteal",
 		"desc": "Aspire l'encre des ennemis : vol de vie ×3 sur ses coups, +5% de base."},
@@ -126,6 +133,9 @@ const TYPES := {
 	"point_final": {"name": "Point final", "kind": "ranged", "style": "well", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 1.1, "cd": 2.2, "speed": 1.0,
 		"desc": "Légendaire. Pose un point noir qui grossit, ASPIRE les ennemis autour, puis implose."},
+	"cage": {"name": "Cage à oiseaux", "kind": "ranged", "style": "cage", "ink": 102, "bink": 25, "canvas": 32, "bcanvas": 16,
+		"min_rar": 3, "pet": true, "dmg": 0.9, "cd": 2.0, "speed": 1.0,
+		"desc": "Légendaire. Libère un OISEAU (ton dessin de balle) qui pique les ennemis pendant 6 s (5 max)."},
 	"autoportrait": {"name": "Autoportrait", "kind": "ranged", "style": "clone", "ink": 102, "bink": 30, "canvas": 32, "bcanvas": 16,
 		"min_rar": 3, "nobullet": true, "dmg": 2.4, "cd": 3.0, "speed": 0.5,
 		"desc": "Légendaire. Envoie un clone de TON PERSO qui court vers l'ennemi le plus proche et explose."},
@@ -154,9 +164,12 @@ static func orb(col: Color = Pal.INK) -> Image:
 
 
 ## Types qu'une offre de cette rareté peut proposer.
+## Les armes de familiers ("pet") ne sortent que si tu as au moins un familier.
 static func allowed_for(rar: int) -> Array:
 	var out := []
 	for id in TYPES:
+		if TYPES[id].get("pet", false) and Run.familiars.is_empty():
+			continue
 		if int(TYPES[id].get("min_rar", 0)) <= rar:
 			out.append(id)
 	return out
@@ -167,7 +180,7 @@ static func allowed_for(rar: int) -> Array:
 static func of_kind(kind: String, include_special := false) -> Array:
 	var out := []
 	for id in TYPES:
-		var special: bool = int(TYPES[id].get("min_rar", 0)) > 0 or TYPES[id].has("scale")
+		var special: bool = int(TYPES[id].get("min_rar", 0)) > 0 or TYPES[id].has("scale") or TYPES[id].get("pet", false)
 		if TYPES[id].kind == kind and (include_special or not special):
 			out.append(id)
 	return out

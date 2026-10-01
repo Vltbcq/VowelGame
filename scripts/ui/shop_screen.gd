@@ -237,6 +237,15 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			desc = "Mise ton or : Rouge ou Noir ×2, Vert ×36."
 			frame_cols = FRAME_ROULETTE
 			icon = _wheel_icon()
+		"familiar":
+			var fdef := FamiliarDB.get_def(o.id)
+			oname = fdef.name
+			kind = Pal.RARITY_NAMES[o.rar]
+			desc = fdef.desc
+			if Run.familiar_art.has(o.id):
+				icon = Run.familiar_art[o.id].image
+			elif _default_img("familier_" + o.id):
+				icon = _default_img("familier_" + o.id)
 		"case":
 			var kname := "Armes" if o.kind == "weapon" else "Amulettes"
 			oname = "%s" % Run.CASE_NAMES[o.tier]
@@ -286,7 +295,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type in ["heal", "case"] else Pal.RARITY_NAMES_F[o.rar]
 	# Petite icône : arme ou amulette (aussi pour les caisses et les enchères)
 	var ik := ""
-	if o.type in ["weapon", "amulet"]:
+	if o.type in ["weapon", "amulet", "familiar"]:
 		ik = o.type
 	elif o.type == "case":
 		ik = o.kind
@@ -294,7 +303,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 		ik = o.item.type
 	if ik != "":
 		var badge := UI.panel(CARTEL, GOLD_DARK, 1)
-		badge.tooltip_text = "Arme" if ik == "weapon" else "Amulette"
+		badge.tooltip_text = {"weapon": "Arme", "amulet": "Amulette", "familiar": "Familier"}[ik]
 		UI.put(self, badge, pos + Vector2(2, 2), Vector2(16, 16))
 		UI.put(badge, UI.thumb(_kind_icon(ik), Vector2(12, 12)), Vector2(2, 2), Vector2(12, 12))
 	if o.get("new", false) and not o.sold:
@@ -1362,9 +1371,21 @@ class _CaseStrip extends Control:
 		await tw2.finished
 
 
-## Icône 12×12 : épée (arme) ou pendentif (amulette).
+## Icône 12×12 : épée (arme), collier (amulette) ou trace de patte (familier).
 func _kind_icon(kind: String) -> Image:
 	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
+	if kind == "familiar":
+		var paw := Color("8a5a2b")
+		for y in 12:
+			for x in 12:
+				if Vector2(x - 5.5, y - 8.0).length() < 3.0:   # coussinet
+					img.set_pixel(x, y, paw)
+		for toe in [Vector2(2.0, 4.5), Vector2(4.5, 2.5), Vector2(7.0, 2.5), Vector2(9.5, 4.5)]:
+			for y in 12:
+				for x in 12:
+					if Vector2(x + 0.5, y + 0.5).distance_to(toe) < 1.5:
+						img.set_pixel(x, y, paw)
+		return img
 	if kind == "weapon":
 		# petite épée droite : lame, garde dorée, poignée, pommeau
 		img.fill_rect(Rect2i(4, 1, 4, 7), Pal.INK)          # contour de la lame

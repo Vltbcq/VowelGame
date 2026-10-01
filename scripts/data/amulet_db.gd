@@ -141,6 +141,13 @@ const LIST := [
 	{"id": "alchimie", "ink": 80, "name": "Alchimie", "rar": 3, "flag": true, "desc": "Tes effets élémentaires ont 50% de chances de se propager à l'ennemi le plus proche · {m} PV max", "malus": ["max_hp", -5.0]},
 	{"id": "horloge", "ink": 76, "name": "Horloge", "rar": 3, "flag": true, "desc": "Toutes les 12 s, le TEMPS S'ARRÊTE 2 s : ennemis et tirs figés, tes armes font ×2 · {m} PV max", "malus": ["max_hp", -6.0]},
 	{"id": "sablier_brise", "ink": 70, "name": "Sablier brisé", "rar": 3, "stat": "atk_speed", "v": 45.0, "flag": true, "desc": "+{v}% vit. d'attaque, mais les vagues durent 25% plus longtemps"},
+	# --- Familiers ("pet" : proposées seulement si tu as au moins un familier)
+	{"id": "laisse", "ink": 18, "name": "Laisse", "rar": 0, "flag": true, "pet": true, "desc": "Tes familiers restent plus près de toi et vont 20% plus vite · {m}% vitesse", "malus": ["speed", -3.0]},
+	{"id": "croquettes", "ink": 20, "name": "Croquettes", "rar": 0, "flag": true, "pet": true, "desc": "Tes familiers agissent 15% plus souvent · {m} chance", "malus": ["luck", -3.0]},
+	{"id": "collier_grelot", "ink": 30, "name": "Collier à grelot", "rar": 1, "flag": true, "pet": true, "desc": "Chaque action d'un familier te soigne de 1 PV · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "niche", "ink": 40, "name": "Niche", "rar": 1, "flag": true, "pet": true, "desc": "+20% dégâts des familiers · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
+	{"id": "dresseur", "ink": 50, "name": "Carnet du dresseur", "rar": 2, "flag": true, "pet": true, "desc": "+25% dégâts des familiers PAR familier possédé · {m} PV max", "malus": ["max_hp", -3.0]},
+	{"id": "meute", "ink": 70, "name": "Meute", "rar": 3, "flag": true, "pet": true, "desc": "Les coups de tes familiers appliquent l'ÉLÉMENT de ton perso (sa couleur dominante) · {m} armure", "malus": ["armor", -3.0]},
 ]
 
 ## Bonus selon l'endroit où l'amulette est posée sur le perso.

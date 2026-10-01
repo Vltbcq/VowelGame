@@ -78,6 +78,13 @@ var wave_len := 0.0       # durée de la vague (Cadran solaire)
 var patron_mult := 1.0    # Mécène : ennemis en plus
 var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
 var peels: Array = []     # La Banane : peaux au sol {pos, t, a}
+var familiars: Array = [] # familiers sur la page
+var slimes: Array = []    # Escargot : bave {pos, t}
+var shrooms: Array = []   # Teemeo : champignons invisibles {pos, dmg}
+var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
+var whip_stacks := 0
+var whistle: Enemy        # Sifflet : cible désignée aux familiers
+var whistle_t := 0.0
 var banana_kills := 0
 var spy_zoom := 1.5       # Longue-vue : zoom visé
 var void_f := 0.0         # Toile Blanche : part effacée de chaque bord (0 = rien, 0.113 = zone à 60 %)
@@ -161,6 +168,11 @@ func _ready() -> void:
 		Run.patron = ""
 
 	Run.snapshot_wave_stats()   # journal : stats au début de la vague
+	for fid in Run.familiars:
+		var fm := Familiar.new()
+		world.add_child(fm)
+		fm.setup(self, fid)
+		familiars.append(fm)
 	cam = Camera2D.new()
 	var z: float = Meta.setting("zoom")
 	cam.zoom = Vector2(z, z)
@@ -291,6 +303,10 @@ func _process(delta: float) -> void:
 			e.tick(delta)
 	for a in allies.duplicate():
 		a.tick(delta)
+	if not frozen:
+		for fm in familiars:
+			fm.tick(delta)
+		_tick_pets(delta)
 	if not frozen:
 		_tick_effects(delta)
 		_tick_board(delta)
@@ -565,6 +581,13 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if stop_t > 0.0:
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
 	dmg *= _amulet_dmg_mult(e, wst)
+	match String(wst.get("type", "")):
+		"sifflet":
+			whistle = e
+			whistle_t = 3.0
+		"fouet":
+			whip_t = 3.0
+			whip_stacks = mini(5, whip_stacks + 1)
 	match String(wst.get("style", "")):
 		"staple":
 			e.pin_t = 1.0
@@ -864,6 +887,15 @@ func kill_enemy(e: Enemy) -> void:
 func collect(p: Pickup) -> void:
 	if p.heal > 0.0:
 		player.heal(p.heal)
+	# Pie voleuse : +1 or toutes les 10 gouttes
+	for fm in familiars:
+		if fm.id == "pie":
+			fm.pie_count += 1
+			if fm.pie_count >= 10:
+				fm.pie_count = 0
+				Run.gold += 1
+				float_text(fm.position + Vector2(0, -14), "+1", Pal.ACCENT)
+				fm._action()
 	Run.gold += p.value
 	Sfx.play("pickup", 0.2)
 	if p.value > 0:
@@ -1320,8 +1352,58 @@ func toxic_burst(e: Enemy) -> void:
 
 
 ## Où les ennemis visent : le joueur, ou le leurre de la Lanterne magique.
-func target_pos() -> Vector2:
-	return lure_pos if lure_t > 0.0 else player.position
+## Ce que les ennemis visent : toi, le leurre de la Lanterne, ou Pavel s'il est près d'eux.
+func target_pos(from := Vector2.INF) -> Vector2:
+	if lure_t > 0.0:
+		return lure_pos
+	if from != Vector2.INF:
+		for fm in familiars:
+			if fm.pavel_up() and from.distance_to(fm.position) < 110.0:
+				return fm.position
+	return player.position
+
+
+## Escargot : bave sur la page (ralentit les ennemis).
+func add_slime(pos: Vector2) -> void:
+	slimes.append({"pos": pos, "t": 4.0})
+	if slimes.size() > 120:
+		slimes.pop_front()
+
+
+func slime_at(pos: Vector2) -> bool:
+	for s in slimes:
+		if pos.distance_squared_to(s.pos) < 100.0:
+			return true
+	return false
+
+
+## Bave qui sèche, champignons de Teemeo qui explosent, Fouet de dresseur qui retombe.
+func _tick_pets(delta: float) -> void:
+	whip_t -= delta
+	if whip_t <= 0.0:
+		whip_stacks = 0
+	whistle_t -= delta
+	if whistle_t <= 0.0:
+		whistle = null
+	if not slimes.is_empty():
+		for s in slimes:
+			s.t -= delta
+		slimes = slimes.filter(func(s): return s.t > 0.0)
+	if not shrooms.is_empty():
+		var keep := []
+		for sh in shrooms:
+			var boom := false
+			for e in near(sh.pos, 10.0):
+				if not e.dead:
+					boom = true
+					break
+			if boom:
+				add_zone(sh.pos, 40.0, 3.0, sh.dmg, Pal.POISON)
+				burst(sh.pos, Pal.main_color(Pal.POISON), 14, 90.0)
+				Sfx.play("explode")
+			else:
+				keep.append(sh)
+		shrooms = keep
 
 
 ## Multiplicateur de dégâts des amulettes conditionnelles.
@@ -1792,6 +1874,10 @@ class _Marks extends Node2D:
 			draw_rect(Rect2(Vector2(0, r.position.y), Vector2(r.position.x, r.size.y)), vc)
 			draw_rect(Rect2(Vector2(r.end.x, r.position.y), Vector2(full.end.x - r.end.x, r.size.y)), vc)
 			draw_rect(r, Color(Pal.BAD, 0.4 + 0.4 * sin(arena.elapsed * 8.0)), false, 2.0)
+		for s in arena.slimes:
+			draw_circle(s.pos, 6.0, Color(0.6, 0.85, 0.5, 0.25 * clampf(s.t, 0.0, 1.0)))
+		for sh in arena.shrooms:
+			draw_circle(sh.pos, 3.0, Color(0.4, 0.6, 0.2, 0.25))   # invisibles pour eux, à peine visibles pour toi
 		for pl in arena.peels:
 			# peau de banane : 3 lanières jaunes autour d'un petit centre
 			var c: Vector2 = pl.pos
@@ -1995,3 +2081,17 @@ class _Ring extends Node2D:
 		var r := max_r * minf(1.0, t)
 		draw_arc(Vector2.ZERO, r, 0.0, TAU, 24, Color(color, 1.0 - t), 3.0)
 		draw_circle(Vector2.ZERO, r * 0.6, Color(color, (1.0 - t) * 0.35))
+
+
+## Cage à oiseaux : un familier temporaire (le dessin de balle) qui pique les ennemis.
+func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float) -> void:
+	var n := 0
+	for fm in familiars:
+		if fm.id == "oiseau":
+			n += 1
+	if n >= 5:
+		return
+	var fm := Familiar.new()
+	world.add_child(fm)
+	fm.setup_bird(self, tex, effect, outline, dmg)
+	familiars.append(fm)

@@ -7,7 +7,7 @@ extends Control
 
 signal done(result)
 
-const TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["ennemis", "Ennemis"]]
+const TABS := [["armes", "Armes"], ["amulettes", "Amulettes"], ["familiers", "Familiers"], ["ennemis", "Ennemis"]]
 
 var tab := "armes"
 var sel := ""
@@ -39,6 +39,10 @@ func _items() -> Array:
 			for d in AmuletDB.LIST:
 				out.append(d.id)
 			out.sort_custom(func(a, b): return _order(int(AmuletDB.get_def(a).rar), AmuletDB.get_def(a).name) < _order(int(AmuletDB.get_def(b).rar), AmuletDB.get_def(b).name))
+		"familiers":
+			for d in FamiliarDB.LIST:
+				out.append(d.id)
+			out.sort_custom(func(a, b): return _order(int(FamiliarDB.get_def(a).rar), FamiliarDB.get_def(a).name) < _order(int(FamiliarDB.get_def(b).rar), FamiliarDB.get_def(b).name))
 		"ennemis":
 			for id in EnemyDB.TYPES:
 				out.append(id)
@@ -69,6 +73,8 @@ func _name(id: String) -> String:
 			return WeaponDB.get_def(id).name
 		"amulettes":
 			return AmuletDB.get_def(id).name
+		"familiers":
+			return FamiliarDB.get_def(id).name
 	return EnemyDB.get_def(id).name
 
 
@@ -87,6 +93,9 @@ func _slots(id: String) -> Array:
 		"amulettes":
 			var ad := AmuletDB.get_def(id)
 			return [["amulette_" + id, "Amulette " + Pal.RARITY_NAMES_F[int(ad.rar)].to_lower(), DrawCfg.amulet(ad), Pal.RARITY[int(ad.rar)]]]
+		"familiers":
+			var fd := FamiliarDB.get_def(id)
+			return [["familier_" + id, "Familier " + Pal.RARITY_NAMES_F[int(fd.rar)].to_lower(), DrawCfg.familiar(fd), Pal.RARITY[int(fd.rar)]]]
 	return [[id, "Ennemi", DrawCfg.enemy(id)]]
 
 
@@ -103,6 +112,8 @@ func _slot_keys(id: String) -> Array:
 			return out
 		"amulettes":
 			return ["amulette_" + id]
+		"familiers":
+			return ["familier_" + id]
 	return [id]
 
 
@@ -193,6 +204,8 @@ Débloqué : armes, amulettes et ennemis disponibles"
 			b.add_theme_stylebox_override("normal", UI.sb(UI.SELECTED, Pal.ACCENT, 1))
 		if tab == "amulettes":
 			b.add_theme_color_override("font_color", Pal.RARITY[AmuletDB.get_def(iid).rar])
+		elif tab == "familiers":
+			b.add_theme_color_override("font_color", Pal.RARITY[int(FamiliarDB.get_def(iid).rar)])
 		elif tab == "armes":
 			# couleur de la rareté minimum de l'arme (commune blanc, rare bleu, épique violet, légendaire orange)
 			b.add_theme_color_override("font_color", Pal.RARITY[int(WeaponDB.TYPES[iid].get("min_rar", 0))])
@@ -345,6 +358,10 @@ func _stats_text(id: String) -> String:
 			var def := AmuletDB.get_def(id)
 			L.append("%s — encre %d" % [Pal.RARITY_NAMES_F[def.rar], AmuletDB.ink(def)])
 			L.append(AmuletDB.describe(def))
+		"familiers":
+			var fdef := FamiliarDB.get_def(id)
+			L.append("Familier %s (unique) — encre %d" % [Pal.RARITY_NAMES_F[int(fdef.rar)].to_lower(), FamiliarDB.ink(fdef)])
+			L.append(String(fdef.desc))
 		"ennemis":
 			var def := EnemyDB.get_def(id)
 			var kind := "Boss" if def.get("boss", 0) == 2 else ("Mini-boss" if def.has("boss") else "Ennemi")

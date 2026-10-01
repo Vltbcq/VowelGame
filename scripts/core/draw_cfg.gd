@@ -74,6 +74,14 @@ static func eproj(id: String) -> Dictionary:
 		"cancel": false, "min": 1, "random": true}
 
 
+static func familiar(def: Dictionary) -> Dictionary:
+	var s := FamiliarDB.canvas(def)
+	return {"kind": "familiar", "gallery": "familiar", "size": Vector2i(s, s), "ink": FamiliarDB.ink(def),
+		"def": def, "title": "Dessine ton familier : %s" % def.name,
+		"sub": String(def.desc) + "  Ce dessin servira pour toute la partie.",
+		"cancel": true, "min": 4}
+
+
 static func amulet(def: Dictionary) -> Dictionary:
 	var s := AmuletDB.canvas(def)
 	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def),

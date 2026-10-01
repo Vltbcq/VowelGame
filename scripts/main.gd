@@ -186,6 +186,18 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 
 
 ## Obtenir une amulette : dessin (une seule fois par partie) puis pose avec rotation / miroir.
+## Familier : on le dessine (ou on reprend son dessin de base), puis il rejoint la partie.
+func _get_familiar(id: String) -> bool:
+	var def := FamiliarDB.get_def(id)
+	if not Run.familiar_art.has(id):
+		var r = await _obtain("familier_" + id, DrawCfg.familiar(def), 0, "TON FAMILIER")
+		if r == null:
+			return false
+		Run.set_familiar_art(id, r.image, r.effect, r.outline)
+	Run.add_familiar(id)
+	return true
+
+
 func _get_amulet(id: String) -> bool:
 	var def := AmuletDB.get_def(id)
 	if not Run.amulet_art.has(id):
@@ -389,6 +401,8 @@ func _buy(i: int) -> void:
 			ok = true
 		else:
 			ok = Run.weapons.size() < Run.max_weapons() and await _get_weapon(o.wtype, o.rar, o.price)
+	elif o.type == "familiar":
+		ok = await _get_familiar(o.id)
 	else:
 		ok = await _get_amulet(o.id)
 	if not ok:

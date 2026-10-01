@@ -26,7 +26,8 @@ var paper := 0              # Bouclier de papier : coups ignorés restants dans 
 var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
 var spike_acc := 0.0        # Hérisson
 var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
-var sap_t := 0.0            # Élixir de sève : régénération boostée restante (s)
+var sap_t := 0.0            # Élixir de sève
+var yuki_t := 0.0           # Yuki : +30 % de vitesse : régénération boostée restante (s)
 
 
 func setup(a: Arena) -> void:
@@ -92,6 +93,9 @@ func tick(delta: float) -> void:
 	# Correcteur : insensible aux flaques d'encre
 	var hz: Array = [1.0, 0.0] if Run.amulet_count("correcteur") > 0 else arena.hazard_effect(position, radius)
 	var boost := 1.2 if Run.amulet_count("derniere_touche") > 0 and hp < max_hp * 0.25 else 1.0
+	if yuki_t > 0.0:
+		yuki_t -= delta
+		boost *= 1.3   # Yuki
 	vel = d * st.move * hz[0] * boost
 	position += vel * delta
 	if hz[1] > 0.0:

@@ -508,6 +508,8 @@ func bestiary_label(key: String) -> String:
 		return "Ton perso"
 	if key.begins_with("amulette_"):
 		return "Amulette : " + String(AmuletDB.get_def(key.substr(9)).get("name", key))
+	if key.begins_with("familier_"):
+		return "Familier : " + String(FamiliarDB.get_def(key.substr(9)).get("name", key))
 	if key.begins_with("balle_"):
 		return "Balles : " + String(WeaponDB.get_def(key.substr(6)).get("name", key))
 	if key.begins_with("arme_"):

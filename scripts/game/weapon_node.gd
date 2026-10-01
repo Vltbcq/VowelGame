@@ -443,6 +443,12 @@ func _fire(target: Enemy) -> void:
 	if st.style == "clone":
 		_fire_clone()
 		return
+	if st.style == "cage":
+		var bc: Dictionary = st.bullets[0]
+		arena.add_bird(bullet_tex[0], art.beffect, art.get("boutline", false), bc.damage)
+		recoil = 3.0
+		Sfx.play("shoot")
+		return
 	if st.style == "well":
 		var b: Dictionary = st.bullets[0]
 		arena.add_well(target.position, 70.0 * _range_mult(), b.damage * 3.0, st)

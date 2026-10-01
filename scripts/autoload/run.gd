@@ -68,6 +68,8 @@ var boss_plan := {}         # vague -> boss de cette partie
 var weapons: Array = []     # {type, rar, price, anchor, rot, flip, st}
 var amulet_art := {}        # id -> {image, effect, a}
 var amulets: Array = []     # {id, image, pos, zone, mag, a, outline}
+var familiar_art := {}      # id -> {image, effect, outline}
+var familiars: Array = []   # ids des familiers possédés (uniques)
 var enemy_art := {}         # type -> {image, effect, a, mods}
 var elite_art := {}         # type -> version élite redessinée (difficultés hautes)
 var eproj_art := {}         # type -> {image, a, mods}
@@ -113,6 +115,8 @@ func start(d: int, map_id := 1) -> void:
 	weapons = []
 	amulet_art = {}
 	amulets = []
+	familiar_art = {}
+	familiars = []
 	enemy_art = {}
 	elite_art = {}
 	eproj_art = {}
@@ -288,6 +292,15 @@ func weapon_count(type: String) -> int:
 
 
 # ------------------------------------------------------------------ Amulettes
+
+func set_familiar_art(id: String, img: Image, effect: String, outline := false) -> void:
+	familiar_art[id] = {"image": Analyzer.trim(img), "effect": effect, "outline": outline}
+
+
+func add_familiar(id: String) -> void:
+	if not id in familiars:
+		familiars.append(id)
+
 
 func set_amulet_art(id: String, img: Image, effect: String, outline := false) -> void:
 	amulet_art[id] = {"image": Analyzer.trim(img), "effect": effect, "a": Analyzer.analyze(img), "outline": outline}
@@ -478,6 +491,11 @@ func to_save(stage: String) -> Dictionary:
 		aa[k] = {"image": _png(amulet_art[k].image), "effect": amulet_art[k].effect, "outline": amulet_art[k].get("outline", false)}
 	d.amulet_art = aa
 	d.amulets = amulets.map(func(am): return {"id": am.id, "image": _png(am.image), "pos": am.pos})
+	var fa := {}
+	for k in familiar_art:
+		fa[k] = {"image": _png(familiar_art[k].image), "effect": familiar_art[k].effect, "outline": familiar_art[k].get("outline", false)}
+	d.familiar_art = fa
+	d.familiars = familiars.duplicate()
 	d.marks = marks.map(func(m): return {"image": _png(m.image), "pos": m.pos, "outline": m.get("outline", false)})
 	for field in ["enemy_art", "elite_art", "eproj_art"]:
 		var src: Dictionary = get(field)
@@ -509,6 +527,12 @@ func from_save(d: Dictionary) -> bool:
 			add_amulet(am.id, _img(am.image), am.pos)
 	for m in d.marks:
 		add_mark(_img(m.image), m.pos, m.outline)
+	var fa: Dictionary = d.get("familiar_art", {})
+	for k in fa:
+		set_familiar_art(k, _img(fa[k].image), fa[k].effect, fa[k].outline)
+	for fid in d.get("familiars", []):
+		if not FamiliarDB.get_def(fid).is_empty() and familiar_art.has(fid):
+			add_familiar(fid)
 	for k in d.enemy_art:
 		set_enemy_art(k, _img(d.enemy_art[k].image), d.enemy_art[k].effect, d.enemy_art[k].outline)
 	for k in d.elite_art:
@@ -623,7 +647,7 @@ func snapshot_wave_stats() -> void:
 
 
 func item_label(type: String, id: String, rar: int) -> String:
-	var n: String = String(WeaponDB.get_def(id).name) if type == "weapon" else String(AmuletDB.get_def(id).name)
+	var n: String = String(WeaponDB.get_def(id).name) if type == "weapon" else (String(FamiliarDB.get_def(id).name) if type == "familiar" else String(AmuletDB.get_def(id).name))
 	return "%s %s" % [n, Pal.RARITY_NAMES_F[rar].to_lower()]
 
 
@@ -788,6 +812,15 @@ func roll_shop() -> void:
 	var offered := {}
 	for i in n:
 		var rar := roll_rarity()
+		# Familiers : de temps en temps (uniques : jamais un déjà possédé ni deux fois le même)
+		if randf() < 0.15:
+			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id))
+			if not fpool.is_empty():
+				var fd: Dictionary = fpool.pick_random()
+				offered["f:" + fd.id] = true
+				shop_offers.append({"type": "familiar", "id": fd.id, "rar": rar,
+					"price": roundi(FamiliarDB.PRICE[rar] * price_mult()), "sold": false})
+				continue
 		if amulet_count("case_opening") > 0:
 			# Case opening : une caisse à la place (la rareté tirée donne la caisse)
 			shop_offers.append(make_case(rar, "weapon" if randf() < 0.4 else "amulet"))
@@ -815,7 +848,7 @@ func roll_shop() -> void:
 	# Première rencontre : « ! » sur le tableau (retenu pour la suite, même après une relance)
 	var fresh := []
 	for o in shop_offers:
-		var key := ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else ItemUnlockDB.key_amulet(o.id)
+		var key: String = ItemUnlockDB.key_weapon(o.wtype) if o.type == "weapon" else (("f:" + o.id) if o.type == "familiar" else ItemUnlockDB.key_amulet(o.id))
 		o["new"] = not Meta.item_seen(key)
 		fresh.append(key)
 	for key in fresh:
@@ -863,6 +896,8 @@ func make_event(ev: String) -> Dictionary:
 func amulet_candidates(rar: int) -> Array:
 	return AmuletDB.of_rarity(rar).filter(func(d):
 		if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
+			return false
+		if d.get("pet", false) and familiars.is_empty():
 			return false
 		var lim := int(d.get("limit", 1 if rar == 3 else 0))
 		return lim == 0 or amulet_count(d.id) < lim)

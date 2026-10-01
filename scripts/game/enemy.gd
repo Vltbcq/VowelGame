@@ -62,6 +62,7 @@ var hit_ids := {}
 # Effets des armes épiques / légendaires
 var pin_t := 0.0             # Agrafeuse : épinglé au sol
 var slip_t := 0.0            # La Banane : assommé après avoir glissé
+var firefly := false         # Luciole : +25 % de dégâts subis
 var slide := Vector2.ZERO    # La Banane : glissade (ralentit doucement)
 var slide_hits := {}         # ennemis déjà percutés pendant cette glissade
 var wet_t := 0.0             # Brumisateur : mouillé
@@ -246,7 +247,7 @@ func tick(delta: float) -> void:
 	if dead:
 		return
 	var p := arena.player
-	var to_p := arena.target_pos() - position   # le joueur, ou le leurre de la Lanterne
+	var to_p := arena.target_pos(position) - position   # le joueur, le leurre de la Lanterne ou Pavel
 	var dist := maxf(0.01, to_p.length())
 	var dirp := to_p / dist
 	blind_t -= delta
@@ -268,6 +269,8 @@ func tick(delta: float) -> void:
 	if slip_t > 0.0:
 		slip_t -= delta
 		mult = 0.0   # assommé par la peau de banane
+	if not arena.slimes.is_empty() and arena.slime_at(position):
+		mult *= 0.5   # bave de l'Escargot
 	hop_h = 0.0
 
 	# Chef-d'œuvre : boss en fureur = attaques plus rapprochées
@@ -459,6 +462,8 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 		return
 	if mark_t > 0.0:
 		amount *= (1.5 if arena.syn.has(Pal.ARCANE) else 1.25) + 0.15 * Run.amulet_count("grimoire")
+	if firefly:
+		amount *= 1.25   # Luciole
 	if state == "jam":
 		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
 	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
