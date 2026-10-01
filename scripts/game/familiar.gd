@@ -242,9 +242,12 @@ func _taupe(delta: float) -> void:
 			if st_t <= 0.0:
 				if target and not target.dead:
 					position = target.position
-					hit(target, fdmg(8.0, 2.5), Vector2(0, -60))
 					target.pin_t = maxf(target.pin_t, 1.0)
-					arena.burst(position, Color("8a5a2b"), 10, 80.0)
+					# la terre jaillit : tous les ennemis autour prennent des dégâts
+					for o in arena.near(position, 34.0):
+						hit(o, fdmg(8.0, 2.5), (o.position - position).normalized() * 60.0)
+					arena.explosion(position, 34.0, Color(0.55, 0.35, 0.17, 0.6), true)
+					arena.burst(position, Color("8a5a2b"), 16, 110.0)
 					arena.float_text(position + Vector2(0, -16), "SURPRISE !", Color("c08040"))
 				sprite.modulate.a = 1.0
 				state = "walk"

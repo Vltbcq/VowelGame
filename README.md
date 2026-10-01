@@ -185,7 +185,7 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 ## Familiers (12, uniques)
 
 - Nouveau type d'objet (icône **patte** en boutique). Ils remplacent une offre normale de temps en temps (~15 %), au prix d'une arme de la même rareté (16 / 30 / 52 / 88 or). Chacun est **unique** et se dessine une fois (onglet Familiers du Bestiaire et de la galerie). Nombre illimité ; ils te suivent et se baladent sur la page.
-- Communs : **Moustique** (pique l'ennemi le plus proche et te rend 1 PV), **Taupe** (surgit sous un ennemi toutes les 4 s, l'étourdit 1 s), **Pie voleuse** (15 % des gouttes d'or font briller une pièce : elle va la chercher et te rapporte 1 ou 2 or).
+- Communs : **Moustique** (pique l'ennemi le plus proche et te rend 1 PV), **Taupe** (surgit sous un ennemi toutes les 4 s : dégâts de zone autour, la cible est étourdie 1 s), **Pie voleuse** (15 % des gouttes d'or font briller une pièce : elle va la chercher et te rapporte 1 ou 2 or).
 - Rares : **Hérisson-pelote** (roule et rebondit, frappe avec tes épines), **Luciole** (l'ennemi éclairé prend +25 % de dégâts), **Perroquet** (vole partout sur la page et répète une de tes armes toutes les 3 s).
 - Épiques : **Corbeau** (plonge sur l'ennemi le plus fort toutes les 3 s), **Grenouille** (avale un petit ennemi toutes les 6 s), **Fantôme de papier** (traverse la page et aveugle 2 s).
 - Légendaires : **Yuki** (chat collé à toi : soin 5 % toutes les 8 s, bloque un coup toutes les 12 s, +30 % de vitesse sous 25 % de PV), **Pavel** (le chien de Theorus, tank de poche : les ennemis proches l'attaquent lui ; K.O., il revient 10 s plus tard), **Teemeo** (champignons de poison invisibles, fléchette aveuglante).

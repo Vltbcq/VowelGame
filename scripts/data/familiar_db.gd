@@ -9,7 +9,7 @@ const LIST := [
 	{"id": "moustique", "name": "Moustique", "rar": 0, "ink": 40,
 		"desc": "Vole piquer l'ennemi le plus proche toutes les 1,5 s : dégâts, et te rend 1 PV."},
 	{"id": "taupe", "name": "Taupe", "rar": 0, "ink": 50,
-		"desc": "Creuse, puis surgit sous un ennemi : dégâts et étourdi 1 s (toutes les 4 s)."},
+		"desc": "Creuse, puis surgit sous un ennemi (toutes les 4 s) : DÉGÂTS DE ZONE autour de lui, et la cible est étourdie 1 s."},
 	{"id": "pie", "name": "Pie voleuse", "rar": 0, "ink": 45,
 		"desc": "Chaque goutte d'or a 15% de chances de faire briller une pièce : la Pie va la chercher et te rapporte 1 ou 2 or."},
 	# Rares

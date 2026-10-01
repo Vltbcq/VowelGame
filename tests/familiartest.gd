@@ -196,6 +196,26 @@ func _ready() -> void:
 	par.cd = 0.0
 	par.tick(1.0 / 60.0)
 	_check(pv.hp < pvh, "Perroquet : copie le coup d'épée (%.0f → %.0f)" % [pvh, pv.hp])
+	# Taupe : dégâts de zone en surgissant
+	var tp: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "taupe":
+			tp = fm
+	for e in arena.enemies.duplicate():
+		arena.kill_enemy(e)
+	var c0: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(150, 0), false)
+	var c1: Enemy = arena.spawn_enemy_now("colosse", c0.position + Vector2(20, 0), false)
+	var c2: Enemy = arena.spawn_enemy_now("colosse", c0.position + Vector2(0, -22), false)
+	arena.player.inv = 999.0
+	arena._process(1.0 / 60.0)   # grille des ennemis à jour
+	var h1 := c1.hp
+	var h2 := c2.hp
+	var h0 := c0.hp
+	tp.target = c0
+	tp.state = "dig"
+	tp.st_t = 0.0
+	tp.tick(1.0 / 60.0)
+	_check(c0.hp < h0 and c1.hp < h1 and c2.hp < h2 and c0.pin_t > 0.0, "Taupe : dégâts de zone (3 ennemis touchés) et cible étourdie")
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")
 	Run.add_amulet("meute", img, Vector2i(20, 20))
