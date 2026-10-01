@@ -6,12 +6,12 @@ extends RefCounted
 
 const LIST := [
 	# Communs
-	{"id": "mouche", "name": "Mouche à encre", "rar": 0, "ink": 40,
-		"desc": "Tourne autour de toi et pique les ennemis qu'elle traverse."},
+	{"id": "moustique", "name": "Moustique", "rar": 0, "ink": 40,
+		"desc": "Vole piquer l'ennemi le plus proche toutes les 1,5 s : dégâts, et te rend 1 PV."},
 	{"id": "taupe", "name": "Taupe", "rar": 0, "ink": 50,
 		"desc": "Creuse, puis surgit sous un ennemi : dégâts et étourdi 1 s (toutes les 4 s)."},
 	{"id": "pie", "name": "Pie voleuse", "rar": 0, "ink": 45,
-		"desc": "Picore ton butin : +1 or toutes les 10 gouttes ramassées."},
+		"desc": "Chaque goutte d'or ramassée : 15% de chances de te rapporter 1 ou 2 or en plus."},
 	# Rares
 	{"id": "herisson_f", "name": "Hérisson-pelote", "rar": 1, "ink": 55,
 		"desc": "Roule au hasard sur la page : les ennemis touchés prennent tes épines (au moins 3)."},

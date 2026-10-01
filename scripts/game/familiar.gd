@@ -25,7 +25,6 @@ var line_to := Vector2.ZERO   # langue de la grenouille / fléchette de Teemeo
 var line_t := 0.0
 var line_col := Color.WHITE
 var shroom_n := 0       # Teemeo : champignons posés
-var pie_count := 0      # Pie : gouttes ramassées
 var life := -1.0        # oiseau de la Cage : durée de vie (s), -1 = permanent
 var bird_dmg := 0.0
 
@@ -84,15 +83,24 @@ func _leash() -> float:
 	return 45.0 if Run.amulet_count("laisse") > 0 else 75.0
 
 
-## Le familier touche un ennemi (Collier à grelot : soin ; Meute : élément de ton perso).
+## Le familier touche un ennemi (Collier à grelot : soin ; Meute : un kill recharge la meute).
 func hit(e: Enemy, dmg: float, kb := Vector2.ZERO) -> void:
 	if e == null or e.dead:
 		return
 	e.hurt(dmg, false, kb)
 	_action()
-	var dom := int(Run.char_a.get("dominant", 0))
-	if dom > 0 and Run.amulet_count("meute") > 0 and not e.dead:
-		arena._apply_el(e, dom, dmg, false)
+	if e.dead:
+		on_kill()
+
+
+## Meute : quand un familier tue, tous les familiers ont leur délai de capacité réduit de 50 %.
+func on_kill() -> void:
+	if Run.amulet_count("meute") == 0:
+		return
+	for fm in arena.familiars:
+		fm.cd *= 0.5
+		fm.cd2 *= 0.5
+		fm.cd3 *= 0.5
 
 
 func _action() -> void:
@@ -156,8 +164,8 @@ func tick(delta: float) -> void:
 	match id:
 		"oiseau":
 			_oiseau(delta)
-		"mouche":
-			_mouche(delta)
+		"moustique":
+			_moustique(delta)
 		"taupe":
 			_taupe(delta)
 		"pie":
@@ -198,15 +206,22 @@ func _draw() -> void:
 
 # ------------------------------------------------------------------ Comportements
 
-func _mouche(delta: float) -> void:
-	ang += 3.2 * _speed() * delta
-	var r := 30.0 if Run.amulet_count("laisse") > 0 else 38.0
-	position = arena.player.position + Vector2.from_angle(ang) * r
-	for e in arena.near(position, 8.0):
-		var k: int = e.get_instance_id()
-		if not hit_cd.has(k):
-			hit_cd[k] = 0.5
-			hit(e, fdmg(3.0, 1.0))
+func _moustique(delta: float) -> void:
+	if target == null or not is_instance_valid(target) or target.dead:
+		target = arena.nearest(arena.player.position, 220.0)
+	if target == null:
+		_wander(delta, 110.0)
+		return
+	# vole autour de sa cible en zigzag, et pique dès que c'est prêt
+	var spot := target.position + Vector2(sin(t * 9.0) * 8.0, -10.0 + cos(t * 7.0) * 4.0)
+	position = position.move_toward(spot if cd > 0.0 else target.position, 200.0 * _speed() * delta)
+	_sitflip(target.position.x - position.x)
+	if cd <= 0.0 and position.distance_to(target.position) < 8.0:
+		cd = fcd(1.5)
+		var victim := target
+		hit(victim, fdmg(4.0, 1.2))
+		arena.player.heal(1.0)
+		arena.burst(position, Pal.BAD, 4, 40.0)
 
 
 func _taupe(delta: float) -> void:
@@ -331,6 +346,7 @@ func _grenouille(delta: float) -> void:
 			_action()
 			arena.float_text(best.position + Vector2(0, -14), "GLOUP !", Color("6ac04a"))
 			arena.kill_enemy(best)
+			on_kill()
 
 
 func _fantome(delta: float) -> void:

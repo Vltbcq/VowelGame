@@ -149,13 +149,57 @@ func _ready() -> void:
 		arena.player.inv = 999.0
 		arena._process(1.0 / 60.0)
 	_check(arena.familiars.size() == n0, "les oiseaux s'envolent au bout de 6 s")
+	# Moustique : pique et soigne
+	var mq: Familiar = null
+	var pie: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "moustique":
+			mq = fm
+		if fm.id == "pie":
+			pie = fm
+	var prey: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(60, 0), false)
+	mq.target = prey
+	mq.position = prey.position
+	mq.cd = 0.0
+	arena.player.hp = 3.0
+	var php := prey.hp
+	mq.tick(1.0 / 60.0)
+	_check(prey.hp < php and arena.player.hp >= 4.0, "Moustique : pique (%.0f → %.0f) et rend 1 PV (%.0f)" % [php, prey.hp, arena.player.hp])
+	# Pie : ~15 % de chances de +1/+2 or par goutte d'or
+	var g0 := Run.gold
+	for k in 400:
+		var pk := Pickup.new()
+		pk.value = 0
+		arena.collect(pk)
+		pk.free()
+	_check(Run.gold == g0, "Pie : rien sur les gouttes sans or")
+	var extra := 0
+	for k in 400:
+		var pk := Pickup.new()
+		pk.value = 1
+		var before_g := Run.gold
+		arena.collect(pk)
+		extra += Run.gold - before_g - 1
+		pk.free()
+	_check(extra > 60 and extra < 180, "Pie : %d or en plus sur 400 gouttes (≈ 90 attendu)" % extra)
+	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
+	Run.set_amulet_art("meute", img, "")
+	Run.add_amulet("meute", img, Vector2i(20, 20))
+	for fm in arena.familiars:
+		fm.cd = 4.0
+	var weak: Enemy = arena.spawn_enemy_now("tache", arena.player.position + Vector2(-60, 0), false)
+	mq.hit(weak, weak.hp + 10.0)
+	var halved := true
+	for fm in arena.familiars:
+		halved = halved and absf(fm.cd - 2.0) < 0.01
+	_check(weak.dead and halved, "Meute : un kill de familier divise par 2 le délai de tous")
 	arena.queue_free()
 
 	# --- Boutique : capture avec un familier en vitrine
 	Run.familiars = ["yuki"]
 	Run.roll_shop()
 	Run.shop_offers[0] = {"type": "familiar", "id": "teemeo", "rar": 3, "price": 88, "sold": false}
-	Run.shop_offers[1] = {"type": "familiar", "id": "taupe", "rar": 0, "price": 16, "sold": false}
+	Run.shop_offers[1] = {"type": "familiar", "id": "moustique", "rar": 0, "price": 16, "sold": false}
 	var shop := ShopScreen.new()
 	add_child(shop)
 	await get_tree().process_frame

@@ -147,7 +147,7 @@ const LIST := [
 	{"id": "collier_grelot", "ink": 30, "name": "Collier à grelot", "rar": 1, "flag": true, "pet": true, "desc": "Chaque action d'un familier te soigne de 1 PV · {m}% dégâts", "malus": ["dmg", -3.0]},
 	{"id": "niche", "ink": 40, "name": "Niche", "rar": 1, "flag": true, "pet": true, "desc": "+20% dégâts des familiers · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
 	{"id": "dresseur", "ink": 50, "name": "Carnet du dresseur", "rar": 2, "flag": true, "pet": true, "desc": "+25% dégâts des familiers PAR familier possédé · {m} PV max", "malus": ["max_hp", -3.0]},
-	{"id": "meute", "ink": 70, "name": "Meute", "rar": 3, "flag": true, "pet": true, "desc": "Les coups de tes familiers appliquent l'ÉLÉMENT de ton perso (sa couleur dominante) · {m} armure", "malus": ["armor", -3.0]},
+	{"id": "meute", "ink": 70, "name": "Meute", "rar": 3, "flag": true, "pet": true, "desc": "Quand un familier TUE un ennemi, le délai de capacité de tous tes familiers est réduit de 50% · {m} armure", "malus": ["armor", -3.0]},
 ]
 
 ## Bonus selon l'endroit où l'amulette est posée sur le perso.

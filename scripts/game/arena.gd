@@ -887,15 +887,13 @@ func kill_enemy(e: Enemy) -> void:
 func collect(p: Pickup) -> void:
 	if p.heal > 0.0:
 		player.heal(p.heal)
-	# Pie voleuse : +1 or toutes les 10 gouttes
+	# Pie voleuse : 15 % de chances de +1 ou +2 or par goutte d'or
 	for fm in familiars:
-		if fm.id == "pie":
-			fm.pie_count += 1
-			if fm.pie_count >= 10:
-				fm.pie_count = 0
-				Run.gold += 1
-				float_text(fm.position + Vector2(0, -14), "+1", Pal.ACCENT)
-				fm._action()
+		if fm.id == "pie" and p.value > 0 and randf() < 0.15:
+			var bonus := randi_range(1, 2)
+			Run.gold += bonus
+			float_text(fm.position + Vector2(0, -14), "+%d" % bonus, Pal.ACCENT)
+			fm._action()
 	Run.gold += p.value
 	Sfx.play("pickup", 0.2)
 	if p.value > 0:
