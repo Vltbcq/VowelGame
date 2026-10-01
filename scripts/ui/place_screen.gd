@@ -3,7 +3,8 @@ extends Control
 ## Pose une amulette ou une arme où tu veux sur ton perso.
 ## On peut tourner (R) et retourner en miroir (M) l'objet. Pour une amulette, la zone donne un bonus.
 ## Pour une arme, sa pointe (le côté droit du dessin après rotation) vise les ennemis.
-## done({"pos": Vector2i, "image": Image, "rot": int, "flip": bool}) pour une amulette,
+## Amulette : on peut aussi attraper et DÉCALER les amulettes déjà posées (pour faire de la place).
+## done({"pos": Vector2i, "image": Image, "rot": int, "flip": bool, "moves": [{pos, image}...]}) pour une amulette,
 ## done({"anchor": Vector2, "rot": int, "flip": bool}) pour une arme (position relative au centre du perso).
 
 signal done(result)
@@ -26,6 +27,9 @@ var margin := 0                     # zone en plus autour du perso (armes : bien
 var outline := false                 # l'objet posé a-t-il un contour noir ?
 const WEAPON_MARGIN := 34
 var flip := false
+var olds: Array = []                # amulettes déjà posées : [{image, pos, tex, outline}]
+var held := -1                      # ce qu'on tient : -1 la nouvelle, i une ancienne, -2 rien
+var grab_off := Vector2i.ZERO       # où on a attrapé l'ancienne amulette
 
 
 func _init(m: String, img: Image, d: Dictionary, with_outline := false) -> void:
@@ -43,7 +47,11 @@ func _disp_tex(img: Image, with_outline: bool) -> ImageTexture:
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
-	base = Run.build_player_image()
+	base = Run.build_player_image(mode != "amulet")
+	if mode == "amulet":
+		for am in Run.amulets:
+			var ao: bool = am.get("outline", false)
+			olds.append({"image": am.image, "pos": am.pos, "tex": _disp_tex(am.image, ao), "outline": ao})
 	if mode == "weapon":
 		margin = WEAPON_MARGIN
 		var big := Image.create_empty(base.get_width() + margin * 2, base.get_height() + margin * 2, false, Image.FORMAT_RGBA8)
@@ -60,6 +68,8 @@ func _ready() -> void:
 	var what: String = {"amulet": "ton amulette : %s", "weapon": "ton arme : %s", "mark": "ta marque : %s"}[mode] % def.name
 	UI.put(self, UI.label("Pose " + what, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
 	var hint := "Clique pour poser (clic droit pour reprendre).  R : tourner · M : miroir"
+	if mode == "amulet" and not olds.is_empty():
+		hint = "Clique pour poser · clique sur une amulette posée pour la décaler · R : tourner · M : miroir"
 	UI.put(self, UI.label(hint, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 32), Vector2(640, 14))
 
 	var s := base.get_size()
@@ -113,7 +123,8 @@ func _validate() -> void:
 		return
 	Sfx.play("buy")
 	if mode != "weapon":
-		done.emit({"pos": cell, "image": item, "rot": rot, "flip": flip})
+		done.emit({"pos": cell, "image": item, "rot": rot, "flip": flip,
+			"moves": olds.map(func(o): return {"pos": o.pos, "image": o.image})})
 	else:
 		var center := Vector2(cell) + Vector2(item.get_size()) / 2.0
 		done.emit({"anchor": center - Run.char_center() - Vector2(margin, margin), "rot": rot, "flip": flip})
@@ -162,7 +173,17 @@ func _clamp(p: Vector2i) -> Vector2i:
 	return Vector2i(clampi(p.x, 0, maxi(0, s.x - item.get_width())), clampi(p.y, 0, maxi(0, s.y - item.get_height())))
 
 
+## Amulette déjà posée sous ce point (la plus haute), ou -1.
+func _old_at(c: Vector2i) -> int:
+	for i in range(olds.size() - 1, -1, -1):
+		if Rect2i(olds[i].pos, olds[i].image.get_size()).grow(1).has_point(c):
+			return i
+	return -1
+
+
 func _view_input(ev: InputEvent) -> void:
+	if mode == "amulet" and not olds.is_empty() and _amulet_input(ev):
+		return
 	if ev is InputEventMouseMotion and not placed:
 		cell = _clamp(_cell_at(ev.position))
 		_update()
@@ -176,6 +197,34 @@ func _view_input(ev: InputEvent) -> void:
 		placed = false
 		ok_btn.disabled = true
 		_update()
+
+
+## Décaler les amulettes déjà posées. Retourne true si l'événement est traité ici.
+func _amulet_input(ev: InputEvent) -> bool:
+	var c := Vector2i(floori(ev.position.x / px), floori(ev.position.y / px))
+	if held >= 0:
+		var o: Dictionary = olds[held]
+		var s := base.get_size()
+		var isz: Vector2i = o.image.get_size()
+		var np := c - grab_off
+		np = Vector2i(clampi(np.x, 0, maxi(0, s.x - isz.x)), clampi(np.y, 0, maxi(0, s.y - isz.y)))
+		o.pos = np
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+			held = -2 if placed else -1   # posée ; si la nouvelle n'est pas encore posée, on la reprend
+			Sfx.play("paint")
+		view.queue_redraw()
+		return ev is InputEventMouseMotion or ev is InputEventMouseButton
+	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		# la nouvelle (posée) passe devant : on l'attrape d'abord avec le comportement normal
+		var on_new := placed and Rect2i(cell, item.get_size()).has_point(c)
+		var i := _old_at(c)
+		if i >= 0 and not on_new:
+			held = i
+			grab_off = c - olds[i].pos
+			Sfx.play("click")
+			view.queue_redraw()
+			return true
+	return false
 
 
 func _update() -> void:
@@ -198,6 +247,13 @@ func _draw_view() -> void:
 			view.draw_line(Vector2(rr.position.x, yy), Vector2(rr.end.x, yy), Color(Pal.BORDER, 0.4))
 	var bo := 1.0 if Run.char_outline else 0.0
 	view.draw_texture_rect(base_tex, Rect2(Vector2(-bo, -bo) * px, sz + Vector2(bo, bo) * 2.0 * px), false)
+	for i in olds.size():
+		var o: Dictionary = olds[i]
+		var oo := 1.0 if o.outline else 0.0
+		var orc := Rect2(Vector2(o.pos) * px, Vector2(o.image.get_size()) * px)
+		view.draw_texture_rect(o.tex, orc.grow(oo * px), false)
+		if i == held:
+			view.draw_rect(orc.grow(oo * px + 1.0), Pal.ACCENT, false, 1.0)
 	for g in weapon_ghosts:
 		var go := 1.0 if g[3] else 0.0
 		var gs: Vector2 = (g[2] + Vector2(go, go) * 2.0) * px

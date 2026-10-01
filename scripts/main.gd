@@ -206,6 +206,7 @@ func _get_amulet(id: String) -> bool:
 			return false
 		Run.set_amulet_art(id, r.image, r.effect, r.outline)
 	var p = await _ask(PlaceScreen.new("amulet", Run.amulet_art[id].image, def, Run.amulet_art[id].outline))
+	Run.apply_amulet_moves(p.get("moves", []))   # amulettes déjà posées, éventuellement décalées
 	Run.add_amulet(id, p.image, p.pos)
 	return true
 

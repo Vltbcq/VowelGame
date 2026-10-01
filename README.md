@@ -296,4 +296,4 @@ Sauvegarde : `%APPDATA%/VowelGame/`.
 
 Le numéro de version est affiché en bas à droite de l'écran titre (écrit par la pipeline de Release à partir du tag). **v0.X** = nouveautés (contenu, mécaniques) ; **v0.X.Y** = correctifs et équilibrage ; **v1.0** plus tard.
 
-Autres changements récents : plus de bonus de zone en posant une amulette (tu la poses où tu veux) ; les amulettes élémentaires (Allumette, Braise, Givre, Stalactite, Paratonnerre, Dynamo, Fiole, Champignon, Grimoire, Pentacle, Vitrail, Auréole) ne s'achètent qu'une fois chacune ; « Ranger mes armes » range aussi les amulettes ; icône arme / amulette sur les tableaux de la boutique ; le Raturé tire moins souvent.
+Autres changements récents : plus de bonus de zone en posant une amulette (tu la poses où tu veux, et tu peux décaler celles déjà posées pour faire de la place) ; les amulettes élémentaires (Allumette, Braise, Givre, Stalactite, Paratonnerre, Dynamo, Fiole, Champignon, Grimoire, Pentacle, Vitrail, Auréole) ne s'achètent qu'une fois chacune ; « Ranger mes armes » range aussi les amulettes ; icône arme / amulette sur les tableaux de la boutique ; le Raturé tire moins souvent.
