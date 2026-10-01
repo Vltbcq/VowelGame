@@ -120,6 +120,8 @@ func _ready() -> void:
 
 	# Sifflet : la cible est désignée aux familiers
 	var t: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(120, 40), false)
+	t.max_hp = 1000000.0   # qu'il survive aux 12 familiers pendant le test
+	t.hp = t.max_hp
 	arena.hit_enemy(t, 1.0, {"type": "sifflet", "style": "shot"}, Vector2.RIGHT, 0.0)
 	_check(arena.whistle == t, "Sifflet : l'ennemi touché devient la cible")
 	for f in 120:
@@ -269,6 +271,8 @@ func _ready() -> void:
 	var dh2 := d2.hp
 	var all_fams: Array = arena.familiars.duplicate()
 	arena.familiars = [tm]   # les autres familiers ne doivent pas toucher le 2e ennemi
+	arena.shrooms.clear()    # ni les champignons / nuages déjà posés
+	arena.clouds.clear()
 	var base := tm.position
 	d1.pin_t = 99.0
 	d2.pin_t = 99.0
