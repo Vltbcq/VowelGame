@@ -358,12 +358,12 @@ func _fantome(delta: float) -> void:
 	match state:
 		"cross":
 			position += vel * delta
-			for e in arena.near(position, 14.0):
+			for e in arena.near(position, 18.0):
 				var k: int = e.get_instance_id()
 				if not hit_cd.has(k):
 					hit_cd[k] = 3.0
 					e.blind_t = maxf(e.blind_t, 2.0)
-					hit(e, fdmg(4.0, 1.0))
+					hit(e, fdmg(14.0, 4.0))
 			if position.x < -30.0 or position.x > Arena.W + 30.0 or position.y < -30.0 or position.y > Arena.H + 30.0:
 				state = "walk"
 				position = arena.player.position + Vector2(0, -20)

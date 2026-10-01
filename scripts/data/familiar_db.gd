@@ -25,7 +25,7 @@ const LIST := [
 	{"id": "grenouille", "name": "Grenouille", "rar": 2, "ink": 60,
 		"desc": "Saute partout et avale d'un coup de langue un petit ennemi (pas les élites ni les boss), toutes les 6 s."},
 	{"id": "fantome", "name": "Fantôme de papier", "rar": 2, "ink": 55,
-		"desc": "Traverse la page en ligne droite toutes les 5 s : les ennemis traversés sont aveuglés 2 s."},
+		"desc": "Traverse la page en ligne droite toutes les 5 s : les ennemis traversés prennent de gros dégâts et sont aveuglés 2 s."},
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,
 		"desc": "Petit chat magique collé à toi : te soigne de 5% de tes PV toutes les 8 s, bloque un coup toutes les 12 s, et sous 25% de PV te donne +30% de vitesse 3 s."},
