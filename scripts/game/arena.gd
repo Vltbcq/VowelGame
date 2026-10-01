@@ -1952,6 +1952,16 @@ class _Marks extends Node2D:
 				draw_rect(Rect2(0, sc.y - 6, W, 12), Color(0.6, 1.0, 0.7, 0.18))
 				draw_line(Vector2(0, sc.y), Vector2(W, sc.y), Color(0.75, 1.0, 0.8, 0.95), 2.0)
 		for g in arena.telegraphs_fx:
+			if g.get("boss", false):
+				# arrivée d'un boss : cercle rouge qui se resserre + croix qui clignote
+				var k: float = clampf(g.t - 1.0, 0.0, 1.0)
+				var blink := 0.55 + 0.45 * sin(arena.elapsed * 20.0)
+				draw_circle(g.pos, 26.0, Color(Pal.BAD, 0.12))
+				draw_arc(g.pos, 10.0 + 30.0 * k, 0.0, TAU, 28, Color(Pal.BAD, 0.9), 2.0)
+				draw_arc(g.pos, 26.0, 0.0, TAU, 28, Color(Pal.BAD, 0.4 * blink), 1.0)
+				draw_line(g.pos + Vector2(-6, -6), g.pos + Vector2(6, 6), Color(Pal.BAD, blink), 2.0)
+				draw_line(g.pos + Vector2(-6, 6), g.pos + Vector2(6, -6), Color(Pal.BAD, blink), 2.0)
+				continue
 			draw_arc(g.pos, 10.0, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
 			draw_string(UI.font, g.pos + Vector2(-20, -14), "COPIE", HORIZONTAL_ALIGNMENT_CENTER, 40, 10, Color(1, 1, 1, 0.8))
 		# Agrafes (Agrafeuse)

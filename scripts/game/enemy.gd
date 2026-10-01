@@ -46,6 +46,8 @@ var cd := 0.0
 var cd2 := 0.0
 var cd3 := 0.0
 var dash_dir := Vector2.ZERO
+var tp_pos := Vector2.ZERO     # Raturé : où il va réapparaître (annoncé 1 s avant)
+var tp_mark := {}
 var spiral_a := 0.0
 var last_atk := ""          # Raturé : dernière attaque (jamais deux fois de suite)
 var atk_bag: Array = []     # Raturé : attaques restantes du cycle en cours
@@ -1189,10 +1191,8 @@ func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		st_t -= delta
 		mat.set_shader_parameter("alpha", clampf(st_t / 0.5, 0.15, 1.0))
 		if st_t <= 0.0:
-			var p := arena.player.position
-			position = p + Vector2.from_angle(randf() * TAU) * randf_range(70.0, 120.0)
-			position.x = clampf(position.x, 30.0, Arena.W - 30.0)
-			position.y = clampf(position.y, 30.0, Arena.H - 30.0)
+			position = tp_pos
+			tp_mark.t = 0.0   # la cible s'efface quand il arrive
 			mat.set_shader_parameter("alpha", 1.0)
 			contact = true
 			state = "walk"
@@ -1208,8 +1208,14 @@ func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	if cd <= 0.0:
 		cd = 4.5 if _enraged() else 5.5
 		state = "fade"
-		st_t = 0.5
+		st_t = 1.0   # le point d'arrivée est annoncé 1 s avant
 		contact = false
+		var p := arena.player.position
+		tp_pos = p + Vector2.from_angle(randf() * TAU) * randf_range(70.0, 120.0)
+		tp_pos.x = clampf(tp_pos.x, 30.0, Arena.W - 30.0)
+		tp_pos.y = clampf(tp_pos.y, 30.0, Arena.H - 30.0)
+		tp_mark = {"pos": tp_pos, "t": 2.0, "boss": true}
+		arena.telegraphs_fx.append(tp_mark)
 	var tang := dirp.orthogonal()
 	return (tang + dirp * clampf((dist - 95.0) / 50.0, -1.0, 1.0)).normalized() * speed
 
