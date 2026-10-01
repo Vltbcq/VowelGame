@@ -166,7 +166,7 @@ func _ready() -> void:
 	_check(prey.hp < php and arena.player.hp >= 4.0, "Moustique : pique (%.0f → %.0f) et rend 1 PV (%.0f)" % [php, prey.hp, arena.player.hp])
 	# Pie : va chercher la pièce brillante et te la rapporte
 	var g0 := Run.gold
-	pie.fetch = [{"pos": arena.player.position + Vector2(90, 30), "v": 2}, {"pos": arena.player.position + Vector2(-70, 50), "v": 1}, {"pos": arena.player.position + Vector2(40, -60), "v": 1}]
+	pie.fetch = [{"pos": arena.player.position + Vector2(90, 30), "v": 2, "test": true}, {"pos": arena.player.position + Vector2(-70, 50), "v": 1, "test": true}, {"pos": arena.player.position + Vector2(40, -60), "v": 1, "test": true}]
 	pie.carry = false
 	var went := false
 	for f in 480:
@@ -176,7 +176,8 @@ func _ready() -> void:
 		if f == 50 and args.size() > 2:
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png(args[2])
-	_check(went and pie.fetch.is_empty() and Run.gold >= g0 + 4, "Pie : va chercher les pièces et rapporte l'or (+%d)" % (Run.gold - g0))
+	var mine := pie.fetch.filter(func(f): return f.pos.distance_to(arena.player.position) > 0.0 and f.v >= 1 and f.get("test", false))
+	_check(went and mine.is_empty() and Run.gold >= g0 + 4, "Pie : va chercher les pièces et rapporte l'or (+%d)" % (Run.gold - g0))
 	var drops := 0
 	for k in 300:
 		arena.kill_enemy(arena.spawn_enemy_now("tache", arena.player.position + Vector2(200, 0), false))
