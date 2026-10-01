@@ -443,6 +443,15 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 			_line(L, "Régén.", s.regen, "")
 			_line(L, "Vol de vie", s.lifesteal, "%")
 			_res_lines(L, s.res)
+		"familiar":
+			if a.pixels > 0:
+				var sm := FamiliarDB.size_mult(cfg.def, a.pixels)
+				L.append("Taille : %d%% de l'encre" % roundi(sm.fill * 100.0))
+				L.append("Dégâts : ×%.2f" % sm.dmg)
+				L.append("Vitesse : ×%.2f" % sm.spd)
+				L.append("")
+				L.append("Gros dessin = frappe fort mais lent.")
+				L.append("Petit dessin = rapide, agit plus souvent.")
 		"melee":
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)

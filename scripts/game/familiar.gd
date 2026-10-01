@@ -29,6 +29,7 @@ const LUCIOLE_R := 48.0
 const GRENOUILLE_R := 58.0
 var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
 var carry := false      # Pie : elle rapporte une pièce
+var sm := {"fill": 0.5, "dmg": 1.0, "spd": 1.0}   # effet de la taille du dessin
 var frac: Array = []    # part de chaque couleur du dessin : chances d'effet élémentaire
 var darts: Array = []   # Teemeo : fléchettes en vol {pos, vel, life}
 var lit: Array = []     # Luciole : ennemis dans son aura
@@ -43,7 +44,9 @@ func setup(a: Arena, fid: String) -> void:
 	var art: Dictionary = Run.familiar_art[id]
 	sprite = Gfx.sprite(Gfx.texture(Analyzer.trim(art.image)), Gfx.material(art.effect, art.get("outline", false)))
 	add_child(sprite)
-	frac = Analyzer.analyze(art.image).get("frac", [])
+	var an := Analyzer.analyze(art.image)
+	frac = an.get("frac", [])
+	sm = FamiliarDB.size_mult(def, int(an.get("pixels", 0)))
 	position = arena.player.position + Vector2.from_angle(randf() * TAU) * 30.0
 	goal = position
 	ang = randf() * TAU
@@ -73,7 +76,7 @@ func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: fl
 
 ## Dégâts d'un familier : base + vague, × tes dégâts, × bonus des amulettes de familiers.
 func fdmg(base: float, per_wave: float) -> float:
-	var m := (1.0 + 0.2 * Run.amulet_count("niche")) * (1.0 + 0.25 * Run.amulet_count("dresseur") * Run.familiars.size())
+	var m: float = sm.dmg * (1.0 + 0.3 * Run.amulet_count("niche")) * (1.0 + 0.25 * Run.amulet_count("dresseur") * Run.familiars.size())
 	if arena.whip_t > 0.0:
 		m *= 1.0 + 0.1 * arena.whip_stacks   # Fouet de dresseur
 	return (base + per_wave * Run.wave) * (1.0 + Run.stats.dmg / 100.0) * m
@@ -81,11 +84,11 @@ func fdmg(base: float, per_wave: float) -> float:
 
 ## Délai entre deux actions (Croquettes : -15 % chacune).
 func fcd(sec: float) -> float:
-	return sec * pow(0.85, Run.amulet_count("croquettes"))
+	return sec * pow(0.85, Run.amulet_count("croquettes")) / sm.spd
 
 
 func _speed() -> float:
-	return 1.0 + 0.25 * Run.amulet_count("laisse")
+	return sm.spd * (1.0 + 0.25 * Run.amulet_count("laisse"))
 
 
 func _leash() -> float:
@@ -99,7 +102,6 @@ func hit(e: Enemy, dmg: float, kb := Vector2.ZERO) -> void:
 	var h0: float = e.hp
 	e.hurt(dmg, false, kb)
 	arena.fam_credit(id, h0 - maxf(0.0, e.hp))
-	_action()
 	_elements(e, dmg)
 	if e.dead:
 		on_kill()
@@ -108,7 +110,7 @@ func hit(e: Enemy, dmg: float, kb := Vector2.ZERO) -> void:
 ## Couleurs du dessin = éléments, comme les armes : chaque couleur a sa chance d'effet
 ## (selon sa part du dessin, × puissance élémentaire).
 func _elements(e: Enemy, dmg: float) -> void:
-	if frac.is_empty() or e.dead:
+	if frac.is_empty() or e.dead or Run.amulet_count("teinture") == 0:
 		return
 	var power: float = 1.0 + Run.stats.el_power / 100.0
 	for el in range(1, mini(frac.size(), Pal.COUNT)):
@@ -129,9 +131,15 @@ func on_kill() -> void:
 		fm.cd3 *= 0.5
 
 
+## Une ACTION = une utilisation de capacité (piqûre, plongeon, langue, livraison, copie...).
+## Collier à grelot : toutes les 5 actions (tous familiers confondus), +1 PV par collier.
 func _action() -> void:
 	var g := Run.amulet_count("collier_grelot")
-	if g > 0:
+	if g == 0:
+		return
+	arena.grelot_n += 1
+	if arena.grelot_n >= 5:
+		arena.grelot_n = 0
 		arena.player.heal(1.0 * g)
 
 
@@ -266,6 +274,7 @@ func _moustique(delta: float) -> void:
 		cd = fcd(1.5)
 		var victim := target
 		hit(victim, fdmg(4.0, 1.2))
+		_action()
 		arena.player.heal(1.0)
 		arena.burst(position, Pal.BAD, 4, 40.0)
 
@@ -285,6 +294,7 @@ func _taupe(delta: float) -> void:
 					arena.explosion(position, 28.0, Color(0.55, 0.35, 0.17, 0.6), true)
 					arena.burst(position, Color("8a5a2b"), 16, 110.0)
 					arena.float_text(position + Vector2(0, -16), "SURPRISE !", Color("c08040"))
+					_action()
 				sprite.modulate.a = 1.0
 				state = "walk"
 			return
@@ -313,6 +323,7 @@ func _herisson(delta: float) -> void:
 		if not hit_cd.has(k):
 			hit_cd[k] = 0.6
 			hit(e, fdmg(7.0, 2.0), vel.normalized() * 60.0)
+			_action()
 
 
 func _luciole(delta: float) -> void:
@@ -354,6 +365,7 @@ func _corbeau(delta: float) -> void:
 			_sitflip(target.position.x - position.x)
 			if position.distance_to(target.position) < 8.0:
 				hit(target, fdmg(20.0, 5.0), (target.position - arena.player.position).normalized() * 80.0)
+				_action()
 				arena.burst(position, Pal.INK, 10, 90.0)
 				state = "back"
 			return
@@ -427,6 +439,7 @@ func _fantome(delta: float) -> void:
 		_sitflip(vel.x)
 		sprite.modulate.a = 0.9
 		state = "cross"
+		_action()
 
 
 func _yuki(delta: float) -> void:
@@ -511,6 +524,7 @@ func _teemeo(delta: float) -> void:
 		var e: Enemy = _called() if _called() else arena.nearest(position, 260.0)
 		if e:
 			darts.append({"pos": position, "vel": (e.position - position).normalized() * 260.0, "life": 1.2})
+			_action()
 			Sfx.play("shoot")
 
 
@@ -525,6 +539,7 @@ func _oiseau(delta: float) -> void:
 	if cd <= 0.0 and position.distance_to(target.position) < 10.0:
 		cd = fcd(0.6)
 		hit(target, fdmg(bird_dmg, 0.0), (target.position - position).normalized() * 40.0)
+		_action()
 		arena.burst(position, Pal.INK, 5, 60.0)
 		target = null
 

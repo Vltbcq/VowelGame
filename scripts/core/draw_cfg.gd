@@ -78,7 +78,7 @@ static func familiar(def: Dictionary) -> Dictionary:
 	var s := FamiliarDB.canvas(def)
 	return {"kind": "familiar", "gallery": "familiar", "size": Vector2i(s, s), "ink": FamiliarDB.ink(def),
 		"def": def, "title": "Dessine ton familier : %s" % def.name,
-		"sub": String(def.desc) + "  Ses couleurs donnent des effets élémentaires, comme tes armes.",
+		"sub": String(def.desc) + "  Gros dessin = plus de dégâts, petit = plus rapide.",
 		"cancel": true, "min": 4}
 
 

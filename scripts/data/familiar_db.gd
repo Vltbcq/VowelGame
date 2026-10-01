@@ -51,7 +51,15 @@ static func of_rarity(rar: int) -> Array:
 
 
 static func ink(def: Dictionary) -> int:
-	return roundi(def.ink * RAR_INK[int(def.rar)])
+	return roundi(def.ink * RAR_INK[int(def.rar)]) + 15
+
+
+## La TAILLE du dessin (part de l'encre max utilisée) : gros = frappe fort mais lent,
+## petit = rapide et agit plus souvent mais tape moins fort.
+## dmg : ×0,8 → ×1,4 ; spd (déplacement et fréquence des actions) : ×1,2 → ×0,85.
+static func size_mult(def: Dictionary, pixels: int) -> Dictionary:
+	var fill := clampf(float(pixels) / maxf(1.0, float(ink(def))), 0.0, 1.0)
+	return {"fill": fill, "dmg": 0.8 + 0.6 * fill, "spd": 1.2 - 0.35 * fill}
 
 
 static func canvas(def: Dictionary) -> int:

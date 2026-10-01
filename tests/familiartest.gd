@@ -267,6 +267,8 @@ func _ready() -> void:
 	arena._process(1.0 / 60.0)
 	var dh1 := d1.hp
 	var dh2 := d2.hp
+	var all_fams: Array = arena.familiars.duplicate()
+	arena.familiars = [tm]   # les autres familiers ne doivent pas toucher le 2e ennemi
 	var base := tm.position
 	d1.pin_t = 99.0
 	d2.pin_t = 99.0
@@ -276,6 +278,7 @@ func _ready() -> void:
 		d1.position = base + Vector2(50, 0)
 		d2.position = base + Vector2(80, 0)
 		arena._process(1.0 / 60.0)
+	arena.familiars = all_fams
 	_check(d1.poison > 0, "Teemeo : la fléchette empoisonne")
 	_check(d1.hp < dh1 and d2.hp == dh2 and tm.darts.is_empty(), "Teemeo : la fléchette touche le 1er ennemi et s'arrête (%.0f→%.0f, 2e : %.0f→%.0f)" % [dh1, d1.hp, dh2, d2.hp])
 	# Couleurs = éléments : un familier dessiné tout en couleur Poison empoisonne
@@ -288,7 +291,27 @@ func _ready() -> void:
 	var pe: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(0, -90), false)
 	for k in 6:
 		pc.hit(pe, 1.0)
-	_check(pe.poison > 0, "couleurs du familier : un dessin vert empoisonne (frac poison %.2f)" % float(pc.frac[Pal.POISON]))
+	_check(pe.poison == 0, "sans Teinture : pas d'effet élémentaire")
+	Run.set_amulet_art("teinture", img, "")
+	Run.add_amulet("teinture", img, Vector2i(20, 20))
+	for k in 6:
+		pc.hit(pe, 1.0)
+	_check(pe.poison > 0, "avec Teinture : un dessin vert empoisonne (frac poison %.2f)" % float(pc.frac[Pal.POISON]))
+	# Taille du dessin : gros = plus de dégâts, plus lent
+	var big := FamiliarDB.size_mult(FamiliarDB.get_def("corbeau"), FamiliarDB.ink(FamiliarDB.get_def("corbeau")))
+	var small := FamiliarDB.size_mult(FamiliarDB.get_def("corbeau"), 5)
+	_check(big.dmg > 1.35 and big.spd < 0.9 and small.dmg < 0.85 and small.spd > 1.15, "taille : gros ×%.2f dégâts / ×%.2f vitesse, petit ×%.2f / ×%.2f" % [big.dmg, big.spd, small.dmg, small.spd])
+	_check(FamiliarDB.ink(FamiliarDB.get_def("moustique")) == 55, "Moustique : 55 pixels d'encre")
+	# Collier à grelot : 1 PV toutes les 5 actions
+	Run.set_amulet_art("collier_grelot", img, "")
+	Run.add_amulet("collier_grelot", img, Vector2i(20, 20))
+	arena.grelot_n = 0
+	arena.player.hp = 3.0
+	for k in 4:
+		pc._action()
+	var hp4 := arena.player.hp
+	pc._action()
+	_check(hp4 == 3.0 and arena.player.hp == 4.0, "Collier à grelot : rien pendant 4 actions, +1 PV à la 5e")
 	pc.queue_free()
 	# Meute : un kill de familier réduit de 50 % les délais de tous les familiers
 	Run.set_amulet_art("meute", img, "")

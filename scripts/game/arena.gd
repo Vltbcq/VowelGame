@@ -82,6 +82,7 @@ var familiars: Array = [] # familiers sur la page
 var shrooms: Array = []   # Teemeo : champignons {pos, dmg}
 var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
 var whip_stacks := 0
+var grelot_n := 0         # Collier à grelot : actions de familiers comptées
 var fam_dealt := {}       # dégâts infligés par familier (id -> total), pour les mesures
 var whistle: Enemy        # Sifflet : cible désignée aux familiers
 var whistle_t := 0.0
