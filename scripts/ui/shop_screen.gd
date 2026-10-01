@@ -1388,7 +1388,7 @@ class _CaseStrip extends Control:
 func _kind_icon(kind: String) -> Image:
 	var img := Image.create_empty(12, 12, false, Image.FORMAT_RGBA8)
 	if kind == "familiar":
-		# trace de patte : 4 doigts + coussinet, en noir avec un liseré blanc
+		# trace de patte : 4 doigts + coussinet, roses avec un contour noir
 		const PAW := [
 			"............",
 			"...##..##...",
@@ -1405,16 +1405,16 @@ func _kind_icon(kind: String) -> Image:
 		for y in 12:
 			for x in 12:
 				if PAW[y][x] == "#":
-					img.set_pixel(x, y, Pal.INK)
-		for y in 12:
-			for x in 12:
-				if PAW[y][x] == "#":
+					# coussinets roses, avec un reflet en haut à gauche de chaque morceau
+					var top: bool = y == 0 or PAW[y - 1][x] != "#"
+					var left: bool = x == 0 or PAW[y][x - 1] != "#"
+					img.set_pixel(x, y, Color("ffc8d4") if top and left else (Color("f08aa4") if top or left else Color("d85a7a")))
 					continue
 				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 					var nx: int = x + d.x
 					var ny: int = y + d.y
 					if nx >= 0 and ny >= 0 and nx < 12 and ny < 12 and PAW[ny][nx] == "#":
-						img.set_pixel(x, y, Color.WHITE)
+						img.set_pixel(x, y, Pal.INK)   # contour
 						break
 		return img
 	if kind == "weapon":
