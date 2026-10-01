@@ -78,11 +78,11 @@ func fcd(sec: float) -> float:
 
 
 func _speed() -> float:
-	return 1.2 if Run.amulet_count("laisse") > 0 else 1.0
+	return 1.0 + 0.25 * Run.amulet_count("laisse")
 
 
 func _leash() -> float:
-	return 45.0 if Run.amulet_count("laisse") > 0 else 75.0
+	return 75.0
 
 
 ## Le familier touche un ennemi (Collier à grelot : soin ; Meute : un kill recharge la meute).
@@ -111,7 +111,7 @@ func _action() -> void:
 		arena.player.heal(1.0 * g)
 
 
-## Se promène autour du joueur (Laisse : plus près, plus vite).
+## Se promène autour du joueur (Laisse : plus vite).
 func _wander(delta: float, speed := 90.0) -> void:
 	var p := arena.player.position
 	if position.distance_to(goal) < 6.0 or goal.distance_to(p) > _leash() * 1.4:
