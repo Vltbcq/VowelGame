@@ -20,6 +20,7 @@ var theme: Theme
 const MENU_FONT_PATH := "res://assets/fonts/YosterIsland.ttf"
 const MENU_SIZE := 12
 const MENU_BIG := 24
+const MENU_TITLE := 36   # 3 pixels de jeu par pixel de police
 const MENU_MARGIN := 2   # marge verticale dans les boutons du menu
 
 
@@ -31,7 +32,7 @@ func _ready() -> void:
 	font_menu.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
 	font_menu.generate_mipmaps = false
 	font_menu.allow_system_fallback = false
-	font_menu.fallbacks = [font]   # parenthèses et symboles (·, ◆, ●) : pris dans la police pixel
+	font_menu.fallbacks = [font]   # au cas où un caractère manquerait (voir docs/yoster_glyphs.py)
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
@@ -283,14 +284,19 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	return tr
 
 
-## Police du menu (Yoster Island) sur tous les boutons d'un bloc : normal → MENU_SIZE, gros (≥ 20) → MENU_BIG.
-## Marges verticales des boutons : MENU_MARGIN.
+## Police du menu (Yoster Island) sur tous les textes d'un bloc : normal → MENU_SIZE,
+## gros (≥ 20) → MENU_BIG, très gros titre (≥ 40) → MENU_TITLE. Marges verticales des boutons : MENU_MARGIN.
+func fs_title() -> int:
+	return 40
+
+
 func use_menu_font(root: Node) -> void:
 	for c in root.get_children():
-		if c is Button:
-			var big: bool = (c as Control).get_theme_font_size("font_size") >= 20
+		if c is Button or c is Label:
+			var cur := (c as Control).get_theme_font_size("font_size")
+			var n := MENU_TITLE if cur >= fs_title() else (MENU_BIG if cur >= 20 else MENU_SIZE)
 			(c as Control).add_theme_font_override("font", font_menu)
-			(c as Control).add_theme_font_size_override("font_size", MENU_BIG if big else MENU_SIZE)
+			(c as Control).add_theme_font_size_override("font_size", n)
 			if c is Button:
 				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox

@@ -89,13 +89,13 @@ func _ready() -> void:
 	var d := Meta.data
 	var info := "Record : vague %d\nParties : %d  ·  Victoires : %d" % [int(d.best_wave), int(d.runs), int(d.wins)]
 	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(224, 30))
-	UI.use_menu_font(mp)
 
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))
-	Tips.show(self, "welcome")
 	if entries.is_empty():
 		UI.put(self, UI.label("Tes dessins seront exposés ici !", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 318), Vector2(640, 14))
+	UI.use_menu_font(self)   # tout l'écran titre en Yoster Island
+	Tips.show(self, "welcome")
 
 
 # ------------------------------------------------------------------ Cadres
