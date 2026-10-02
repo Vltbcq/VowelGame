@@ -45,7 +45,7 @@ func _ready() -> void:
 	print("RARITY : armes=%d, rares=%d, dessin commun inchangé=%s, dessin rare différent=%s, offre vendue=%s" % [
 		Run.weapons.size(), rares, Run.weapon_art["epee#0"].image == art0,
 		Run.has_art("epee", 1) and Run.weapon_art["epee#1"].image.get_data() != art0.get_data(), Run.shop_offers[0].sold])
-	# Dessin par défaut de la rareté ÉPIQUE dans le Bestiaire : il est proposé à l'achat de l'épique
+	# Dessin par défaut de la rareté ÉPIQUE dans le Codex : il est proposé à l'achat de l'épique
 	var tmp := OS.get_temp_dir().path_join("vowel_test_default.png")
 	var epic := img.duplicate()
 	epic.fill_rect(Rect2i(2, 2, 6, 6), Pal.SHADES[2][1])
@@ -55,7 +55,7 @@ func _ready() -> void:
 	Run.shop_offers = [{"type": "weapon", "wtype": "lance", "rar": 2, "price": 10, "sold": false}]
 	Run.weapons.resize(3)
 	var screens := await _drive(main, func(): await main._buy(0))
-	print("DÉFAUT : écrans=%s, lance épique = dessin épique du Bestiaire : %s, commune inchangée : %s" % [screens,
+	print("DÉFAUT : écrans=%s, lance épique = dessin épique du Codex : %s, commune inchangée : %s" % [screens,
 		Run.has_art("lance", 2) and Analyzer.trim(Run.weapon_art["lance#2"].image).get_data() == Analyzer.trim(epic).get_data(),
 		Run.weapon_art["lance#0"].image.get_data() == img.get_data()])
 	# Fusion vers une rareté sans dessin (légendaire) : écran de dessin obligatoire (pas de « Garder »)

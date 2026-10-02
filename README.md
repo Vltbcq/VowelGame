@@ -21,7 +21,7 @@ Pour dessiner : clic gauche pour peindre et clic droit pour gommer. Raccourcis B
 |---|---|
 | Partout | **Entrée** = valider / continuer, **Échap** = retour / fermer (rappelés dans l'infobulle des boutons) |
 | En jeu | **Échap** ou **P** = pause · molette ou **+ / -** = zoom · dans la pause : **Entrée** reprendre, **O** options |
-| Accueil | **Entrée** / **N** nouvelle partie, **A** atelier, **G** galerie, **B** bestiaire, **O** options |
+| Accueil | **Entrée** / **N** nouvelle partie, **A** atelier, **G** galerie, **B** codex, **O** options |
 | Boutique | **R** actualiser la galerie, **A** ranger mes armes, **Entrée** salle suivante |
 | Choix du dessin | **Entrée** utiliser, **M** modifier, **N** nouveau, **C** bord, **Échap** retour |
 | Dessin | **B E L R O F S** outils, **M** symétrie, **G** dégradé, **C** bord, **V** aperçu, **Ctrl+Z / Ctrl+Y**, **Entrée** valider |
@@ -35,7 +35,7 @@ Armes spéciales et nouvelles amulettes : `Godot --headless --path . res://tests
 
 ## Outil de dev (Ctrl+P en pleine vague)
 
-Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, or, niveaux, tuer tout, finir la vague, **aller directement à une vague** (−/+ puis « Y aller », sans boutique) ; faire apparaître **n'importe quel ennemi ou boss devant soi** (élite ou non) ; donner n'importe quelle **arme** (toute rareté) ou **amulette**, ajouter ou retirer des **familiers**. Les dessins manquants sont pris dans le Bestiaire, sinon remplacés par des formes provisoires.
+Panneau de test (jeu en pause) : stats du perso (−/+), invincibilité, soin, or, niveaux, tuer tout, finir la vague, **aller directement à une vague** (−/+ puis « Y aller », sans boutique) ; faire apparaître **n'importe quel ennemi ou boss devant soi** (élite ou non) ; donner n'importe quelle **arme** (toute rareté) ou **amulette**, ajouter ou retirer des **familiers**. Les dessins manquants sont pris dans le Codex, sinon remplacés par des formes provisoires.
 **À retirer avant de publier le jeu** : `ENABLED := false` dans `scripts/dev/dev_panel.gd` (ou supprimer le dossier `scripts/dev/`).
 
 ## Publier une version (GitHub)
@@ -49,7 +49,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 
 ## Sauvegardes et reprise
 
-- **3 sauvegardes** au lancement du jeu : chacune a sa progression (pigments, déblocages, records), sa galerie, son Bestiaire et sa partie en cours. Les options sont communes. Bouton **Supprimer** avec confirmation (il faut cliquer, Entrée ne suffit pas). Depuis le titre : « Sauvegarde N · changer » (touche **S**).
+- **3 sauvegardes** au lancement du jeu : chacune a sa progression (pigments, déblocages, records), sa galerie, son Codex et sa partie en cours. Les options sont communes. Bouton **Supprimer** avec confirmation (il faut cliquer, Entrée ne suffit pas). Depuis le titre : « Sauvegarde N · changer » (touche **S**).
 - La sauvegarde 1 utilise les fichiers d'origine (`user://vowel_save.json`, `gallery/`, `bestiary/`) ; les 2 et 3 sont dans `user://slot2/` et `user://slot3/`. Options : `user://settings.json`.
 - **Reprise de partie** : la partie est enregistrée automatiquement au début de chaque vague, à la fin de chaque vague, après chaque niveau et à chaque action en boutique (`run_save.dat`). **Sauvegarder et quitter** est dans le menu pause et dans la boutique ; au titre, **Reprendre** (Entrée). Quitter en pleine vague (ou fermer le jeu) fait recommencer cette vague depuis son début, avec les PV du début de vague. Commencer une nouvelle partie remplace la partie en cours (après confirmation, sans compter de défaite).
 - Test : `res://tests/savetest.tscn` (travaille dans un dossier temporaire, jamais dans les vraies sauvegardes).
@@ -89,7 +89,7 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 7. **Montée de niveau** : après la vague, pour chaque niveau gagné tu choisis 1 bonus parmi 3 (rareté tirée comme en boutique : plus tu avances et plus ton niveau est haut, plus le rare sort), puis tu dessines une petite **marque d'encre** (plus le bonus est rare, plus elle peut être grande : 10 à 34 d'encre) (tatouage, cicatrice...) que tu poses sur ton perso. Elle ne compte pas dans sa taille : il ne devient ni plus gros ni plus lent. Sa couleur donne un peu de résistance. Bouton « Passer » pour ne pas dessiner.
 8. En fin de partie, tu gagnes des **pigments**. L'**Atelier** (mur de planches, établi et tableau en liège) :
    - **Établi (pigments)** : Encrier, Grande toile, Étal élargi, Relance offerte, Bourse.
-   - **Succès (tableau en liège)** : chaque succès débloque une amélioration. Terminer la vague 3 → pack primaire ; vaincre le boss de la vague 5 → pack secondaire ; 500 ennemis effacés → gros pinceaux ; 15 dessins en galerie → ligne ; vague 8 → rectangle ; boss de la vague 10 → ellipse ; niveau 10 → symétrie ; une arme légendaire → dégradé ; une vague sans perdre de PV → encre pulsante ; gagner une partie → encre scintillante ; gagner en Aquarelle ou plus → encre arc-en-ciel. Un succès obtenu **pendant une partie** est marqué tout de suite (bandeau « débloqué à la fin de la partie », sablier ⌛ sur le tableau de l'Atelier), mais son amélioration n'arrive qu'**à la fin de la partie** : victoire, défaite, abandon, ou partie en cours remplacée par une nouvelle. Les récompenses en attente sont sauvegardées (rien n'est perdu si tu quittes le jeu). L'écran de fin fait le récapitulatif « Nouveautés débloquées ». Hors partie (ex. galerie remplie depuis le Bestiaire), c'est immédiat. Les anciennes sauvegardes gardent ce qui était déjà débloqué.
+   - **Succès (tableau en liège)** : chaque succès débloque une amélioration. Terminer la vague 3 → pack primaire ; vaincre le boss de la vague 5 → pack secondaire ; 500 ennemis effacés → gros pinceaux ; 15 dessins en galerie → ligne ; vague 8 → rectangle ; boss de la vague 10 → ellipse ; niveau 10 → symétrie ; une arme légendaire → dégradé ; une vague sans perdre de PV → encre pulsante ; gagner une partie → encre scintillante ; gagner en Aquarelle ou plus → encre arc-en-ciel. Un succès obtenu **pendant une partie** est marqué tout de suite (bandeau « débloqué à la fin de la partie », sablier ⌛ sur le tableau de l'Atelier), mais son amélioration n'arrive qu'**à la fin de la partie** : victoire, défaite, abandon, ou partie en cours remplacée par une nouvelle. Les récompenses en attente sont sauvegardées (rien n'est perdu si tu quittes le jeu). L'écran de fin fait le récapitulatif « Nouveautés débloquées ». Hors partie (ex. galerie remplie depuis le Codex), c'est immédiat. Les anciennes sauvegardes gardent ce qui était déjà débloqué.
 
 **Encre = traits seulement** : seuls les pixels de contour (au bord du dessin) coûtent de l'encre ; remplir ou colorier l'intérieur d'une forme est gratuit. Chaque dessin peut avoir ou non un **contour noir** en jeu (bouton « Bord » ou touche C, avec aperçu).
 
@@ -119,9 +119,9 @@ Fin de vague : toutes les gouttes restées au sol s'envolent vers le perso (les 
 
 Particules d'encre à chaque coup (couleur de l'ennemi, blanches en critique) et grosse éclaboussure à chaque mort ; ennemis qui s'écrasent quand on les frappe ; chiffres de dégâts qui sautent (critiques plus gros) ; traînée colorée derrière les coups de mêlée (et le Compas) ; éclat au canon des armes à distance ; voile rouge sur les bords de l'écran et arrêt sur image quand tu es touché ; arrêt sur image à la mort d'une élite ou d'un boss ; explosion de particules à la montée de niveau ; bannières de vague qui « popent ». Tout est dans `arena.gd` (`burst`, `hitstop`, `hit_fx`, classe `_Sparks`).
 
-## Objets à débloquer (succès du Bestiaire)
+## Objets à débloquer (succès du Codex)
 
-La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 9 armes classiques restent libres) et **62 amulettes sur 129**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Bestiaire**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
+La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio et une partie des épiques / légendaires ; les 9 armes classiques restent libres) et **62 amulettes sur 129**. Un objet verrouillé n'apparaît pas en boutique. Sa condition (souvent liée à son thème : Pinceau doré = 150 or en poche, Silhouette = perso de 450 px, Allumette = synergie Feu...) n'est affichée **que dans sa fiche du Codex**, où il apparaît en « ??? » comme les ennemis pas encore rencontrés. En boutique, un « ! » marque une arme ou une amulette jamais vue. Obtenu pendant une partie, il n'arrive qu'à la fin de la partie ; l'écran de fin liste sobrement ce qui a été débloqué (liste qui défile s'il y en a beaucoup). Conditions : `scripts/data/item_unlock_db.gd`.
 
 ## Cartes
 
@@ -132,7 +132,7 @@ La moitié des objets est verrouillée : **20 armes sur 39** (les armes à ratio
 - Ennemis du Tableau noir : **Punaise** (vise, fonce, reste plantée), **Craie** (projectiles suspendus qui partent ensemble), **Trombones** (par deux, reliés par un fil qui coupe), **Tampon encreur** (saute et s'écrase sur un carré annoncé), et trois **tanks** peu sensibles au recul, rares (jamais plus de 2 à la fois) : **Brouillon** (70 PV, se froisse deux fois : plus petit, plus rapide, crache des boulettes), **Gomme mie de pain** (90 PV, efface tes projectiles autour d'elle), **Équation** (110 PV, fait apparaître des punaises).
 - Boss du Tableau noir : **Le Professeur** (vague 5 : interros surprises, une question de calcul s'affiche en haut et chaque colonne du tableau porte une réponse ; seule la colonne de la bonne réponse n'explose pas, 3,2 s pour y aller, 4 colonnes et multiplications en rage), **La Photocopieuse** (vague 10 : chaque salve a une copie tirée du côté opposé, scanner qui balaie l'écran, bourrage papier = vulnérable), **L'Encrier renversé** (vague 15 : inondations d'encre, spirales, charges ; en rage, la **nuit d'encre** ne laisse voir qu'autour de toi).
 - **Difficultés par carte** : chaque carte a ses propres difficultés débloquées (gagner en Croquis sur La Feuille n'ouvre pas Aquarelle sur Le Tableau noir). Les anciennes sauvegardes gardent leur progression sur La Feuille.
-- **Bestiaire** : tant qu'une carte n'est pas débloquée, ses ennemis et boss apparaissent en « ??? » (ni nom, ni dessin, ni description).
+- **Codex** : tant qu'une carte n'est pas débloquée, ses ennemis et boss apparaissent en « ??? » (ni nom, ni dessin, ni description).
 - Tests : `res://tests/map2test.tscn`.
 
 ## Ennemis (comportements pensés autour du dessin)
@@ -156,7 +156,7 @@ Boss : le Raturé tourne autour de toi en tirant en éventail et réapparaît pr
 
 Des **flèches** au bord de l'écran montrent les ennemis hors champ (rouge = boss, jaune = élite, orange = tireur, gris = proches).
 
-## Carnet des ennemis (bestiaire permanent)
+## Carnet des ennemis (codex permanent)
 
 Quand un ennemi, un boss ou un élite apparaît pour la première fois dans une partie, le jeu ouvre ton **carnet** :
 - s'il y est déjà : **Garder ce dessin** (par défaut) ou **Redessiner** en partant de l'ancien (+2 ◆ ennemi, +3 élite, +5 boss si tu le modifies) ;
@@ -168,17 +168,17 @@ Le carnet est conservé d'une partie à l'autre (`%APPDATA%/VowelGame/bestiary/`
 
 Chaque **rareté** d'un type d'arme a **son propre dessin**, avec sa propre quantité d'encre (plus la rareté est haute, plus il y a d'encre). Les exemplaires des autres raretés **gardent leur dessin**.
 - Acheter ou fusionner vers une rareté pas encore dessinée dans la partie ouvre un dessin :
-  - si le Bestiaire a un dessin pour **cette rareté** : il est proposé (utiliser, modifier ou nouveau) ;
+  - si le Codex a un dessin pour **cette rareté** : il est proposé (utiliser, modifier ou nouveau) ;
   - sinon : tu **retouches** le dessin d'une autre rareté avec l'encre de celle-ci. En fusion, pas de bouton retour : il faut valider un dessin.
-- Le premier dessin fait pour une rareté devient son dessin par défaut dans le Bestiaire.
+- Le premier dessin fait pour une rareté devient son dessin par défaut dans le Codex.
 - Les balles sont communes à toutes les raretés du type.
 - Avec **6 armes**, acheter une arme identique (même type, même rareté) à l'une des tiennes la **fusionne directement**.
 
-## Sélection avant dessin et Bestiaire
+## Sélection avant dessin et Codex
 
 Avant **chaque** dessin (perso, armes, balles, amulettes, marques, ennemis), un écran propose d'abord un dessin existant : le dernier utilisé pour cet objet dans le grand cadre, et ta galerie à droite. Cliquer un dessin de la galerie le **met dans le cadre** : « Utiliser ce dessin », « Modifier » (repart de lui) ou « Nouveau ». Bouton **« Bord : oui / non »** avec aperçu.
 
-Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % débloqué) et liste toutes les armes, amulettes et ennemis avec leurs stats, et permet de choisir leur **dessin par défaut** (pour les armes : un par rareté, plus les balles) (depuis la galerie, en le dessinant, ou le retirer). En partie, ce dessin est **le dessin par défaut** : il n'est proposé que la **première fois** que tu obtiens l'objet dans la partie (« Utiliser ce dessin », « Modifier » ou « Nouveau »), et ce que tu choisis ou dessines en partie **devient automatiquement le nouveau dessin par défaut** (la fois suivante, c'est le dernier sélectionné qui est proposé, perso compris).
+Le **Codex** (menu principal) affiche sa **complétion** (% dessiné, % débloqué) et liste toutes les armes, amulettes et ennemis avec leurs stats, et permet de choisir leur **dessin par défaut** (pour les armes : un par rareté, plus les balles) (depuis la galerie, en le dessinant, ou le retirer). En partie, ce dessin est **le dessin par défaut** : il n'est proposé que la **première fois** que tu obtiens l'objet dans la partie (« Utiliser ce dessin », « Modifier » ou « Nouveau »), et ce que tu choisis ou dessines en partie **devient automatiquement le nouveau dessin par défaut** (la fois suivante, c'est le dernier sélectionné qui est proposé, perso compris).
 
 ## Synergies, fusion, pactes
 
@@ -189,7 +189,7 @@ Le **Bestiaire** (menu principal) affiche sa **complétion** (% dessiné, % déb
 
 ## Familiers (12, uniques)
 
-- Nouveau type d'objet (icône **patte** en boutique). Avec l'amulette **Teinture**, les couleurs de leur dessin donnent des effets élémentaires à leurs attaques. Ils remplacent une offre normale de temps en temps (~5 % par offre, plus rares que les amulettes), au prix d'une arme de la même rareté (16 / 30 / 52 / 88 or). Chacun est **unique** et se dessine une fois ; la **taille** du dessin compte : gros = jusqu'à +40 % de dégâts mais plus lent, petit = plus rapide et agit plus souvent (−20 % de dégâts) (onglet Familiers du Bestiaire et de la galerie). Nombre illimité ; ils te suivent et se baladent sur la page.
+- Nouveau type d'objet (icône **patte** en boutique). Avec l'amulette **Teinture**, les couleurs de leur dessin donnent des effets élémentaires à leurs attaques. Ils remplacent une offre normale de temps en temps (~5 % par offre, plus rares que les amulettes), au prix d'une arme de la même rareté (16 / 30 / 52 / 88 or). Chacun est **unique** et se dessine une fois ; la **taille** du dessin compte : gros = jusqu'à +40 % de dégâts mais plus lent, petit = plus rapide et agit plus souvent (−20 % de dégâts) (onglet Familiers du Codex et de la galerie). Nombre illimité ; ils te suivent et se baladent sur la page.
 - Communs : **Moustique** (pique l'ennemi le plus proche et te rend 1 PV), **Taupe** (surgit sous un ennemi toutes les 4 s : petits dégâts de zone autour, la cible est étourdie 1 s), **Pie** (15 % des gouttes d'or font briller une pièce : elle va la chercher et te rapporte 1 ou 2 or).
 - Rares : **Hérisson** (roule et rebondit, frappe les ennemis percutés), **Luciole** (aura au-dessus des ennemis : +15 % de dégâts subis), **Perroquet** (vole partout sur la page et répète une de tes armes toutes les 2 s).
 - Épiques : **Corbeau** (plonge sur l'ennemi le plus fort toutes les 1,5 s), **Grenouille** (coup de langue circulaire toutes les 4 s), **Fantôme** (traverse la page : dégâts et aveugle 2 s).

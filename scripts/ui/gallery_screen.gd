@@ -112,7 +112,7 @@ func _view(e: Dictionary) -> void:
 	UI.hotkey(ob, [KEY_C])
 	UI.put(p, ob, Vector2(330, 8), Vector2(80, 14))
 	UI.put(p, UI.label("%d × %d px · encre %d" % [img.get_width(), img.get_height(), Analyzer.ink_cost(img)], 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 270), Vector2(420, 12))
-	# À quoi ce dessin sert dans le Bestiaire (dessin de base de...)
+	# À quoi ce dessin sert dans le Codex (dessin de base de...)
 	var uses := Meta.gallery_uses(img)
 	var ut := ("Dessin de base de : " + ", ".join(uses)) if not uses.is_empty() else "Pas utilisé comme dessin de base"
 	var ul := UI.label(ut, 10, Pal.GOOD if not uses.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)

@@ -118,7 +118,7 @@ static func weapon_kind() -> Control:
 			UI.put(root, p, Vector2(40 + i * 192, 72), Vector2(176, 262))
 			UI.put(p, UI.label(def.name, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(176, 24))
 			UI.put(p, UI.label("Corps à corps" if def.kind == "melee" else "À distance", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 32), Vector2(176, 12))
-			# Son dessin de base (Bestiaire), s'il existe : l'arme commune, et ses balles
+			# Son dessin de base (Codex), s'il existe : l'arme commune, et ses balles
 			var art = Meta.bestiary_get(Run.weapon_key(id, 0))
 			var bart = Meta.bestiary_get("balle_" + id) if def.kind == "ranged" else null
 			var fr := UI.panel(Pal.PAPER, Pal.RARITY[0], 2)

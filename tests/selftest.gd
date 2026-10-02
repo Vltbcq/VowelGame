@@ -203,7 +203,7 @@ func _ready() -> void:
 				scr._ask_delete()
 				print("galerie : confirmation ouverte = %s" % (scr.confirm != null))
 		if scr is CodexScreen:
-			print("bestiaire %s : %d objets, texte : %s" % [scr.tab, scr._items().size(), scr._stats_text(scr.sel).substr(0, 60)])
+			print("codex %s : %d objets, texte : %s" % [scr.tab, scr._items().size(), scr._stats_text(scr.sel).substr(0, 60)])
 		if scr is BestiaryPrompt:
 			if not scr.gallery_btns.is_empty():
 				scr.gallery_btns[0].pressed.emit()

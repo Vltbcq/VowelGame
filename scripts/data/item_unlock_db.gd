@@ -1,7 +1,7 @@
 class_name ItemUnlockDB
 extends RefCounted
 ## Succès qui DÉBLOQUENT des armes et des amulettes (la moitié du jeu). Un objet verrouillé
-## n'apparaît pas en boutique. Les conditions ne sont affichées que dans le Bestiaire.
+## n'apparaît pas en boutique. Les conditions ne sont affichées que dans le Codex.
 ## Obtenu pendant une partie : l'objet n'est disponible qu'à la fin de la partie.
 ## Clés : "w:<type d'arme>" ou "a:<id d'amulette>".
 ##
@@ -122,7 +122,7 @@ static func label(key: String) -> String:
 	return "Amulette : " + String(AmuletDB.get_def(key.substr(2)).name)
 
 
-## Condition en clair (affichée dans le Bestiaire).
+## Condition en clair (affichée dans le Codex).
 static func text(c: Dictionary) -> String:
 	match String(c.kind):
 		"stat":

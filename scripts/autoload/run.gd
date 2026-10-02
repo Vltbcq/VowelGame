@@ -199,7 +199,7 @@ static func art_key(type: String, rar: int) -> String:
 	return "%s#%d" % [type, rar]
 
 
-## Clé du Bestiaire pour le dessin d'une arme à une rareté. La rareté de base (commune, ou la
+## Clé du Codex pour le dessin d'une arme à une rareté. La rareté de base (commune, ou la
 ## rareté minimum des armes spéciales) garde la clé historique "arme_<type>".
 static func weapon_key(type: String, rar: int) -> String:
 	if rar <= int(WeaponDB.get_def(type).get("min_rar", 0)):
@@ -837,7 +837,7 @@ func roll_shop() -> void:
 			# Limite d'achat : légendaires uniques, Étiquette de prix 5 max...
 			var pool := AmuletDB.of_rarity(rar).filter(func(d):
 				if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
-					return false   # verrouillée (succès du Bestiaire)
+					return false   # verrouillée (succès du Codex)
 				var lim := int(d.get("limit", 1 if rar == 3 else 0))
 				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id))))
 			if pool.is_empty():

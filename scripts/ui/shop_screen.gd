@@ -208,7 +208,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			if Run.has_art(o.wtype, o.rar):
 				desc += "\n✓ Dessinée"
 			elif dflt:
-				desc += "\nDessin du Bestiaire"
+				desc += "\nDessin du Codex"
 			elif Run.has_any_art(o.wtype):
 				desc += "\nÀ redessiner"
 			else:
@@ -405,7 +405,7 @@ func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
 
 # ------------------------------------------------------------------ Styles « musée »
 
-## Dessin par défaut du Bestiaire (montré en vitrine tant que l'objet n'est pas acheté).
+## Dessin par défaut du Codex (montré en vitrine tant que l'objet n'est pas acheté).
 func _default_img(key: String) -> Image:
 	if not default_cache.has(key):
 		var d = Meta.bestiary_get(key)

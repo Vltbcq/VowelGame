@@ -104,7 +104,7 @@ func _ready() -> void:
 	Run.active = false
 	print("SUCCÈS : outil acheté=%s, encre achetée=%s, pendant la partie : primaire=%s symétrie=%s, en fin de partie : %s -> primaire=%s secondaire=%s symétrie=%s rectangle=%s" % [
 		bought_tool, bought_ink, during[0], during[1], got_unlocks, Meta.has("pack_primaires"), Meta.has("pack_secondaires"), Meta.has("tool_mirror"), Meta.has("tool_rect")])
-	# Hors partie (ex. galerie remplie dans le Bestiaire) : tout de suite
+	# Hors partie (ex. galerie remplie dans le Codex) : tout de suite
 	Meta.check_achievements({"cleared": 8})
 	print("SUCCÈS hors partie : rectangle=%s, en attente=%s" % [Meta.has("tool_rect"), Meta.data.pending_unlocks])
 	# Abandon : succès obtenu pendant la partie -> en attente (même après rechargement) -> appliqué à l'abandon

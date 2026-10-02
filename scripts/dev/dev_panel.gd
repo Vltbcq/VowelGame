@@ -224,7 +224,7 @@ func _spawn(id: String) -> void:
 		arena.float_text(pos + Vector2(0, -20), "DEV : " + String(e.def.name), Pal.GOOD)
 
 
-## Dessin d'un ennemi : celui de la partie, sinon celui du Bestiaire, sinon un rond provisoire.
+## Dessin d'un ennemi : celui de la partie, sinon celui du Codex, sinon un rond provisoire.
 func _ensure_enemy_art(id: String) -> void:
 	var def: Dictionary = EnemyDB.TYPES[id]
 	if not Run.enemy_art.has(id):

@@ -1,6 +1,6 @@
 class_name CodexScreen
 extends Control
-## Bestiaire : toutes les armes, amulettes et ennemis, avec leurs stats et leur DESSIN PAR DÉFAUT.
+## Codex : toutes les armes, amulettes et ennemis, avec leurs stats et leur DESSIN PAR DÉFAUT.
 ## Le dessin par défaut est proposé en premier quand on achète / rencontre l'objet en partie
 ## (on peut toujours le redessiner à ce moment-là). Les armes ont un dessin PAR RARETÉ.
 ## done(null) pour revenir au titre, done({"a": "draw", "key", "cfg", "tab", "sel"}) pour dessiner.
@@ -117,7 +117,7 @@ func _slot_keys(id: String) -> Array:
 	return [id]
 
 
-## Complétion d'un onglet (ou de tout le Bestiaire) : [% dessiné, % débloqué].
+## Complétion d'un onglet (ou de tout le Codex) : [% dessiné, % débloqué].
 func _completion(only := "") -> Array:
 	var keep := tab
 	var slots_n := 0
@@ -154,7 +154,7 @@ func _build() -> void:
 		c.queue_free()
 	picker = null
 	UI.fill_bg(self)
-	UI.put(self, UI.label("BESTIAIRE", 20, Pal.ACCENT), Vector2(12, 8))
+	UI.put(self, UI.label("CODEX", 20, Pal.ACCENT), Vector2(12, 8))
 	UI.put(self, UI.label("Choisis le dessin par défaut de chaque objet : il sera proposé en premier en partie.", 10, Pal.DIM), Vector2(130, 14))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
@@ -171,11 +171,11 @@ func _build() -> void:
 		var tc := _completion(tid)
 		b.tooltip_text = "%s : %d%% dessiné · %d%% débloqué" % [t[1], roundi(tc[0]), roundi(tc[1])]
 		tabs.add_child(b)
-	# Complétion du Bestiaire (tout confondu) et de l'onglet ouvert
+	# Complétion du Codex (tout confondu) et de l'onglet ouvert
 	var all := _completion()
 	var cl := UI.label("COMPLÉTION  %d%% dessiné · %d%% débloqué" % [roundi(all[0]), roundi(all[1])], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_RIGHT)
 	cl.mouse_filter = Control.MOUSE_FILTER_STOP
-	cl.tooltip_text = "Dessiné : cases du Bestiaire qui ont un dessin par défaut (chaque rareté d'arme compte)
+	cl.tooltip_text = "Dessiné : cases du Codex qui ont un dessin par défaut (chaque rareté d'arme compte)
 Débloqué : armes, amulettes et ennemis disponibles"
 	UI.put(self, cl, Vector2(270, 36), Vector2(358, 12))
 
@@ -316,7 +316,7 @@ func _item_key(id: String) -> String:
 
 func _stats_text(id: String) -> String:
 	var L := []
-	# Succès qui débloque cet objet (uniquement affiché ici, dans le Bestiaire)
+	# Succès qui débloque cet objet (uniquement affiché ici, dans le Codex)
 	var ik := _item_key(id)
 	if ItemUnlockDB.CONDS.has(ik):
 		var cond := ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])

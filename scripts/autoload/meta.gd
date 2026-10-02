@@ -1,6 +1,6 @@
 extends Node
 ## Progression permanente entre les parties : pigments, déblocages, galerie de dessins.
-## 3 SAUVEGARDES : chacune a sa progression, sa galerie, son Bestiaire et sa partie en cours.
+## 3 SAUVEGARDES : chacune a sa progression, sa galerie, son Codex et sa partie en cours.
 ## La sauvegarde 1 garde les emplacements historiques (user://vowel_save.json, user://gallery...),
 ## les 2 et 3 sont dans user://slot2/ et user://slot3/. Les réglages sont communs (settings.json).
 
@@ -84,7 +84,7 @@ func slot_summary(n: int) -> Dictionary:
 	return out
 
 
-## Efface une sauvegarde : progression, partie en cours, galerie et Bestiaire.
+## Efface une sauvegarde : progression, partie en cours, galerie et Codex.
 func delete_slot(n: int) -> void:
 	if no_save:
 		return
@@ -426,7 +426,7 @@ func check_achievements(ctx: Dictionary) -> void:
 	ctx.runs = int(data.get("runs", 0)) + (1 if Run.active else 0)
 	ctx.gallery = (data.gallery as Array).size()
 	var changed := false
-	# Succès d'objets (armes / amulettes) : conditions visibles dans le Bestiaire
+	# Succès d'objets (armes / amulettes) : conditions visibles dans le Codex
 	if not data.has("item_unlocks"):
 		data.item_unlocks = {}
 	var fresh := []
@@ -490,7 +490,7 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 	check_achievements({})
 
 
-## Galerie : à quoi ce dessin sert-il de dessin de base dans le Bestiaire ? (noms lisibles)
+## Galerie : à quoi ce dessin sert-il de dessin de base dans le Codex ? (noms lisibles)
 func gallery_uses(img: Image) -> Array:
 	var out := []
 	var target := Analyzer.trim(img).get_data()
@@ -502,7 +502,7 @@ func gallery_uses(img: Image) -> Array:
 	return out
 
 
-## Nom lisible d'une case du Bestiaire (« Épée (rare) », « Balles : Arc », « Ton perso »...).
+## Nom lisible d'une case du Codex (« Épée (rare) », « Balles : Arc », « Ton perso »...).
 func bestiary_label(key: String) -> String:
 	if key == "perso":
 		return "Ton perso"
@@ -548,7 +548,7 @@ func gallery(kind: String) -> Array:
 	return out
 
 
-# ------------------------------------------------------------------ Bestiaire (carnet des ennemis)
+# ------------------------------------------------------------------ Codex (carnet des ennemis)
 
 ## Dessin du carnet pour un ennemi (clé = id, ou id + "_elite"), ou null.
 func bestiary_get(key: String):

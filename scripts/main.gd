@@ -44,7 +44,7 @@ func _choose_slot() -> void:
 				break
 			"delete":
 				var ok = await _ask(ChoiceScreens.confirm("Supprimer la sauvegarde %d ?" % r.n,
-					"Progression, pigments, galerie, Bestiaire et partie en cours seront effacés. Impossible de revenir en arrière.",
+					"Progression, pigments, galerie, Codex et partie en cours seront effacés. Impossible de revenir en arrière.",
 					"Supprimer", "Annuler", true))
 				if ok:
 					Meta.delete_slot(r.n)
@@ -132,7 +132,7 @@ func _get_weapon(type: String, rar: int, price: int, cancel := true) -> bool:
 
 
 ## Dessin d'une rareté pas encore dessinée dans la partie (achat ou fusion) :
-## - le Bestiaire a un dessin pour CETTE rareté, ou le type n'a encore aucun dessin dans la
+## - le Codex a un dessin pour CETTE rareté, ou le type n'a encore aucun dessin dans la
 ##   partie : sélection (utiliser / modifier / nouveau) ;
 ## - sinon : on retouche le dessin d'une autre rareté avec l'encre de celle-ci.
 func _draw_rarity(type: String, rar: int, cancel: bool) -> bool:
@@ -180,7 +180,7 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 	if r == null:
 		return false
 	Run.set_weapon_art(type, rar, r.image, r.effect, base.bullet, base.beffect, r.outline, base.boutline)
-	# Premier dessin de cette rareté : il devient son dessin par défaut dans le Bestiaire
+	# Premier dessin de cette rareté : il devient son dessin par défaut dans le Codex
 	await _remember(Run.weapon_key(type, rar), Meta.bestiary_get(Run.weapon_key(type, rar)), r)
 	return true
 
@@ -290,13 +290,15 @@ func _pre_wave(w: int) -> void:
 	if Run.difficulty >= 1 and w >= 4 and EnemyDB.boss_for(w) == "":   # élites dès Croquis
 		for id in EnemyDB.pool(w):
 			if Run.enemy_art.has(id) and not Run.elite_art.has(id):
-				var art = await _obtain(id + "_elite", DrawCfg.elite(id), 3)
+				# Comme l'upgrade d'arme : on complète directement le dessin de l'ennemi de cette partie
+				var art = await _paint(DrawCfg.elite(id))
+				await _remember(id + "_elite", Meta.bestiary_get(id + "_elite"), art)
 				Run.set_elite_art(id, art.image, art.effect, art.outline)
 				break
 
 
 ## Pour TOUT ce qui se dessine (seulement la 1re fois dans la partie) : on propose d'abord le
-## dessin par défaut du Bestiaire, ou un dessin compatible de la galerie, ou de dessiner.
+## dessin par défaut du Codex, ou un dessin compatible de la galerie, ou de dessiner.
 ## « < Choix » dans l'écran de dessin ramène à cette sélection.
 ## Retourne {image, effect, outline}, ou null si le joueur annule (quand c'est permis).
 func _obtain(key: String, cfg: Dictionary, reward := 0, caption := "TON DESSIN DE BASE"):
@@ -337,7 +339,7 @@ func _remember(key: String, existing, r: Dictionary) -> void:
 	Meta.bestiary_set(key, r.image, r.effect, r.outline)
 
 
-## Bestiaire : régler le dessin par défaut de chaque arme / amulette / ennemi.
+## Codex : régler le dessin par défaut de chaque arme / amulette / ennemi.
 func _codex() -> void:
 	var tab := "armes"
 	var sel := ""

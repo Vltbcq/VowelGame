@@ -1,5 +1,5 @@
 extends Node
-## Capture du Bestiaire (onglet et sélection en argument) : -- <capture.png> <onglet> <id> [défilement]
+## Capture du Codex (onglet et sélection en argument) : -- <capture.png> <onglet> <id> [défilement]
 
 
 func _ready() -> void:

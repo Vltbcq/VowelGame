@@ -23,7 +23,7 @@ func _ready() -> void:
 	Run.new_shop()
 	res.append(["Boutique Entrée", await _press(ShopScreen.new(), KEY_ENTER)])
 	res.append(["Boutique A", await _press(ShopScreen.new(), KEY_A)])
-	res.append(["Bestiaire Échap", await _press(CodexScreen.new("armes"), KEY_ESCAPE)])
+	res.append(["Codex Échap", await _press(CodexScreen.new("armes"), KEY_ESCAPE)])
 	res.append(["Carnet Entrée (aucun dessin)", await _press(BestiaryPrompt.new(DrawCfg.enemy("tache"), null, 2), KEY_ENTER)])
 	res.append(["Dessin Échap", await _press(DrawScreen.new(DrawCfg.weapon("epee", 0, true)), KEY_ESCAPE)])
 	for r in res:

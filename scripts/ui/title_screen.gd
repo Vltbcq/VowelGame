@@ -83,7 +83,7 @@ func _ready() -> void:
 		vb.add_child(UI.hotkey(UI.button("Nouvelle partie", func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
 	vb.add_child(UI.hotkey(UI.button("Atelier  ◆ %d" % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
 	vb.add_child(UI.hotkey(UI.button("Galerie (%d dessins)" % entries.size(), func(): done.emit("gallery")), [KEY_G]))
-	vb.add_child(UI.hotkey(UI.button("Bestiaire", func(): done.emit("codex")), [KEY_B]))
+	vb.add_child(UI.hotkey(UI.button("Codex", func(): done.emit("codex")), [KEY_B]))
 	vb.add_child(UI.hotkey(UI.button("Options", func(): done.emit("options")), [KEY_O]))
 	vb.add_child(UI.button("Quitter", func(): done.emit("quit")))
 	var d := Meta.data

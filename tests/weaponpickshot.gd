@@ -1,5 +1,5 @@
 extends Node
-## Capture de l'écran « Ta première arme » (avec les dessins de base du Bestiaire).
+## Capture de l'écran « Ta première arme » (avec les dessins de base du Codex).
 ## Godot --path . res://tests/weaponpickshot.tscn -- <capture.png>
 
 
