@@ -11,15 +11,12 @@ const WOOD_PANEL := Color("4a2e1f")
 const FLOOR := Color("6b4a2a")
 const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
-## Style « autocollant » du logo : plaque noire, texte blanc, liseré blanc (boutons, bulles, titres).
+## Contour des grands titres, comme les lettres du logo.
 const STICKER := Color("100c14")
-const STICKER_HOVER := Color("241c2c")
-const RIM := Color("f4efe2")
 const LOGO_PATH := "res://assets/logo.png"
 
 ## Police du jeu : Stonckarish, adaptée (accents retirés, symboles ajoutés : voir docs/font_fr.py).
-## Ses pixels font 1/16 de la taille : à 8 (et ses multiples), un pixel de police = un demi-pixel
-## de jeu, net à l'écran (fenêtre ×2). Les tailles « historiques » (10, 20, 40...) passent par fs().
+## Elle est plus large que l'ancienne police : les tailles « historiques » (10, 20, 40...) passent par fs().
 const FONT_PATH := "res://assets/fonts/Stonckarish_fr.otf"
 
 var font: FontFile
@@ -27,8 +24,9 @@ var theme: Theme
 
 
 ## Taille réelle de police pour une taille « historique » (10 = texte normal).
+## Petits textes un peu agrandis (lisibles), grands titres un peu réduits (la police est large).
 func fs(size: int) -> int:
-	return maxi(8, roundi(size * 0.8 / 8.0) * 8)
+	return roundi(size * 1.2) if size < 16 else roundi(size * 0.9)
 
 
 func _load_font() -> FontFile:
@@ -73,18 +71,18 @@ func _build_theme() -> Theme:
 	t.default_font = font
 	t.default_font_size = fs(PixelFont.SIZE)
 
-	t.set_stylebox("normal", "Button", _shadowed(sb(STICKER, RIM, 1)))
-	t.set_stylebox("hover", "Button", _shadowed(sb(STICKER_HOVER, Pal.ACCENT, 1)))
-	t.set_stylebox("pressed", "Button", sb(Pal.ACCENT, Pal.ACCENT, 1))
-	t.set_stylebox("hover_pressed", "Button", sb(Pal.ACCENT, Pal.ACCENT, 1))
-	t.set_stylebox("disabled", "Button", sb(Color("1c1820"), Color("4a4450"), 1))
+	t.set_stylebox("normal", "Button", _shadowed(sb(WOOD, GOLD_DARK, 1)))
+	t.set_stylebox("hover", "Button", _shadowed(sb(WOOD_PANEL, GOLD, 1)))
+	t.set_stylebox("pressed", "Button", sb(GOLD, GOLD, 1))
+	t.set_stylebox("hover_pressed", "Button", sb(GOLD, GOLD, 1))
+	t.set_stylebox("disabled", "Button", sb(Color("2a1a12"), Color("4a3524"), 1))
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	t.set_color("font_color", "Button", RIM)
+	t.set_color("font_color", "Button", GOLD)
 	t.set_color("font_hover_color", "Button", Pal.ACCENT)
 	t.set_color("font_pressed_color", "Button", Pal.INK)
 	t.set_color("font_hover_pressed_color", "Button", Pal.INK)
 	t.set_color("font_focus_color", "Button", Pal.TEXT)
-	t.set_color("font_disabled_color", "Button", Color("6a6470"))
+	t.set_color("font_disabled_color", "Button", Pal.DISABLED)
 
 	t.set_color("font_color", "Label", Pal.TEXT)
 	t.set_constant("line_spacing", "Label", 1)
@@ -95,7 +93,7 @@ func _build_theme() -> Theme:
 	t.set_stylebox("background", "ProgressBar", sb(Pal.INK, Pal.BORDER, 1, 0, 0))
 	t.set_stylebox("fill", "ProgressBar", sb(Pal.ACCENT, Color.TRANSPARENT, 0, 0, 0))
 
-	t.set_stylebox("panel", "TooltipPanel", sb(STICKER, RIM, 1, 4, 3))
+	t.set_stylebox("panel", "TooltipPanel", sb(WOOD, GOLD, 1, 4, 3))
 	t.set_color("font_color", "TooltipLabel", Pal.TEXT)
 
 	t.set_stylebox("slider", "HSlider", sb(WOOD, GOLD_DARK, 1, 0, 3))
@@ -223,7 +221,7 @@ func cartel() -> Panel:
 
 ## Style « sélectionné » (onglets, choix actifs).
 func selected(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", sb(STICKER_HOVER, Pal.ACCENT, 1))
+	b.add_theme_stylebox_override("normal", sb(SELECTED, Pal.ACCENT, 1))
 	b.add_theme_color_override("font_color", Pal.ACCENT)
 
 
@@ -251,7 +249,33 @@ func put(parent: Node, c: Control, pos: Vector2, size := Vector2.ZERO) -> Contro
 	c.position = pos
 	if size != Vector2.ZERO:
 		c.size = size
+		fit(c)
 	return c
+
+
+## Texte trop large pour sa case (la police est large) : on réduit sa taille jusqu'à ce qu'il tienne.
+func fit(c: Control) -> void:
+	var text := ""
+	var room := c.size.x
+	if c is Button:
+		text = (c as Button).text
+		room -= 14.0   # marges du bouton
+	elif c is Label and (c as Label).autowrap_mode == TextServer.AUTOWRAP_OFF:
+		text = (c as Label).text
+	if text == "" or room <= 0.0:
+		return
+	var sz := c.get_theme_font_size("font_size")
+	var widest := func(n: int) -> float:
+		var w := 0.0
+		for line in text.split("
+"):
+			w = maxf(w, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, n).x)
+		return w
+	var n := sz
+	while n > 10 and widest.call(n) > room:
+		n -= 1
+	if n != sz:
+		c.add_theme_font_size_override("font_size", n)
 
 
 ## Fond d'écran. Sans couleur : le mur de la galerie (papier peint rayé, cimaise, parquet).

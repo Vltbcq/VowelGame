@@ -438,9 +438,13 @@ func _plaque(pos: Vector2, size: Vector2, text: String, fs: int, col := Pal.INK)
 	UI.put(p, UI.label(text, fs, col if col != Pal.INK else GOLD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, (size.y - 12) / 2.0), Vector2(size.x, 12))
 
 
-## Boutons de la galerie : le style « autocollant » du thème (plaque noire, liseré blanc).
-func _style_museum(_b: Button) -> void:
-	pass
+func _style_museum(b: Button) -> void:
+	b.add_theme_stylebox_override("normal", UI.sb(WOOD, GOLD_DARK, 1))
+	b.add_theme_stylebox_override("hover", UI.sb(WOOD_PANEL, GOLD, 1))
+	b.add_theme_stylebox_override("pressed", UI.sb(GOLD, GOLD, 1))
+	b.add_theme_stylebox_override("disabled", UI.sb(Color("2a1a12"), Color("4a3524"), 1))
+	b.add_theme_color_override("font_color", GOLD)
+	b.add_theme_color_override("font_hover_color", Pal.ACCENT)
 
 
 func _style_price(b: Button) -> void:
