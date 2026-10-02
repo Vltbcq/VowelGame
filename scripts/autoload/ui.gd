@@ -304,3 +304,21 @@ func use_menu_font(root: Node) -> void:
 					sbx.content_margin_bottom = MENU_MARGIN
 					(c as Button).add_theme_stylebox_override(st, sbx)
 		use_menu_font(c)
+
+
+## Le logo du jeu (assets/logo.png), centré, avec une ombre portée. Largeur en pixels de jeu.
+func logo(parent: Node, center_x: float, y: float, w := 230.0) -> TextureRect:
+	var tex: Texture2D = load("res://assets/logo.png")
+	var h := w * tex.get_height() / tex.get_width()
+	var sh := TextureRect.new()
+	sh.texture = tex
+	sh.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sh.stretch_mode = TextureRect.STRETCH_SCALE
+	sh.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sh.modulate = Color(0, 0, 0, 0.35)
+	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	put(parent, sh, Vector2(center_x - w / 2.0 + 2, y + 3), Vector2(w, h))
+	var tr := sh.duplicate() as TextureRect
+	tr.modulate = Color.WHITE
+	put(parent, tr, Vector2(center_x - w / 2.0, y), Vector2(w, h))
+	return tr
