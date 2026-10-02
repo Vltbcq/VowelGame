@@ -68,8 +68,8 @@ func _ready() -> void:
 	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S])
 	UI.put(mp, sb, Vector2(22, 6), Vector2(180, 16))
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 6)
-	UI.put(mp, vb, Vector2(22, 30), Vector2(180, 150))
+	vb.add_theme_constant_override("separation", 3)
+	UI.put(mp, vb, Vector2(22, 28), Vector2(180, 150))
 	var run := Meta.read_run() if Meta.has_run() else {}
 	if not run.is_empty():
 		var rb := UI.button("Reprendre", func(): done.emit("resume"), 20)
@@ -86,6 +86,7 @@ func _ready() -> void:
 	var d := Meta.data
 	var info := "Record : vague %d\nParties : %d  ·  Victoires : %d" % [int(d.best_wave), int(d.runs), int(d.wins)]
 	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 190), Vector2(224, 30))
+	UI.use_font2(mp)   # essai de la police m6x11plus sur le menu
 
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))

@@ -18,8 +18,11 @@ const LOGO_PATH := "res://assets/logo.png"
 ## Police du jeu : Stonckarish, adaptée (accents retirés, symboles ajoutés : voir docs/font_fr.py).
 ## Elle est plus large que l'ancienne police : les tailles « historiques » (10, 20, 40...) passent par fs().
 const FONT_PATH := "res://assets/fonts/Stonckarish_fr.otf"
+## Essai : m6x11plus (Daniel Linssen, libre avec crédit), pour l'instant seulement sur le menu titre.
+const FONT2_PATH := "res://assets/fonts/m6x11plus.ttf"
 
 var font: FontFile
+var font2: FontFile   # m6x11plus (essai sur le menu)
 var theme: Theme
 
 
@@ -29,8 +32,8 @@ func fs(size: int) -> int:
 	return roundi(size * 1.2) if size < 16 else roundi(size * 0.9)
 
 
-func _load_font() -> FontFile:
-	var f: FontFile = (load(FONT_PATH) as FontFile).duplicate()
+func _load_font(path := FONT_PATH) -> FontFile:
+	var f: FontFile = (load(path) as FontFile).duplicate()
 	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 	f.hinting = TextServer.HINTING_NONE
 	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
@@ -42,6 +45,8 @@ func _load_font() -> FontFile:
 
 func _ready() -> void:
 	font = _load_font()
+	font2 = _load_font(FONT2_PATH)
+	font2.fallbacks = [font]   # ses symboles manquants (●, →, ♥...) viennent de Stonckarish
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
@@ -339,3 +344,25 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return tr
+
+
+## Essai m6x11plus : applique la police à tous les textes d'un bloc (boutons, labels).
+## Tailles : texte normal (10) → M6_SIZE, gros (20) → M6_BIG.
+const M6_SIZE := 14
+const M6_BIG := 27
+
+
+func use_font2(root: Node) -> void:
+	for c in root.get_children():
+		if c is Button or c is Label:
+			var big: bool = (c as Control).get_theme_font_size("font_size") > fs(10)
+			(c as Control).add_theme_font_override("font", font2)
+			(c as Control).add_theme_font_size_override("font_size", M6_BIG if big else M6_SIZE)
+			if c is Button:
+				# police plus haute : marges verticales réduites pour garder la même hauteur de bouton
+				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox
+					sbx.content_margin_top = 0
+					sbx.content_margin_bottom = 0
+					(c as Button).add_theme_stylebox_override(st, sbx)
+		use_font2(c)
