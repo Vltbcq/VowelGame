@@ -1944,7 +1944,7 @@ class _Marks extends Node2D:
 				draw_line(Vector2(cw * i, 0), Vector2(cw * i, H), Color(1, 1, 1, 0.5), 2.0)
 				# La réponse de la colonne, répétée sur toute la hauteur (visible même zoomé)
 				for k in 4:
-					draw_string(UI.font, Vector2(cw * i, H * (k + 0.5) / 4.0 + 14.0), str(qz.answers[i]), HORIZONTAL_ALIGNMENT_CENTER, cw, UI.fs(40), Color(1, 1, 1, 0.55))
+					draw_string(UI.font, Vector2(cw * i, H * (k + 0.5) / 4.0 + 14.0), str(qz.answers[i]), HORIZONTAL_ALIGNMENT_CENTER, cw, 40, Color(1, 1, 1, 0.55))
 		for sc in arena.scans:
 			if sc.t < sc.tele:
 				draw_line(Vector2(0, 4), Vector2(W, 4), Color(0.6, 1.0, 0.7, 0.4 + 0.4 * sin(arena.elapsed * 25.0)), 3.0)
@@ -1963,7 +1963,7 @@ class _Marks extends Node2D:
 				draw_line(g.pos + Vector2(-6, 6), g.pos + Vector2(6, -6), Color(Pal.BAD, blink), 2.0)
 				continue
 			draw_arc(g.pos, 10.0, 0.0, TAU, 16, Color(1, 1, 1, 0.8), 2.0)
-			draw_string(UI.font, g.pos + Vector2(-20, -14), "COPIE", HORIZONTAL_ALIGNMENT_CENTER, 40, UI.fs(10), Color(1, 1, 1, 0.8))
+			draw_string(UI.font, g.pos + Vector2(-20, -14), "COPIE", HORIZONTAL_ALIGNMENT_CENTER, 40, 10, Color(1, 1, 1, 0.8))
 		# Agrafes (Agrafeuse)
 		for e in arena.enemies:
 			if e.staple_t > 0.0 and is_instance_valid(e.staple) and not e.staple.dead and e.get_instance_id() < e.staple.get_instance_id():
@@ -2029,8 +2029,8 @@ class _Numbers extends Node2D:
 				s *= 1.4
 			draw_set_transform(it.pos, 0.0, Vector2(s, s))
 			var p := Vector2(-w / 2.0, 0)
-			draw_string(UI.font, p + Vector2(1, 1), it.text, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Color(Pal.INK, a))
-			draw_string(UI.font, p, it.text, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Color(it.color, a))
+			draw_string(UI.font, p + Vector2(1, 1), it.text, HORIZONTAL_ALIGNMENT_CENTER, w, 10, Color(Pal.INK, a))
+			draw_string(UI.font, p, it.text, HORIZONTAL_ALIGNMENT_CENTER, w, 10, Color(it.color, a))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 

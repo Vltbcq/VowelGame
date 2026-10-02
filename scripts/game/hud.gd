@@ -96,8 +96,8 @@ func _bar(pos: Vector2, size: Vector2, t: float, col: Color, text := "") -> void
 
 
 func _text(pos: Vector2, text: String, col: Color, fs := 10, w := -1.0, align := HORIZONTAL_ALIGNMENT_LEFT) -> void:
-	draw_layer.draw_string(UI.font, pos + Vector2(1, 1), text, align, w, UI.fs(fs), Pal.INK)
-	draw_layer.draw_string(UI.font, pos, text, align, w, UI.fs(fs), col)
+	draw_layer.draw_string(UI.font, pos + Vector2(1, 1), text, align, w, fs, Pal.INK)
+	draw_layer.draw_string(UI.font, pos, text, align, w, fs, col)
 
 
 func _draw_hud() -> void:

@@ -152,7 +152,7 @@ func _build() -> void:
 	px.mouse_filter = Control.MOUSE_FILTER_STOP
 	px.tooltip_text = "Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d" % [npx, ncol]
 	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
-	var ct := UI.panel(CARTEL, UI.STICKER, 1)
+	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
 	var lines := Stats.describe_player(Run.stats).split("\n")
 	var half := ceili(lines.size() / 2.0)
@@ -335,7 +335,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			roundi((Stats.RAR_REACH[o.rar] - 1.0) * 100.0), Stats.RAR_PIERCE[o.rar], roundi(Stats.RAR_PROC[o.rar] * 100.0)]
 
 	# Le cartel
-	var ct := UI.panel(CARTEL, UI.STICKER, 1)
+	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, pos + Vector2(-2, 70), Vector2(fw + 4, 94))
 	ct.tooltip_text = "%s — %s
 %s" % [oname, kind, desc]   # texte complet au survol
@@ -1359,7 +1359,7 @@ class _CaseStrip extends Control:
 			draw_texture_rect(tex, Rect2(r.get_center() - ts * sc / 2.0 - Vector2(0, 9), ts * sc), false)
 			# nom de l'objet (utile quand il n'est pas encore dessiné)
 			var font := get_theme_default_font()
-			draw_string(font, Vector2(r.position.x + 2, r.end.y - 9), shop._item_name(it), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 4, UI.fs(10), Pal.INK)
+			draw_string(font, Vector2(r.position.x + 2, r.end.y - 9), shop._item_name(it), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 4, 10, Pal.INK)
 		# curseur central
 		draw_rect(Rect2(Vector2(mid - 1, 0), Vector2(2, size.y)), ShopScreen.GOLD)
 		draw_colored_polygon(PackedVector2Array([Vector2(mid - 6, 0), Vector2(mid + 6, 0), Vector2(mid, 8)]), ShopScreen.GOLD)

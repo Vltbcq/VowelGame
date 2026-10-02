@@ -279,7 +279,7 @@ func _draw_ink_bar() -> void:
 	var txt := "ENCRE  %d / %d   (seuls les traits coûtent)" % [used, eb]
 	if mi > 0:
 		txt = "ENCRE  %d / %d   (minimum %d)" % [used, eb, mi]
-	ink_bar.draw_string(UI.font, Vector2(0, 10), txt, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Pal.TEXT)
+	ink_bar.draw_string(UI.font, Vector2(0, 10), txt, HORIZONTAL_ALIGNMENT_CENTER, w, 10, Pal.TEXT)
 
 
 func _refresh_buttons() -> void:

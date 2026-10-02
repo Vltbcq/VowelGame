@@ -54,7 +54,10 @@ func _ready() -> void:
 	UI.put(self, parade, Vector2.ZERO, Vector2(640, 360))
 
 	# Titre
-	UI.logo(self, 320.0, 3.0)
+	UI.put(self, UI.label("PAINT IT", 40, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(3, 4), Vector2(640, 44))
+	UI.put(self, UI.label("PAINT IT", 40, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(640, 44))
+	UI.put(self, UI.label("UNTIL YOU MAKE IT", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(1, 46), Vector2(640, 14))
+	UI.put(self, UI.label("UNTIL YOU MAKE IT", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 45), Vector2(640, 14))
 
 	# Cadres
 	for i in FRAME_SPOTS.size():
@@ -64,12 +67,12 @@ func _ready() -> void:
 
 	# Menu au centre, dans un panneau
 	var mp := UI.panel(Color(Pal.BG, 0.92), Pal.BORDER, 2)
-	UI.put(self, mp, Vector2(208, 86), Vector2(224, 222))
+	UI.put(self, mp, Vector2(208, 62), Vector2(224, 244))
 	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S])
 	UI.put(mp, sb, Vector2(22, 6), Vector2(180, 16))
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 3)
-	UI.put(mp, vb, Vector2(22, 28), Vector2(180, 150))
+	vb.add_theme_constant_override("separation", 6)
+	UI.put(mp, vb, Vector2(22, 30), Vector2(180, 150))
 	var run := Meta.read_run() if Meta.has_run() else {}
 	if not run.is_empty():
 		var rb := UI.button("Reprendre", func(): done.emit("resume"), 20)
@@ -85,8 +88,7 @@ func _ready() -> void:
 	vb.add_child(UI.button("Quitter", func(): done.emit("quit")))
 	var d := Meta.data
 	var info := "Record : vague %d\nParties : %d  ·  Victoires : %d" % [int(d.best_wave), int(d.runs), int(d.wins)]
-	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 190), Vector2(224, 30))
-	UI.use_font2(mp)   # essai de la police Jersey 10 sur le menu
+	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 208), Vector2(224, 30))
 
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))

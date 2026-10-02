@@ -11,50 +11,21 @@ const WOOD_PANEL := Color("4a2e1f")
 const FLOOR := Color("6b4a2a")
 const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
-## Contour des grands titres, comme les lettres du logo.
-const STICKER := Color("100c14")
-const LOGO_PATH := "res://assets/logo.png"
-
-## Police du jeu : Stonckarish, adaptée (accents retirés, symboles ajoutés : voir docs/font_fr.py).
-## Elle est plus large que l'ancienne police : les tailles « historiques » (10, 20, 40...) passent par fs().
-const FONT_PATH := "res://assets/fonts/Stonckarish_fr.otf"
-## Essai : Jersey 10 (The Soft Type Project, licence OFL), pour l'instant seulement sur le menu titre.
-const FONT2_PATH := "res://assets/fonts/Jersey10-Regular.ttf"
 
 var font: FontFile
-var font2: FontFile   # Jersey 10 (essai sur le menu)
 var theme: Theme
 
 
-## Taille réelle de police pour une taille « historique » (10 = texte normal).
-## Petits textes un peu agrandis (lisibles), grands titres un peu réduits (la police est large).
-func fs(size: int) -> int:
-	return roundi(size * 1.2) if size < 16 else roundi(size * 0.9)
-
-
-func _load_font(path := FONT_PATH) -> FontFile:
-	var f: FontFile = (load(path) as FontFile).duplicate()
-	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-	f.hinting = TextServer.HINTING_NONE
-	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	f.generate_mipmaps = false
-	f.allow_system_fallback = false
-	f.fallbacks = [PixelFont.build()]   # au cas où un caractère manquerait encore
-	return f
-
-
 func _ready() -> void:
-	font = _load_font()
-	font2 = _load_font(FONT2_PATH)
-	font2.fallbacks = [font]   # ses symboles manquants (●, →, ♥, ◆...) viennent de Stonckarish
+	font = PixelFont.build()
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
 	dt.merge_with(theme)
 	dt.default_font = font
-	dt.default_font_size = fs(PixelFont.SIZE)
+	dt.default_font_size = PixelFont.SIZE
 	ThemeDB.fallback_font = font
-	ThemeDB.fallback_font_size = fs(PixelFont.SIZE)
+	ThemeDB.fallback_font_size = PixelFont.SIZE
 	get_tree().root.theme = theme
 
 
@@ -74,7 +45,7 @@ func sb(bg: Color, border: Color = Color.TRANSPARENT, bw := 0, mx := 6, my := 3)
 func _build_theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = font
-	t.default_font_size = fs(PixelFont.SIZE)
+	t.default_font_size = PixelFont.SIZE
 
 	t.set_stylebox("normal", "Button", _shadowed(sb(WOOD, GOLD_DARK, 1)))
 	t.set_stylebox("hover", "Button", _shadowed(sb(WOOD_PANEL, GOLD, 1)))
@@ -153,12 +124,8 @@ func toast(text: String) -> void:
 func label(text: String, size := 10, color := Pal.TEXT, align := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", fs(size))
+	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
-	if size >= 20:
-		# grands titres : contour noir épais, comme les lettres du logo
-		l.add_theme_constant_override("outline_size", 6)
-		l.add_theme_color_override("font_outline_color", STICKER)
 	l.horizontal_alignment = align
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
@@ -168,7 +135,7 @@ func button(text: String, cb: Callable, size := 10) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", fs(size))
+	b.add_theme_font_size_override("font_size", size)
 	b.pressed.connect(func():
 		Sfx.play("click")
 		cb.call())
@@ -230,57 +197,13 @@ func selected(b: Button) -> void:
 	b.add_theme_color_override("font_color", Pal.ACCENT)
 
 
-## Le logo du jeu (noir et blanc façon autocollant), avec une ombre portée. Largeur en pixels de jeu.
-func logo(parent: Node, center_x: float, y: float, w := 302.0) -> TextureRect:
-	var tex: Texture2D = load(LOGO_PATH)
-	var h := w * tex.get_height() / tex.get_width()
-	var sh := TextureRect.new()
-	sh.texture = tex
-	sh.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sh.stretch_mode = TextureRect.STRETCH_SCALE
-	sh.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sh.modulate = Color(0, 0, 0, 0.35)
-	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	put(parent, sh, Vector2(center_x - w / 2.0 + 2, y + 3), Vector2(w, h))
-	var tr := sh.duplicate() as TextureRect
-	tr.modulate = Color.WHITE
-	put(parent, tr, Vector2(center_x - w / 2.0, y), Vector2(w, h))
-	return tr
-
-
 ## Place un contrôle à une position/taille fixe dans un parent (layout 640x360).
 func put(parent: Node, c: Control, pos: Vector2, size := Vector2.ZERO) -> Control:
 	parent.add_child(c)
 	c.position = pos
 	if size != Vector2.ZERO:
 		c.size = size
-		fit(c)
 	return c
-
-
-## Texte trop large pour sa case (la police est large) : on réduit sa taille jusqu'à ce qu'il tienne.
-func fit(c: Control) -> void:
-	var text := ""
-	var room := c.size.x
-	if c is Button:
-		text = (c as Button).text
-		room -= 14.0   # marges du bouton
-	elif c is Label and (c as Label).autowrap_mode == TextServer.AUTOWRAP_OFF:
-		text = (c as Label).text
-	if text == "" or room <= 0.0:
-		return
-	var sz := c.get_theme_font_size("font_size")
-	var widest := func(n: int) -> float:
-		var w := 0.0
-		for line in text.split("
-"):
-			w = maxf(w, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, n).x)
-		return w
-	var n := sz
-	while n > 10 and widest.call(n) > room:
-		n -= 1
-	if n != sz:
-		c.add_theme_font_size_override("font_size", n)
 
 
 ## Fond d'écran. Sans couleur : le mur de la galerie (papier peint rayé, cimaise, parquet).
@@ -344,26 +267,3 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return tr
-
-
-## Essai Jersey 10 : applique la police à tous les textes d'un bloc (boutons, labels).
-## Ses pixels font 75/1400 de la taille : à 28, un pixel de police = 1,5 pixel de jeu (net).
-## Tailles : texte normal (10) → M6_SIZE, gros (20) → M6_BIG.
-const M6_SIZE := 14
-const M6_BIG := 28
-
-
-func use_font2(root: Node) -> void:
-	for c in root.get_children():
-		if c is Button or c is Label:
-			var big: bool = (c as Control).get_theme_font_size("font_size") > fs(10)
-			(c as Control).add_theme_font_override("font", font2)
-			(c as Control).add_theme_font_size_override("font_size", M6_BIG if big else M6_SIZE)
-			if c is Button:
-				# police plus haute : marges verticales réduites pour garder la même hauteur de bouton
-				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
-					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox
-					sbx.content_margin_top = 0
-					sbx.content_margin_bottom = 0
-					(c as Button).add_theme_stylebox_override(st, sbx)
-		use_font2(c)
