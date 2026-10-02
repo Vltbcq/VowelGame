@@ -2,7 +2,7 @@
 
 ![Paint It Until You Make It](docs/logo_petit.png)
 
-*(Anciennement « Vowel ». Logo : `docs/logo.png`, régénérable avec `python docs/logo.py`.)*
+*(Anciennement « Vowel ». Logo : `docs/logo.png`, régénéré par `python docs/logo.py` à partir de `docs/logo_base.txt`, le logo d'origine pixel par pixel : `#` plaque noire, `o` lettres.)*
 
 Roguelike à vagues façon Brotato où **tu dessines tout** : ton perso, tes armes, tes balles, tes amulettes, et même les ennemis et les boss.
 Godot 4.7, GDScript, pixel art 16 bits, 640×360 affiché en ×2.
