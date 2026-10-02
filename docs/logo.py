@@ -1,19 +1,29 @@
-"""Logo « Paint It Until You Make It » : on garde EXACTEMENT le logo d'origine (police, plaque noire,
-contours) et on ajoute seulement : les lettres peintes aux couleurs des éléments, et un crayon de
-couleur en train de peindre le dernier T (le bas du T est encore blanc).
-Usage : python docs/logo.py   (lit docs/logo_base.txt, écrit docs/logo.png et docs/logo_petit.png)"""
+"""Logo « Paint It Until You Make It » : on part de l'image d'origine (docs/logo_base.png) SANS toucher
+à sa police, sa plaque noire ni ses contours, et on ajoute seulement :
+- les grandes lettres (Paint, I, T) peintes aux couleurs des éléments (reflet en haut, ombre en bas) ;
+- un crayon de couleur en train de peindre le dernier T (le bas du T est encore blanc).
+Usage : python docs/logo.py   (écrit docs/logo.png et docs/logo_petit.png)"""
 import math
 import os
 import sys
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-grid_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'logo_base.txt')
+src = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, 'logo_base.png')
 out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(HERE, 'logo.png')
-grid = open(grid_path, encoding='utf-8').read().split('\n')
-GW = max(len(r) for r in grid)
-grid = [r.ljust(GW) for r in grid]
-GH = len(grid)
+P = 13.5   # taille d'un « pixel » des grandes lettres dans l'image d'origine
+
+base = Image.open(src).convert('RGBA')
+W, H = base.size
+src_px = base.load()
+
+
+def kind(x, y):
+	r, g, b, a = src_px[x, y]
+	if a < 128:
+		return 0          # fond transparent
+	return 1 if r < 128 else 2   # 1 plaque noire, 2 lettre blanche
+
 
 INK = (0x1a, 0x14, 0x23)
 WHITE = (255, 255, 255)
@@ -25,148 +35,160 @@ SH = {   # sombre, normale, claire (palette du jeu)
 	'arcane': [(0x4d, 0x2a, 0x7a), (0x8c, 0x52, 0xc9), (0xc7, 0x9b, 0xea)],
 }
 
-# --- Morceaux blancs (les lettres) : composantes 4-connexes
-seen = set()
-comps = []
-for y in range(GH):
-	for x in range(GW):
-		if grid[y][x] == 'o' and (x, y) not in seen:
+# --- Les morceaux blancs (composantes 4-connexes), en pleine résolution
+label = [[-1] * W for _ in range(H)]
+comps = []   # [x0, y0, x1, y1, n]
+for y in range(H):
+	for x in range(W):
+		if label[y][x] == -1 and kind(x, y) == 2:
+			k = len(comps)
 			stack = [(x, y)]
-			seen.add((x, y))
-			cells = []
+			label[y][x] = k
+			b = [x, y, x, y, 0]
 			while stack:
 				cx, cy = stack.pop()
-				cells.append((cx, cy))
-				for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-					nx, ny = cx + dx, cy + dy
-					if 0 <= nx < GW and 0 <= ny < GH and grid[ny][nx] == 'o' and (nx, ny) not in seen:
-						seen.add((nx, ny))
+				b[0] = min(b[0], cx); b[1] = min(b[1], cy); b[2] = max(b[2], cx); b[3] = max(b[3], cy); b[4] += 1
+				for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+					if 0 <= nx < W and 0 <= ny < H and label[ny][nx] == -1 and kind(nx, ny) == 2:
+						label[ny][nx] = k
 						stack.append((nx, ny))
-			comps.append(cells)
+			comps.append(b)
 
-
-def bbox(cells):
-	xs = [c[0] for c in cells]
-	ys = [c[1] for c in cells]
-	return min(xs), min(ys), max(xs), max(ys)
-
-
-# Les grosses lettres : « Paint » en haut (le point du i rejoint son i), puis I et T à droite.
-# Les petites lettres (« until you make ») restent blanches, comme sur le logo d'origine.
-top = min(bbox(c)[1] for c in comps)
-big = [c for c in comps if bbox(c)[1] < top + 10]   # tout ce qui commence en haut (les petites lettres sont en bas)
-big.sort(key=lambda c: bbox(c)[0])
-letters = []   # [cells]
-for c in big:
-	x0, y0, x1, y1 = bbox(c)
-	# le point du i : chevauche en x la lettre précédente ou suivante
-	host = None
-	for k, l in enumerate(letters):
-		lx0, ly0, lx1, ly1 = bbox(l)
-		if x0 <= lx1 and x1 >= lx0 and (y1 < ly0 or y0 > ly1):
-			host = k
-	if host is not None:
-		letters[host] = letters[host] + c
-		continue
-	letters.append(c)
-# un point du i placé AVANT son i dans le tri : on le rattache à la lettre qui le chevauche
-merged = []
-for l in letters:
-	x0, y0, x1, y1 = bbox(l)
-	if merged:
-		mx0, my0, mx1, my1 = bbox(merged[-1])
-		if x0 <= mx1 and (y1 < my0 or y0 > my1 or (y1 - y0) < 6 or (my1 - my0) < 6):
-			merged[-1] = merged[-1] + l
-			continue
-	merged.append(l)
-letters = merged
+# Grandes lettres = celles qui commencent tout en haut (Paint, I, T) ; le point du i rejoint son i.
+top = min(c[1] for c in comps if c[4] > 50)
+starts_top = [k for k, c in enumerate(comps) if c[4] > 50 and c[1] < top + 3 * P]
+# bas de la ligne « Paint » = le bas le plus fréquent parmi les lettres du haut (le I et le T descendent plus bas)
+bottoms = sorted(comps[k][3] for k in starts_top)
+paint_bottom = bottoms[len(bottoms) // 2]
+# + les morceaux qui finissent sur cette ligne (le pied du i, sous son point)
+big = sorted(set(starts_top) | {k for k, c in enumerate(comps) if c[4] > 50 and abs(c[3] - paint_bottom) < P * 1.5},
+	key=lambda k: comps[k][0])
+groups = []   # [[indices], x0, y0, x1, y1]
+for k in big:
+	x0, y0, x1, y1, n = comps[k]
+	for g in groups:
+		if x0 <= g[3] and x1 >= g[1]:   # chevauche en x : même lettre (le i et son point)
+			g[0].append(k); g[1] = min(g[1], x0); g[2] = min(g[2], y0); g[3] = max(g[3], x1); g[4] = max(g[4], y1)
+			break
+	else:
+		groups.append([[k], x0, y0, x1, y1])
+groups.sort(key=lambda g: g[1])
 order = ['feu', 'glace', 'foudre', 'poison', 'arcane', 'feu', 'glace']   # P a i n t  I T
-color = {}
-for k, cells in enumerate(letters):
-	sh = SH[order[k % len(order)]]
-	x0, y0, x1, y1 = bbox(cells)
-	h = y1 - y0 + 1
-	for (x, y) in cells:
-		ly = y - y0
+comp_letter = {}
+for gi, g in enumerate(groups):
+	for k in g[0]:
+		comp_letter[k] = gi
+
+# Dernier T : peint jusqu'à 60 % de sa hauteur (bord un peu irrégulier, case par case)
+tg = groups[-1]
+t_rows = round((tg[4] - tg[2] + 1) / P)
+paint_row = round(t_rows * 0.6)
+
+img = base.copy()
+px = img.load()
+for y in range(H):
+	for x in range(W):
+		k = label[y][x]
+		if k < 0 or k not in comp_letter:
+			continue
+		gi = comp_letter[k]
+		g = groups[gi]
+		row = int((y - g[2]) / P)                       # rangée de « pixel » dans la lettre
+		rows = max(1, round((g[4] - g[2] + 1) / P))
+		if gi == len(groups) - 1:
+			col = int((x - g[1]) / P)
+			if row > paint_row - (1 if col % 3 == 1 else 0):
+				continue                                 # pas encore peint : reste blanc
+		sh = SH[order[gi % len(order)]]
 		c = sh[1]
-		if ly < max(1, round(h * 0.2)):
+		if row < max(1, round(rows * 0.2)):
 			c = sh[2]
-		elif ly >= h - max(1, round(h * 0.15)):
+		elif row >= rows - max(1, round(rows * 0.15)):
 			c = sh[0]
-		color[(x, y)] = c
+		px[x, y] = c + (255,)
 
-# --- Le dernier T est en train d'être peint : sous la « ligne de peinture », il reste blanc
-t_cells = letters[-1]
-tx0, ty0, tx1, ty1 = bbox(t_cells)
-paint_y = ty0 + round((ty1 - ty0) * 0.62)
-front = {}
-for (x, y) in t_cells:
-	# bord de peinture un peu irrégulier, comme un coup de crayon
-	limit = paint_y + (1 if (x // 2) % 2 == 0 else 0)
-	if y > limit:
-		color.pop((x, y), None)
-	front[x] = max(front.get(x, -1), min(y, limit))
-
-# --- Image native (1 case = 1 px), avec une marge pour le crayon
-PAD_R, PAD_B = 22, 4
-img = Image.new('RGBA', (GW + PAD_R, GH + PAD_B), (0, 0, 0, 0))
-pix = img.load()
-for y in range(GH):
-	for x in range(GW):
-		ch = grid[y][x]
-		if ch == '#':
-			pix[x, y] = (0, 0, 0, 255)
-		elif ch == 'o':
-			pix[x, y] = color.get((x, y), WHITE) + (255,)
-
-# --- Crayon de couleur (mine bleue, celle du T), qui part vers le haut à droite (sur la plaque noire),
-# la mine posée sur le bord de la peinture, côté droit du pied du T
-stem = [x for (x, y) in t_cells if y == paint_y]
-tip = (max(stem) - 1, paint_y)
+# --- Crayon de couleur (mine bleue, celle du T), dessiné en « gros pixels » alignés sur le T.
+# La mine touche le bord droit du pied du T, à la limite de la peinture ; il part vers le haut à droite.
+ox, oy = tg[1], tg[2]                     # origine de la grille du T
+paint_y = oy + (paint_row + 1) * P
+stem_right = max(x for x in range(tg[1], tg[3] + 1) if label[int(paint_y - P / 2)][x] >= 0 and comp_letter.get(label[int(paint_y - P / 2)][x]) == len(groups) - 1)
+C = P * 0.6   # taille d'une case du crayon
+tip = ((stem_right - ox) / C - 0.5, (paint_y - oy) / C - 0.5)   # en cases
 ANG = math.radians(17)
-DX, DY = math.cos(ANG), -math.sin(ANG)   # le long du crayon
-NX, NY = -DY, DX                         # en travers
+DX, DY = math.cos(ANG), -math.sin(ANG)
+NX, NY = -DY, DX
 L, R = 30.0, 3.4
 BLUE = SH['glace']
-YEL = SH['foudre']
-pencil = {}
-for y in range(img.height):
-	for x in range(img.width):
-		a = (x - tip[0]) * DX + (y - tip[1]) * DY
-		b = (x - tip[0]) * NX + (y - tip[1]) * NY
-		if a < 0 or a > L:
-			continue
-		half = min(R, 0.4 + a * 0.5) if a < 7 else R
-		if abs(b) > half:
-			continue
-		if a < 2.2:
-			c = BLUE[1] if b < 0.3 else BLUE[0]                              # mine de couleur
-		elif a < 7:
-			c = (0xe8, 0xc0, 0x8a) if b < half - 1.0 else (0xc0, 0x90, 0x5a)  # bois taillé
-		elif a < L - 7:
-			c = BLUE[2] if b < -1.2 else (BLUE[1] if b < 1.4 else BLUE[0])   # corps du crayon, bleu
-		elif a < L - 4:
-			c = (0xd8, 0xd8, 0xe4) if b < 0 else (0x98, 0x98, 0xa8)          # bague en métal
-		else:
-			c = (0xf8, 0xb0, 0xc0) if b < 0 else (0xe0, 0x70, 0x90)          # gomme
-		pencil[(x, y)] = c
-for (x, y), c in pencil.items():
-	pix[x, y] = c + (255,)
-for (x, y) in list(pencil):
-	for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-		p = (x + dx, y + dy)
-		if p not in pencil and 0 <= p[0] < img.width and 0 <= p[1] < img.height:
-			pix[p] = INK + (255,)
-# petit liseré blanc autour du crayon quand il sort sur le fond transparent
-for (x, y) in list(pencil):
-	for dx in (-2, -1, 0, 1, 2):
-		for dy in (-2, -1, 0, 1, 2):
-			p = (x + dx, y + dy)
-			if p not in pencil and 0 <= p[0] < img.width and 0 <= p[1] < img.height and pix[p][3] == 0 and abs(dx) + abs(dy) <= 2:
-				pix[p] = WHITE + (255,)
 
-bb = img.getbbox()
-img = img.crop(bb)
-for scale, suffix in [(8, ''), (3, '_petit')]:
-	img.resize((img.width * scale, img.height * scale), Image.NEAREST).save(out.replace('.png', suffix + '.png'))
-print(img.size, len(letters), 'lettres colorées')
+
+def pencil_at(cx, cy):
+	a = (cx - tip[0]) * DX + (cy - tip[1]) * DY
+	b = (cx - tip[0]) * NX + (cy - tip[1]) * NY
+	if a < 0 or a > L:
+		return None
+	half = min(R, 0.4 + a * 0.5) if a < 7 else R
+	if abs(b) > half:
+		return None
+	if a < 2.2:
+		return BLUE[1] if b < 0.3 else BLUE[0]
+	if a < 7:
+		return (0xe8, 0xc0, 0x8a) if b < half - 1.0 else (0xc0, 0x90, 0x5a)
+	if a < L - 7:
+		return BLUE[2] if b < -1.2 else (BLUE[1] if b < 1.4 else BLUE[0])
+	if a < L - 4:
+		return (0xd8, 0xd8, 0xe4) if b < 0 else (0x98, 0x98, 0xa8)
+	return (0xf8, 0xb0, 0xc0) if b < 0 else (0xe0, 0x70, 0x90)
+
+
+# cases du crayon, puis contour noir (1 case) et liseré blanc (1 case) hors de la plaque
+cells = {}
+for cy in range(-80, 80):
+	for cx in range(-20, 120):
+		c = pencil_at(cx + 0.5, cy + 0.5)
+		if c:
+			cells[(cx, cy)] = c
+outline = set()
+for (cx, cy) in cells:
+	for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+		if (cx + dx, cy + dy) not in cells:
+			outline.add((cx + dx, cy + dy))
+rim = set()
+for (cx, cy) in outline:
+	for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+		q = (cx + dx, cy + dy)
+		if q not in cells and q not in outline:
+			rim.add(q)
+# agrandit l'image si le crayon dépasse à droite / en haut
+xs = [ox + (c[0] + 1) * C for c in rim]
+ys = [oy + c[1] * C for c in rim]
+pad_r = max(0, int(max(xs)) + 4 - W)
+pad_t = max(0, -int(min(ys)) + 4)
+if pad_r or pad_t:
+	big_img = Image.new('RGBA', (W + pad_r, H + pad_t), (0, 0, 0, 0))
+	big_img.paste(img, (0, pad_t))
+	img = big_img
+	oy += pad_t
+	px = img.load()
+
+
+def fill_cell(c, col, only_transparent=False):
+	x0 = int(round(ox + c[0] * C)); x1 = int(round(ox + (c[0] + 1) * C))
+	y0 = int(round(oy + c[1] * C)); y1 = int(round(oy + (c[1] + 1) * C))
+	for y in range(max(0, y0), min(img.height, y1)):
+		for x in range(max(0, x0), min(img.width, x1)):
+			if only_transparent and px[x, y][3] > 0:
+				continue
+			px[x, y] = col + (255,)
+
+
+for c in rim:
+	fill_cell(c, WHITE, only_transparent=True)
+for c in outline:
+	fill_cell(c, INK)
+for c, col in cells.items():
+	fill_cell(c, col)
+
+img = img.crop(img.getbbox())
+img.save(out)
+img.resize((img.width * 2 // 5, img.height * 2 // 5), Image.NEAREST).save(out.replace('.png', '_petit.png'))
+print(img.size, len(groups), 'lettres colorées')
