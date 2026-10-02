@@ -654,7 +654,7 @@ func item_label(type: String, id: String, rar: int) -> String:
 
 
 func write_journal() -> void:
-	var L := ["VOWEL — Journal de la dernière partie", "",
+	var L := ["PAINT IT UNTIL YOU MAKE IT — Journal de la dernière partie", "",
 		"Carte : %s · Difficulté : %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[difficulty].name],
 		"Vague %d / %d · Niveau %d · Or %d · Ennemis effacés %d" % [wave, WAVES, level, gold, kills], ""]
 	if not wave_stats.is_empty():

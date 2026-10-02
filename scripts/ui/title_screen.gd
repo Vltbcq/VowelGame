@@ -54,8 +54,10 @@ func _ready() -> void:
 	UI.put(self, parade, Vector2.ZERO, Vector2(640, 360))
 
 	# Titre
-	UI.put(self, UI.label("VOWEL", 50, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(3, 6), Vector2(640, 56))
-	UI.put(self, UI.label("VOWEL", 50, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 3), Vector2(640, 56))
+	UI.put(self, UI.label("PAINT IT", 40, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(3, 4), Vector2(640, 44))
+	UI.put(self, UI.label("PAINT IT", 40, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 1), Vector2(640, 44))
+	UI.put(self, UI.label("UNTIL YOU MAKE IT", 10, Pal.INK, HORIZONTAL_ALIGNMENT_CENTER), Vector2(1, 46), Vector2(640, 14))
+	UI.put(self, UI.label("UNTIL YOU MAKE IT", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 45), Vector2(640, 14))
 
 	# Cadres
 	for i in FRAME_SPOTS.size():

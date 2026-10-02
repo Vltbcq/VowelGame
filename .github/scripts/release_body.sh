@@ -34,4 +34,4 @@ else
   echo "📜 [Changelog détaillé](https://github.com/$REPO/commits/$VERSION)"
 fi
 echo
-echo "▶ Télécharge \`Vowel.exe\` (ou \`Vowel-windows.zip\`, plus léger). Si Windows bloque : *Informations complémentaires* → *Exécuter quand même*."
+echo "▶ Télécharge \`PaintIt.exe\` (ou \`PaintIt-windows.zip\`, plus léger). Si Windows bloque : *Informations complémentaires* → *Exécuter quand même*."

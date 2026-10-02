@@ -4,7 +4,7 @@ extends RefCounted
 ## où le joueur découvre la mécanique. Désactivable dans les options.
 
 const TEXT := {
-	"welcome": ["Bienvenue dans Vowel !",
+	"welcome": ["Bienvenue dans Paint It Until You Make It !",
 		"Ici, tu dessines TOUT : ton perso, tes armes, tes balles, tes amulettes... et même tes ennemis.\n\nChaque trait change tes stats. Survis à 15 vagues de monstres (un boss toutes les 5 vagues) pour gagner.\n\nQuelques conseils vont apparaître au fil de ta première partie."],
 	"draw_perso": ["Dessine ton perso",
 		"• Seuls les TRAITS coûtent de l'encre : le contour d'une forme. Remplir l'intérieur (outil Remplir, touche F) est gratuit !\n• Ton dessin change tes stats : à toi de découvrir comment.\n\nRegarde l'APERÇU à droite : il se met à jour à chaque trait. Clic droit = gomme, Ctrl+Z = défaire."],

@@ -38,9 +38,9 @@ jobs:
           DL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
           # Même résumé que la Release, sans le titre ni la ligne « Télécharge… »
           bash .github/scripts/release_body.sh "$VERSION" | grep -v '^## ' | grep -v '^▶' > desc.md
-          printf '\n⬇️ [Vowel.exe](%s/Vowel.exe) · [Vowel-windows.zip](%s/Vowel-windows.zip)\n' "$DL" "$DL" >> desc.md
-          jq -n --arg title "🎨 Vowel ${VERSION} est sortie !" --arg url "$URL" --rawfile desc desc.md '{
-            username: "Vowel",
+          printf '\n⬇️ [PaintIt.exe](%s/PaintIt.exe) · [PaintIt-windows.zip](%s/PaintIt-windows.zip)\n' "$DL" "$DL" >> desc.md
+          jq -n --arg title "🎨 Paint It Until You Make It ${VERSION} est sortie !" --arg url "$URL" --rawfile desc desc.md '{
+            username: "Paint It",
             embeds: [{title: $title, url: $url, description: ($desc | .[0:4000]), color: 14067247,
                       footer: {text: "Windows a protégé votre PC ? Informations complémentaires → Exécuter quand même"}}]
           }' > payload.json

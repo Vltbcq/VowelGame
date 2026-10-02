@@ -32,7 +32,7 @@ static func map_choice() -> Control:
 static func slots() -> Control:
 	var s := _Screen.new()
 	s.build = func(root: _Screen):
-		UI.put(root, UI.label("VOWEL", 40, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 14), Vector2(640, 44))
+		UI.put(root, UI.label("PAINT IT UNTIL YOU MAKE IT", 26, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 20), Vector2(640, 36))
 		UI.put(root, UI.label("Choisis ta sauvegarde", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 62), Vector2(640, 14))
 		for i in Meta.SLOTS:
 			var n := i + 1
