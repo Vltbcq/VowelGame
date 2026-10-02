@@ -13,13 +13,14 @@ const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
 
 var font: FontFile
-var font_menu: FontFile   # BitPap (Cile, licence 1001Fonts FFC) : menu de l'écran titre
+var font_menu: FontFile   # Yoster Island (codeman38, libre dans un jeu) : menu de l'écran titre
 var theme: Theme
 
-## BitPap : ses pixels font 1/16 de la taille, donc 16 = 1 pixel de jeu (net), 24 = 1,5.
-const MENU_FONT_PATH := "res://assets/fonts/BitPap.ttf"
-const MENU_SIZE := 16
+## Yoster Island : ses pixels font 85/1024 de la taille, donc 12 ≈ 1 pixel de jeu (net), 24 = 2.
+const MENU_FONT_PATH := "res://assets/fonts/YosterIsland.ttf"
+const MENU_SIZE := 12
 const MENU_BIG := 24
+const MENU_MARGIN := 2   # marge verticale dans les boutons du menu
 
 
 func _ready() -> void:
@@ -30,7 +31,7 @@ func _ready() -> void:
 	font_menu.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
 	font_menu.generate_mipmaps = false
 	font_menu.allow_system_fallback = false
-	font_menu.fallbacks = [font]   # pas d'accents ni de symboles (·, ◆, ●) : pris dans la police pixel
+	font_menu.fallbacks = [font]   # parenthèses et symboles (·, ◆, ●) : pris dans la police pixel
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
@@ -282,8 +283,8 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	return tr
 
 
-## Police du menu (BitPap) sur tous les boutons d'un bloc : normal → MENU_SIZE, gros (≥ 20) → MENU_BIG.
-## Elle est plus haute que la police pixel : marges verticales des boutons à 0.
+## Police du menu (Yoster Island) sur tous les boutons d'un bloc : normal → MENU_SIZE, gros (≥ 20) → MENU_BIG.
+## Marges verticales des boutons : MENU_MARGIN.
 func use_menu_font(root: Node) -> void:
 	for c in root.get_children():
 		if c is Button:
@@ -293,7 +294,7 @@ func use_menu_font(root: Node) -> void:
 			if c is Button:
 				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox
-					sbx.content_margin_top = 0
-					sbx.content_margin_bottom = 0
+					sbx.content_margin_top = MENU_MARGIN
+					sbx.content_margin_bottom = MENU_MARGIN
 					(c as Button).add_theme_stylebox_override(st, sbx)
 		use_menu_font(c)

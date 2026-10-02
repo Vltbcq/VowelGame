@@ -71,7 +71,7 @@ func _ready() -> void:
 	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S])
 	UI.put(mp, sb, Vector2(22, 6), Vector2(180, 16))
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 2)
+	vb.add_theme_constant_override("separation", 7)
 	UI.put(mp, vb, Vector2(22, 30), Vector2(180, 150))
 	var run := Meta.read_run() if Meta.has_run() else {}
 	if not run.is_empty():

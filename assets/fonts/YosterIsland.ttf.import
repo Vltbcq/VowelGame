@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://bk6g0w3o5u0g1"
-path="res://.godot/imported/BitPap.ttf-b327455bacfb9aa402b4488d26688f47.fontdata"
+uid="uid://bv0dyx6qumwq1"
+path="res://.godot/imported/YosterIsland.ttf-4f6427bcda0462f8f51d7e54b29b741e.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/BitPap.ttf"
-dest_files=["res://.godot/imported/BitPap.ttf-b327455bacfb9aa402b4488d26688f47.fontdata"]
+source_file="res://assets/fonts/YosterIsland.ttf"
+dest_files=["res://.godot/imported/YosterIsland.ttf-4f6427bcda0462f8f51d7e54b29b741e.fontdata"]
 
 [params]
 
