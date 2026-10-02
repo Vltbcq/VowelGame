@@ -13,11 +13,24 @@ const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
 
 var font: FontFile
+var font_menu: FontFile   # BitPap (Cile, licence 1001Fonts FFC) : menu de l'écran titre
 var theme: Theme
+
+## BitPap : ses pixels font 1/16 de la taille, donc 16 = 1 pixel de jeu (net), 24 = 1,5.
+const MENU_FONT_PATH := "res://assets/fonts/BitPap.ttf"
+const MENU_SIZE := 16
+const MENU_BIG := 24
 
 
 func _ready() -> void:
 	font = PixelFont.build()
+	font_menu = (load(MENU_FONT_PATH) as FontFile).duplicate()
+	font_menu.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	font_menu.hinting = TextServer.HINTING_NONE
+	font_menu.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	font_menu.generate_mipmaps = false
+	font_menu.allow_system_fallback = false
+	font_menu.fallbacks = [font]   # pas d'accents ni de symboles (·, ◆, ●) : pris dans la police pixel
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
@@ -267,3 +280,20 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return tr
+
+
+## Police du menu (BitPap) sur tous les boutons d'un bloc : normal → MENU_SIZE, gros (≥ 20) → MENU_BIG.
+## Elle est plus haute que la police pixel : marges verticales des boutons à 0.
+func use_menu_font(root: Node) -> void:
+	for c in root.get_children():
+		if c is Button:
+			var big: bool = (c as Control).get_theme_font_size("font_size") >= 20
+			(c as Control).add_theme_font_override("font", font_menu)
+			(c as Control).add_theme_font_size_override("font_size", MENU_BIG if big else MENU_SIZE)
+			if c is Button:
+				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox
+					sbx.content_margin_top = 0
+					sbx.content_margin_bottom = 0
+					(c as Button).add_theme_stylebox_override(st, sbx)
+		use_menu_font(c)
