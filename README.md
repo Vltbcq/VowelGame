@@ -4,6 +4,8 @@
 
 *(Anciennement « Vowel ». Logo : `docs/logo.png`, régénéré par `python docs/logo.py` à partir du logo d'origine relevé case par case dans `docs/logo_base.txt` (`#` plaque noire, `o` lettres) ; le I de « IT » y devient un crayon.)*
 
+**DA** : galerie d'art (mur bordeaux, cadres dorés) + style « autocollant » du logo : boutons et bulles en plaque noire à liseré blanc, grands titres contourés de noir. Logo dans le jeu : `assets/logo.png` (écran titre et choix de sauvegarde). Police : **Stonckarish** (par TimOth), adaptée par `docs/font_fr.py` : les accents sont retirés (é → e) et les symboles du jeu (●, →, ×, ✓, ♥...) ajoutés dans son style ; un pixel de police = un demi-pixel de jeu (tailles via `UI.fs()`).
+
 Roguelike à vagues façon Brotato où **tu dessines tout** : ton perso, tes armes, tes balles, tes amulettes, et même les ennemis et les boss.
 Godot 4.7, GDScript, pixel art 16 bits, 640×360 affiché en ×2.
 

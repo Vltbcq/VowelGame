@@ -11,21 +11,47 @@ const WOOD_PANEL := Color("4a2e1f")
 const FLOOR := Color("6b4a2a")
 const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
+## Style « autocollant » du logo : plaque noire, texte blanc, liseré blanc (boutons, bulles, titres).
+const STICKER := Color("100c14")
+const STICKER_HOVER := Color("241c2c")
+const RIM := Color("f4efe2")
+const LOGO_PATH := "res://assets/logo.png"
+
+## Police du jeu : Stonckarish, adaptée (accents retirés, symboles ajoutés : voir docs/font_fr.py).
+## Ses pixels font 1/16 de la taille : à 8 (et ses multiples), un pixel de police = un demi-pixel
+## de jeu, net à l'écran (fenêtre ×2). Les tailles « historiques » (10, 20, 40...) passent par fs().
+const FONT_PATH := "res://assets/fonts/Stonckarish_fr.otf"
 
 var font: FontFile
 var theme: Theme
 
 
+## Taille réelle de police pour une taille « historique » (10 = texte normal).
+func fs(size: int) -> int:
+	return maxi(8, roundi(size * 0.8 / 8.0) * 8)
+
+
+func _load_font() -> FontFile:
+	var f: FontFile = (load(FONT_PATH) as FontFile).duplicate()
+	f.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+	f.hinting = TextServer.HINTING_NONE
+	f.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	f.generate_mipmaps = false
+	f.allow_system_fallback = false
+	f.fallbacks = [PixelFont.build()]   # au cas où un caractère manquerait encore
+	return f
+
+
 func _ready() -> void:
-	font = PixelFont.build()
+	font = _load_font()
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
 	dt.merge_with(theme)
 	dt.default_font = font
-	dt.default_font_size = PixelFont.SIZE
+	dt.default_font_size = fs(PixelFont.SIZE)
 	ThemeDB.fallback_font = font
-	ThemeDB.fallback_font_size = PixelFont.SIZE
+	ThemeDB.fallback_font_size = fs(PixelFont.SIZE)
 	get_tree().root.theme = theme
 
 
@@ -45,20 +71,20 @@ func sb(bg: Color, border: Color = Color.TRANSPARENT, bw := 0, mx := 6, my := 3)
 func _build_theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = font
-	t.default_font_size = PixelFont.SIZE
+	t.default_font_size = fs(PixelFont.SIZE)
 
-	t.set_stylebox("normal", "Button", _shadowed(sb(WOOD, GOLD_DARK, 1)))
-	t.set_stylebox("hover", "Button", _shadowed(sb(WOOD_PANEL, GOLD, 1)))
-	t.set_stylebox("pressed", "Button", sb(GOLD, GOLD, 1))
-	t.set_stylebox("hover_pressed", "Button", sb(GOLD, GOLD, 1))
-	t.set_stylebox("disabled", "Button", sb(Color("2a1a12"), Color("4a3524"), 1))
+	t.set_stylebox("normal", "Button", _shadowed(sb(STICKER, RIM, 1)))
+	t.set_stylebox("hover", "Button", _shadowed(sb(STICKER_HOVER, Pal.ACCENT, 1)))
+	t.set_stylebox("pressed", "Button", sb(Pal.ACCENT, Pal.ACCENT, 1))
+	t.set_stylebox("hover_pressed", "Button", sb(Pal.ACCENT, Pal.ACCENT, 1))
+	t.set_stylebox("disabled", "Button", sb(Color("1c1820"), Color("4a4450"), 1))
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	t.set_color("font_color", "Button", GOLD)
+	t.set_color("font_color", "Button", RIM)
 	t.set_color("font_hover_color", "Button", Pal.ACCENT)
 	t.set_color("font_pressed_color", "Button", Pal.INK)
 	t.set_color("font_hover_pressed_color", "Button", Pal.INK)
 	t.set_color("font_focus_color", "Button", Pal.TEXT)
-	t.set_color("font_disabled_color", "Button", Pal.DISABLED)
+	t.set_color("font_disabled_color", "Button", Color("6a6470"))
 
 	t.set_color("font_color", "Label", Pal.TEXT)
 	t.set_constant("line_spacing", "Label", 1)
@@ -69,7 +95,7 @@ func _build_theme() -> Theme:
 	t.set_stylebox("background", "ProgressBar", sb(Pal.INK, Pal.BORDER, 1, 0, 0))
 	t.set_stylebox("fill", "ProgressBar", sb(Pal.ACCENT, Color.TRANSPARENT, 0, 0, 0))
 
-	t.set_stylebox("panel", "TooltipPanel", sb(WOOD, GOLD, 1, 4, 3))
+	t.set_stylebox("panel", "TooltipPanel", sb(STICKER, RIM, 1, 4, 3))
 	t.set_color("font_color", "TooltipLabel", Pal.TEXT)
 
 	t.set_stylebox("slider", "HSlider", sb(WOOD, GOLD_DARK, 1, 0, 3))
@@ -124,8 +150,12 @@ func toast(text: String) -> void:
 func label(text: String, size := 10, color := Pal.TEXT, align := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", fs(size))
 	l.add_theme_color_override("font_color", color)
+	if size >= 20:
+		# grands titres : contour noir épais, comme les lettres du logo
+		l.add_theme_constant_override("outline_size", 6)
+		l.add_theme_color_override("font_outline_color", STICKER)
 	l.horizontal_alignment = align
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
@@ -135,7 +165,7 @@ func button(text: String, cb: Callable, size := 10) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", fs(size))
 	b.pressed.connect(func():
 		Sfx.play("click")
 		cb.call())
@@ -193,8 +223,26 @@ func cartel() -> Panel:
 
 ## Style « sélectionné » (onglets, choix actifs).
 func selected(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", sb(SELECTED, Pal.ACCENT, 1))
+	b.add_theme_stylebox_override("normal", sb(STICKER_HOVER, Pal.ACCENT, 1))
 	b.add_theme_color_override("font_color", Pal.ACCENT)
+
+
+## Le logo du jeu (noir et blanc façon autocollant), avec une ombre portée. Largeur en pixels de jeu.
+func logo(parent: Node, center_x: float, y: float, w := 302.0) -> TextureRect:
+	var tex: Texture2D = load(LOGO_PATH)
+	var h := w * tex.get_height() / tex.get_width()
+	var sh := TextureRect.new()
+	sh.texture = tex
+	sh.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sh.stretch_mode = TextureRect.STRETCH_SCALE
+	sh.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sh.modulate = Color(0, 0, 0, 0.35)
+	sh.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	put(parent, sh, Vector2(center_x - w / 2.0 + 2, y + 3), Vector2(w, h))
+	var tr := sh.duplicate() as TextureRect
+	tr.modulate = Color.WHITE
+	put(parent, tr, Vector2(center_x - w / 2.0, y), Vector2(w, h))
+	return tr
 
 
 ## Place un contrôle à une position/taille fixe dans un parent (layout 640x360).
