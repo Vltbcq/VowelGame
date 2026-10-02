@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://kv6ne5k860lj"
-path="res://.godot/imported/m6x11plus.ttf-ce99c43f9a56b6cb3c7448f42d8cdd11.fontdata"
+uid="uid://bcw1jk1m6ekeu"
+path="res://.godot/imported/Jersey10-Regular.ttf-200460e514ca6d2634756f713ee1b38e.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/m6x11plus.ttf"
-dest_files=["res://.godot/imported/m6x11plus.ttf-ce99c43f9a56b6cb3c7448f42d8cdd11.fontdata"]
+source_file="res://assets/fonts/Jersey10-Regular.ttf"
+dest_files=["res://.godot/imported/Jersey10-Regular.ttf-200460e514ca6d2634756f713ee1b38e.fontdata"]
 
 [params]
 

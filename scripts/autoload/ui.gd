@@ -18,11 +18,11 @@ const LOGO_PATH := "res://assets/logo.png"
 ## Police du jeu : Stonckarish, adaptée (accents retirés, symboles ajoutés : voir docs/font_fr.py).
 ## Elle est plus large que l'ancienne police : les tailles « historiques » (10, 20, 40...) passent par fs().
 const FONT_PATH := "res://assets/fonts/Stonckarish_fr.otf"
-## Essai : m6x11plus (Daniel Linssen, libre avec crédit), pour l'instant seulement sur le menu titre.
-const FONT2_PATH := "res://assets/fonts/m6x11plus.ttf"
+## Essai : Jersey 10 (The Soft Type Project, licence OFL), pour l'instant seulement sur le menu titre.
+const FONT2_PATH := "res://assets/fonts/Jersey10-Regular.ttf"
 
 var font: FontFile
-var font2: FontFile   # m6x11plus (essai sur le menu)
+var font2: FontFile   # Jersey 10 (essai sur le menu)
 var theme: Theme
 
 
@@ -46,7 +46,7 @@ func _load_font(path := FONT_PATH) -> FontFile:
 func _ready() -> void:
 	font = _load_font()
 	font2 = _load_font(FONT2_PATH)
-	font2.fallbacks = [font]   # ses symboles manquants (●, →, ♥...) viennent de Stonckarish
+	font2.fallbacks = [font]   # ses symboles manquants (●, →, ♥, ◆...) viennent de Stonckarish
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
@@ -346,10 +346,11 @@ func thumb(img: Image, size: Vector2) -> TextureRect:
 	return tr
 
 
-## Essai m6x11plus : applique la police à tous les textes d'un bloc (boutons, labels).
+## Essai Jersey 10 : applique la police à tous les textes d'un bloc (boutons, labels).
+## Ses pixels font 75/1400 de la taille : à 28, un pixel de police = 1,5 pixel de jeu (net).
 ## Tailles : texte normal (10) → M6_SIZE, gros (20) → M6_BIG.
 const M6_SIZE := 14
-const M6_BIG := 27
+const M6_BIG := 28
 
 
 func use_font2(root: Node) -> void:

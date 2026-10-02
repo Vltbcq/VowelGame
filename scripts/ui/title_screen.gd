@@ -86,7 +86,7 @@ func _ready() -> void:
 	var d := Meta.data
 	var info := "Record : vague %d\nParties : %d  ·  Victoires : %d" % [int(d.best_wave), int(d.runs), int(d.wins)]
 	UI.put(mp, UI.label(info, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 190), Vector2(224, 30))
-	UI.use_font2(mp)   # essai de la police m6x11plus sur le menu
+	UI.use_font2(mp)   # essai de la police Jersey 10 sur le menu
 
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))
