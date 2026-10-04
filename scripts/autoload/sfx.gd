@@ -10,7 +10,7 @@ var last_played := {}
 const MUSIC := {
 	"menu": "res://assets/music/Bozos-Arcade.ogg",
 	"transition": "res://assets/music/Bumbling-Burglars_Looping.ogg",
-	"vague": "res://assets/music/Cartoon-Chaos.ogg",
+	"vague": "res://assets/music/Pixel-City-Cruising.ogg",
 }
 const MUSIC_DB := -10.0      # la musique reste sous les bruitages
 const FADE := 0.8            # fondu entre deux musiques (s)

@@ -27,7 +27,7 @@ func _ready() -> void:
 	_check((Sfx.music_players[Sfx._music_i].stream as AudioStreamOggVorbis).loop, "elle tourne en boucle")
 	Sfx.music("vague")
 	await get_tree().create_timer(1.2).timeout
-	_check(_playing() == "Cartoon-Chaos.ogg", "vagues : Cartoon Chaos, l'ancienne s'est arrêtée (%s)" % _playing())
+	_check(_playing() == "Pixel-City-Cruising.ogg", "vagues : Pixel City Cruising, l'ancienne s'est arrêtée (%s)" % _playing())
 	Sfx.music("transition")
 	await get_tree().create_timer(1.2).timeout
 	_check(_playing() == "Bumbling-Burglars_Looping.ogg", "entre les vagues : Bumbling Burglars (%s)" % _playing())
