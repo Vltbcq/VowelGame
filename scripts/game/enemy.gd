@@ -15,6 +15,8 @@ var dmg := 1.0
 var speed := 50.0
 var radius := 8.0
 var element := 0
+var color := 0              # couleur dans le cercle des faiblesses (Pal.color_of)
+var weak_t := 0.0           # affichage « FAIBLE ! » / « RÉSISTE » (pas à chaque coup)
 var ink_col := Color.BLACK
 var loot := 1.0
 var dead := false
@@ -129,6 +131,7 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		speed *= BOSS_SPEED
 	radius = mods.radius * (0.6 if small else 1.0)
 	element = mods.element
+	color = Pal.color_of(art.a.frac) if art.has("a") else element
 	ink_col = Pal.main_color(element) if element > 0 else Pal.SHADES[0][1]
 	loot = def.loot * mods.loot * (0.5 if small else 1.0) * (3.0 if elite else 1.0)
 	body = Node2D.new()
@@ -234,6 +237,7 @@ func _draw() -> void:
 func tick(delta: float) -> void:
 	if dead:
 		return
+	weak_t -= delta
 	if ally:
 		_ally_tick(delta)
 		return

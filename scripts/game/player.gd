@@ -27,6 +27,7 @@ var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
 var spike_acc := 0.0        # Hérisson
 var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
 var sap_t := 0.0            # Élixir de sève
+var weak_t := 0.0   # affichage « FAIBLESSE ! »
 var yuki_t := 0.0           # Yuki : +30 % de vitesse : régénération boostée restante (s)
 
 
@@ -86,6 +87,7 @@ func input_dir() -> Vector2:
 
 
 func tick(delta: float) -> void:
+	weak_t -= delta
 	t += delta
 	var d := input_dir()
 	moving = d.length() > 0.1
@@ -154,6 +156,16 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	if god or inv > 0.0 or arena.ended:
 		return
 	dmg *= ENEMY_DMG_MULT
+	# Cercle des faiblesses : couleur de l'attaquant contre la couleur principale de ton perso
+	var att := element
+	if src is Enemy:
+		att = (src as Enemy).color
+	var wmult := Pal.weakness(att, Pal.color_of(Run.char_a.get("frac", [])))
+	if wmult != 1.0:
+		dmg *= wmult
+		if weak_t <= 0.0:
+			weak_t = 1.5
+			arena.float_text(position + Vector2(0, -26), "FAIBLESSE !" if wmult > 1.0 else "RÉSISTE", Pal.BAD if wmult > 1.0 else Pal.DIM)
 	if paper > 0:
 		# Bouclier de papier : ce coup-là est ignoré
 		paper -= 1

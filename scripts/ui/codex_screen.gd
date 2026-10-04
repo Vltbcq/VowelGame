@@ -179,6 +179,10 @@ func _build() -> void:
 Débloqué : armes, amulettes et ennemis disponibles"
 	UI.put(self, cl, Vector2(270, 36), Vector2(358, 12))
 
+	var cb := UI.button("Cercle des couleurs", func(): UI.cercle_popup(self))
+	cb.tooltip_text = "Les faiblesses entre couleurs (éléments)"
+	UI.put(self, cb, Vector2(100, 338), Vector2(130, 16))
+
 	var items := _items()
 	if sel == "" or not sel in items:
 		sel = items[0]

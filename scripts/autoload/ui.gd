@@ -364,3 +364,47 @@ func logo(parent: Node, center_x: float, y: float, w := 230.0) -> TextureRect:
 	tr.modulate = Color.WHITE
 	put(parent, tr, Vector2(center_x - w / 2.0, y), Vector2(w, h))
 	return tr
+
+
+# ------------------------------------------------------------------ Cercle des faiblesses
+
+const CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vise sa flèche, et ×0,75 à celle d'avant. La Lumière et le Noir se battent l'un l'autre.\nCe qui compte : la couleur principale de ton perso, de chaque arme et de chaque ennemi (au moins un quart du dessin)."
+
+
+## Image du cercle (assets/ui/cercle.png, ou la petite version sans les noms).
+func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
+	var tex: Texture2D = load("res://assets/ui/cercle_mini.png" if mini else "res://assets/ui/cercle.png")
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	put(parent, tr, pos, tex.get_size())
+	return tr
+
+
+## Fenêtre « Cercle des faiblesses » par-dessus un écran (Échap ou Fermer pour la fermer).
+## extra : une ligne en plus (ex. la couleur de ton perso).
+func cercle_popup(parent: Node, extra := "") -> Control:
+	var ov := Control.new()
+	ov.process_mode = Node.PROCESS_MODE_ALWAYS
+	ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	put(parent, ov, Vector2.ZERO, Vector2(640, 360))
+	fill_bg(ov, Color(0, 0, 0, 0.6))
+	var p := panel(Pal.PANEL, Pal.BORDER, 2)
+	put(ov, p, Vector2(150, 16), Vector2(340, 328))
+	put(p, label("CERCLE DES FAIBLESSES", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(340, 24))
+	cercle(p, Vector2(52, 32))
+	var t := label(CERCLE_TEXT + ("\n" + extra if extra != "" else ""), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	put(p, t, Vector2(12, 202), Vector2(316, 98))
+	var close := hotkey(button("Fermer", func(): ov.queue_free()), [KEY_ESCAPE])
+	put(p, close, Vector2(120, 304), Vector2(100, 16))
+	return ov
+
+
+## Couleur principale de ton perso, pour les textes d'aide.
+func perso_color_line() -> String:
+	var c := Pal.color_of(Run.char_a.get("frac", []))
+	if c == 0:
+		return "Ton perso n'a pas de couleur principale : aucune faiblesse."
+	return "Ton perso est %s : %s." % [Pal.color_name(c), Pal.color_hint(c)]

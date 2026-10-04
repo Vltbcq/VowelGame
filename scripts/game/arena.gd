@@ -586,6 +586,13 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if stop_t > 0.0:
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
 	dmg *= _amulet_dmg_mult(e, wst)
+	# Cercle des faiblesses : couleur principale de l'arme contre celle de l'ennemi
+	var wmult := Pal.weakness(Pal.color_of(wst.get("frac", []), 0.3), e.color)
+	if wmult != 1.0:
+		dmg *= wmult
+		if e.weak_t <= 0.0:
+			e.weak_t = 1.2
+			float_text(e.position + Vector2(0, -18), "FAIBLE !" if wmult > 1.0 else "RÉSISTE", Pal.ACCENT if wmult > 1.0 else Pal.DIM)
 	match String(wst.get("type", "")):
 		"sifflet":
 			whistle = e

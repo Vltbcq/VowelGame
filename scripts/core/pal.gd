@@ -42,7 +42,63 @@ const RARITY := [Color("c9c3b6"), Color("3a86ff"), Color("c071f0"), Color("f0a03
 const RARITY_NAMES := ["Commun", "Rare", "Épique", "Légendaire"]
 const RARITY_NAMES_F := ["Commune", "Rare", "Épique", "Légendaire"]
 
+## Cercle des faiblesses (cercle chromatique des peintres) : chaque couleur bat la suivante.
+## Feu → Foudre → Poison → Glace → Arcane → Feu ; la Lumière et le Noir se battent l'un l'autre.
+## Une attaque qui bat la couleur de sa cible fait ×1,5 ; dans l'autre sens ×0,75.
+const CYCLE := [FEU, FOUDRE, POISON, GLACE, ARCANE]
+const NOIR := -1   # « couleur » d'un dessin surtout noir (le noir n'est pas un élément)
+const WEAK_MULT := 1.5
+const STRONG_MULT := 0.75
+
 static var _cache := {}
+
+
+## Couleur principale d'un dessin (part de chaque élément) : celle qui couvre au moins `need`
+## du dessin, sinon NOIR s'il est surtout noir, sinon 0 (aucune).
+static func color_of(frac: Array, need := 0.25) -> int:
+	var best := 0
+	var best_v := need
+	for e in range(1, mini(frac.size(), COUNT)):
+		if float(frac[e]) >= best_v:
+			best_v = float(frac[e])
+			best = e
+	if best == 0 and frac.size() > 0 and float(frac[0]) >= 0.5:
+		return NOIR
+	return best
+
+
+## Multiplicateur de dégâts d'une attaque de couleur `att` sur une cible de couleur `def`.
+static func weakness(att: int, def: int) -> float:
+	if att == 0 or def == 0:
+		return 1.0
+	if (att == LUMIERE and def == NOIR) or (att == NOIR and def == LUMIERE):
+		return WEAK_MULT
+	var ia := CYCLE.find(att)
+	var id := CYCLE.find(def)
+	if ia < 0 or id < 0:
+		return 1.0
+	if (ia + 1) % CYCLE.size() == id:
+		return WEAK_MULT
+	if (id + 1) % CYCLE.size() == ia:
+		return STRONG_MULT
+	return 1.0
+
+
+## Nom d'une couleur du cercle (« Noir » pour NOIR).
+static func color_name(c: int) -> String:
+	return "Noir" if c == NOIR else (NAMES[c] if c > 0 else "aucune")
+
+
+## « bat X, craint Y » pour une couleur.
+static func color_hint(c: int) -> String:
+	if c == LUMIERE:
+		return "bat le Noir, craint le Noir"
+	if c == NOIR:
+		return "bat la Lumière, craint la Lumière"
+	var i := CYCLE.find(c)
+	if i < 0:
+		return ""
+	return "bat %s, craint %s" % [NAMES[CYCLE[(i + 1) % CYCLE.size()]], NAMES[CYCLE[(i - 1 + CYCLE.size()) % CYCLE.size()]]]
 
 
 static func main_color(el: int) -> Color:

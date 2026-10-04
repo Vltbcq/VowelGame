@@ -443,6 +443,7 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 			_line(L, "Régén.", s.regen, "")
 			_line(L, "Vol de vie", s.lifesteal, "%")
 			_res_lines(L, s.res)
+			_color_line(L, a.frac, 0.25)
 		"familiar":
 			if a.pixels > 0:
 				var sm := FamiliarDB.size_mult(cfg.def, a.pixels)
@@ -461,6 +462,7 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append("Allonge : %d" % roundi(st.reach))
 				L.append("Critique : %d%%" % roundi(st.crit))
 				_el_lines(L, st.frac)
+				_color_line(L, st.frac, 0.3)
 		"ranged":
 			if a.pixels > 0:
 				var def := WeaponDB.get_def(cfg.wtype)
@@ -471,6 +473,7 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append("Portée : %d" % roundi(150.0 + a.diag * 3.0))
 				L.append("Précision : %d%%" % roundi(a.sym * 100.0))
 				_el_lines(L, a.frac)
+				_color_line(L, a.frac, 0.3)
 				L.append("")
 				L.append("Ensuite : ses balles !")
 		"bullet":
@@ -488,6 +491,7 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append("Perforation : %d" % bl[0].pierce)
 				L.append("Recharge : %.2fs" % st.cooldown)
 				_el_lines(L, st.frac)
+				_color_line(L, st.frac, 0.3)
 		"enemy", "boss":
 			var e := enemy_art(a, cfg.ink)
 			L.append("PV : x%.2f" % e.hp)
@@ -547,3 +551,11 @@ static func describe_player(s: Dictionary) -> String:
 			L.append("%s : %s%d%s" % [row[1], "+" if v > 0 else "", roundi(v), row[2]])
 	_res_lines(L, s.res)
 	return "\n".join(L)
+
+
+## Aperçu du dessin : sa couleur principale dans le cercle des faiblesses.
+static func _color_line(L: Array, frac: Array, need: float) -> void:
+	var c := Pal.color_of(frac, need)
+	if c != 0:
+		L.append("Couleur : %s" % Pal.color_name(c))
+		L.append("  " + Pal.color_hint(c))

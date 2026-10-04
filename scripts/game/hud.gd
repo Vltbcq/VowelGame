@@ -291,7 +291,15 @@ func toggle_pause() -> void:
 	var counts := Run.synergy_counts()
 	for e in counts:
 		syn += "%s %d/%d%s\n" % [Pal.NAMES[e], counts[e], Run.SYNERGY_NEED, (" ✓ " + Run.SYNERGY_DESC[e]) if counts[e] >= Run.SYNERGY_NEED else ""]
-	UI.put(pause_menu, UI.label("ARMES\n" + ws + "\nAMULETTES\n" + (am if am != "" else "aucune") + "\n\nSYNERGIES\n" + (syn if syn != "" else "aucune"), 10, Pal.TEXT), Vector2(260, 64), Vector2(370, 220))
+	var mid := UI.label("ARMES\n" + ws + "\nAMULETTES\n" + (am if am != "" else "aucune") + "\n\nSYNERGIES\n" + (syn if syn != "" else "aucune"), 10, Pal.TEXT)
+	mid.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(pause_menu, mid, Vector2(240, 64), Vector2(160, 280))
+	# Cercle des faiblesses + la couleur de ton perso
+	UI.put(pause_menu, UI.label("FAIBLESSES", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(400, 60), Vector2(236, 12))
+	UI.cercle(pause_menu, Vector2(400, 74))
+	var pc := UI.label(UI.perso_color_line(), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	pc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(pause_menu, pc, Vector2(404, 246), Vector2(228, 40))
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	UI.put(pause_menu, vb, Vector2(40, 270), Vector2(160, 80))

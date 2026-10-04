@@ -228,6 +228,11 @@ Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
 		bx += 70
 	if cfg.get("random", false):
 		UI.put(self, UI.button("Au hasard", _random_monster), Vector2(bx, 318), Vector2(66, 16))
+	if cfg.kind in ["character", "melee", "ranged", "bullet"]:
+		# petit cercle des couleurs : ouvre l'explication en grand
+		var cb := UI.button("Couleurs", func(): UI.cercle_popup(self, UI.perso_color_line() if Run.active and cfg.kind != "character" else ""))
+		cb.tooltip_text = "Cercle des faiblesses : quelle couleur bat laquelle"
+		UI.put(self, cb, Vector2(566, 318), Vector2(66, 16))
 	if cfg.get("cancel", false):
 		UI.put(self, UI.hotkey(UI.button(cfg.get("cancel_label", "Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(426, 338), Vector2(66, 16))
 	UI.put(self, UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER]), Vector2(496, 338), Vector2(136, 16))
