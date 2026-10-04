@@ -651,18 +651,23 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 			if o != e:
 				o.hurt(boom_dmg(dmg * 0.4 * craq), false, (o.position - e.position).normalized() * 40.0)
 	Sfx.play("hit")
+	# Effets par coup proportionnels à la taille du coup (balles) : une rafale de petites balles
+	# déclenche autant d'effets par seconde qu'une grosse balle, pas plus.
+	var hs := 1.0
+	if wst.has("ref_hit") and float(wst.ref_hit) > 0.0:
+		hs = clampf(base / float(wst.ref_hit), 0.2, 1.5)
 	# Vol de vie (Pipette : ×3 + 5 %) ; au-delà de 100 %, plusieurs PV par coup
-	var ls := Stats.lifesteal_of(scale) / 100.0
+	var ls := Stats.lifesteal_of(scale) / 100.0 * hs
 	var heal := floorf(ls) + (1.0 if randf() < ls - floorf(ls) else 0.0)
 	if heal > 0.0:
 		var cal := Run.amulet_count("calice")
 		if cal > 0:
 			heal *= maxf(1.0, dmg * 0.02 * cal)   # Calice : 2 % des dégâts du coup
 		player.heal(heal, true, true)
-	_procs(e, dmg, wst)
+	_procs(e, dmg, wst, hs)
 
 
-func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
+func _procs(e: Enemy, dmg: float, wst: Dictionary, hs := 1.0) -> void:
 	# Crayon de couleur (élément de ton perso) et Kaléidoscope (couleur suivante du cycle)
 	var dom := int(Run.char_a.get("dominant", 0))
 	if dom > 0 and randf() < 0.1 * Run.amulet_count("crayon_couleur"):
@@ -679,7 +684,7 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary) -> void:
 	if wst.get("scale", "") == "luck":
 		bonus += maxf(0.0, Run.stats.luck) * 0.004   # Compte-gouttes : la chance donne des effets
 	for el in range(1, Pal.COUNT):
-		var chance: float = frac[el] * power + bonus
+		var chance: float = (frac[el] * power + bonus) * hs
 		if chance <= 0.0:
 			continue
 		if el == e.element:

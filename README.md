@@ -237,7 +237,7 @@ Tout est dans `scripts/core/stats.gd`. C'est le fichier à modifier pour équili
 | **Arme à distance** | Taille de l'arme et des balles | Petites = rafales rapides + critique ; grosses = tirs lents et forts. **Dégâts/s presque identiques** |
 | | Symétrie | Précision |
 | **Balles** | Taille de chaque morceau | Grosse = lente mais forte |
-| | Forme | Allongée = perforante |
+| | Taille | Grosse balle = perforante (0 à 3 ennemis traversés selon sa taille ; les petites s'arrêtent au premier). Les effets par coup (éléments, vol de vie) sont proportionnels à la force du coup : une rafale de petites balles n'en déclenche pas plus qu'une grosse balle |
 | | **Chaque morceau séparé** | **Un projectile en plus** (tirés en formation) |
 | **Ennemi** | Encre utilisée | + PV, mais + butin (risque / récompense) |
 | | Couleur dominante | Élément de ses attaques, et il résiste à cet élément |
@@ -247,7 +247,7 @@ Tout est dans `scripts/core/stats.gd`. C'est le fichier à modifier pour équili
 
 ### Couleurs = éléments
 
-**Cercle des faiblesses** (cercle chromatique des peintres) : Feu → Foudre → Poison → Glace → Arcane → Feu, et Lumière ⇄ Noir. Une attaque dont la couleur bat celle de sa cible fait ×1,5, dans l'autre sens ×0,75. Comptent : la couleur principale de ton perso (≥ 25 % du dessin), de l'arme qui frappe (≥ 30 %, balles comprises) et de l'ennemi (≥ 25 % ; « Noir » s'il est surtout noir). « FAIBLE ! » / « RÉSISTE » / « FAIBLESSE ! » s'affichent en jeu. Visuel : `assets/ui/cercle.png` (refait par `docs/cercle_elements.py`), affiché dans le menu pause, dans le Codex (bouton « Cercle des couleurs », image seule) et sur l'écran de dessin (bouton « Couleurs ») ; l'aperçu du dessin indique sa couleur et ce qu'elle bat / craint.
+**Cercle des faiblesses** (cercle chromatique des peintres) : Feu → Foudre → Poison → Glace → Arcane → Feu, et Lumière ⇄ Noir. Une attaque dont la couleur bat celle de sa cible fait ×1,5, dans l'autre sens ×0,75. Comptent : la couleur principale de ton perso (≥ 25 % du dessin), de l'arme qui frappe (≥ 30 %, balles comprises) et de l'ennemi (≥ 25 % ; « Noir » s'il est surtout noir). « FAIBLE ! » / « RÉSISTE » / « FAIBLESSE ! » s'affichent en jeu. Visuel : `assets/ui/cercle.png` (refait par `docs/cercle_elements.py`), affiché dans le menu pause, dans le Codex (bouton « Cercle des faiblesses », image seule) et sur l'écran de dessin (bouton « Couleurs ») ; l'aperçu du dessin indique sa couleur et ce qu'elle bat / craint.
 
 | Couleur | Sur le perso | Sur une arme |
 |---|---|---|

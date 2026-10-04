@@ -350,6 +350,9 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 	st.bullets = []
 	# Dégâts d'un tir répartis entre les morceaux (chaque morceau = un projectile)
 	var shot: float = 12.0 * st.dmg_mult * (0.45 + 0.9 * bfill)
+	# Coup de référence (balles qui remplissent leur encre) : les effets par coup (éléments,
+	# vol de vie) sont proportionnels à la taille du coup, voir Arena.hit_enemy.
+	st.ref_hit = 12.0 * st.dmg_mult * 1.35
 	var penalty := 1.0 / (1.0 + 0.08 * (parts.size() - 1))
 	var scale := 45.0 / float(def.bink)
 	for part in parts:
@@ -359,7 +362,7 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 			"damage": shot * penalty * float(part.count) / maxf(1.0, bpx),   # part du tir selon la taille du morceau
 			"speed": clampf(380.0 - pc * 3.2, 90.0, 420.0) * def.speed,         # grosse balle = lente
 			"radius": clampf(maxf(part.size.x, part.size.y) / 2.0, 2.0, 12.0),
-			"pierce": clampi(int(part.elong - 1.0), 0, 4) + int(def.get("pierce", 0)),  # allongée = perforante
+			"pierce": _size_pierce(float(part.count) / (def.bink * FILL_REF)) + int(def.get("pierce", 0)),  # grosse = perforante
 		})
 	var frac := []
 	for e in Pal.COUNT:
@@ -367,7 +370,8 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 	st.frac = frac
 	_apply_rarity(st, w.rar)
 	for bl in st.bullets:
-		bl.pierce += RAR_PIERCE[w.rar]
+		if bl.pierce > 0:   # la rareté renforce les balles qui perforent déjà (les petites, jamais)
+			bl.pierce += RAR_PIERCE[w.rar]
 	_apply_effect(st, w.effect)
 	_apply_effect(st, w.get("beffect", ""))
 	return st
@@ -559,3 +563,15 @@ static func _color_line(L: Array, frac: Array, need: float) -> void:
 	if c != 0:
 		L.append("Couleur : %s" % Pal.color_name(c))
 		L.append("  " + Pal.color_hint(c))
+
+
+## Perforation d'une balle selon sa TAILLE (part de l'encre prévue pour les balles) :
+## petite = s'arrête au premier ennemi, grosse = traverse jusqu'à 3 ennemis.
+static func _size_pierce(size: float) -> int:
+	if size < 0.35:
+		return 0
+	if size < 0.7:
+		return 1
+	if size < 1.05:
+		return 2
+	return 3
