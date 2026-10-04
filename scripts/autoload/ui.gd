@@ -24,7 +24,7 @@ const TITLE_OUTLINE := Color("2a1015")
 ## Yoster Island : ses pixels font 85/1024 de la taille, donc 12 ≈ 1 pixel de jeu (net), 24 = 2.
 const MENU_FONT_PATH := "res://assets/fonts/YosterIsland.ttf"
 const MENU_SIZE := 12
-const MENU_BIG := 24
+const MENU_BIG := 18   # 1,5 pixel de jeu par pixel de police (24 dépassait du menu)
 const MENU_TITLE := 36   # 3 pixels de jeu par pixel de police
 const MENU_MARGIN := 2   # marge verticale dans les boutons du menu
 
@@ -339,6 +339,8 @@ func use_menu_font(root: Node) -> void:
 			var n := MENU_TITLE if cur >= fs_title() else (MENU_BIG if cur >= 20 else MENU_SIZE)
 			(c as Control).add_theme_font_override("font", font_menu)
 			(c as Control).add_theme_font_size_override("font_size", n)
+			if c is Button:
+				(c as Button).clip_text = true   # un texte trop long ne doit jamais élargir le bouton
 			if c is Button:
 				for st in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 					var sbx := (c as Button).get_theme_stylebox(st).duplicate() as StyleBox
