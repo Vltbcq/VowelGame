@@ -146,9 +146,14 @@ func tick(delta: float) -> void:
 		w.tick(delta)
 
 
+## Réglage global des dégâts que te font les ennemis, les boss et leurs pièges (0,8 = -20 %).
+const ENEMY_DMG_MULT := 0.8
+
+
 func take_hit(dmg: float, element: int, src: Node) -> void:
 	if god or inv > 0.0 or arena.ended:
 		return
+	dmg *= ENEMY_DMG_MULT
 	if paper > 0:
 		# Bouclier de papier : ce coup-là est ignoré
 		paper -= 1
