@@ -786,8 +786,10 @@ func kill_enemy(e: Enemy) -> void:
 		hitstop(0.25 if e.is_boss else 0.07)
 	# Butin
 	# L'XP suit le butin de l'ennemi ; l'or en est une fraction (Run.GOLD_MULT).
-	var total := roundi(e.loot * randf_range(0.8, 1.25))
-	if total == 0 and randf() < e.loot:
+	# Moins d'ennemis par vague (SPAWN_MULT) : chacun lâche plus, pour garder le même or / XP par vague
+	var loot: float = e.loot * (1.0 if e.is_boss else 1.0 / SPAWN_MULT)
+	var total := roundi(loot * randf_range(0.8, 1.25))
+	if total == 0 and randf() < loot:
 		total = 1
 	while total > 0:
 		var v := mini(total, 5 if e.is_boss else randi_range(1, 2))
