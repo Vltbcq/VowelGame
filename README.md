@@ -2,7 +2,7 @@
 
 ![Paint It Until You Make It](docs/logo_petit.png)
 
-Logo de l'écran titre : `assets/logo.png` (réduit de `docs/logo_jeu_source.png`).
+Logo de l'écran titre : `assets/logo.png` (réduit de `docs/logo_jeu_source.png`). Icône du jeu : `icon.png` (fenêtre) et `icon.ico` (l'exe), tirées de `docs/icon_source.png`.
 
 *(Anciennement « Vowel ». Logo : `docs/logo.png`, régénéré par `python docs/logo.py` à partir du logo d'origine relevé case par case dans `docs/logo_base.txt` (`#` plaque noire, `o` lettres) ; le I de « IT » y devient un crayon.)*
 
