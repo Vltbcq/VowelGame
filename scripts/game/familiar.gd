@@ -17,6 +17,7 @@ var goal := Vector2.ZERO
 var vel := Vector2.ZERO
 var ang := 0.0
 var target: Enemy
+var rush_t := 0.0       # Sifflet : il fonce sur la cible du rappel
 var hit_cd := {}        # ennemi -> temps avant de pouvoir le retoucher
 var hp := 0.0           # Pavel
 var max_hp := 0.0
@@ -188,6 +189,15 @@ func tick(delta: float) -> void:
 		if hit_cd[k] <= 0.0:
 			hit_cd.erase(k)
 	sprite.position.y = -absf(sin(t * 7.0)) * 1.5
+	# Rappel au pied (Sifflet) : il fonce vers l'ennemi désigné, puis reprend son comportement
+	if rush_t > 0.0:
+		rush_t -= delta
+		var w := _called()
+		if w:
+			position = position.move_toward(w.position, 320.0 * _speed() * delta)
+			goal = w.position
+			if id == "herisson_f":
+				vel = (w.position - position).normalized() * vel.length()
 	if life >= 0.0:
 		life -= delta
 		sprite.modulate.a = clampf(life / 0.5, 0.0, 1.0)

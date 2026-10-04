@@ -70,7 +70,7 @@ const TYPES := {
 	# --- Familiers ("pet" : proposées seulement si tu as au moins un familier)
 	"sifflet": {"name": "Sifflet", "kind": "ranged", "style": "shot", "ink": 50, "bink": 20, "canvas": 24, "bcanvas": 12, "pet": true,
 		"dmg": 0.8, "cd": 0.8, "speed": 1.1,
-		"desc": "Tir simple. L'ennemi touché devient la cible de tes familiers."},
+		"desc": "Tir simple. RAPPEL AU PIED : au plus toutes les 3 s, l'ennemi touché fait accourir tous tes familiers, capacités rechargées."},
 	"fouet": {"name": "Fouet de dresseur", "kind": "melee", "style": "thrust", "ink": 80, "canvas": 40, "min_rar": 2, "pet": true,
 		"dmg": 0.7, "cd": 0.9, "reach": 1.6,
 		"desc": "Épique+. Long coup de fouet qui booste les dégâts de tes familiers."},

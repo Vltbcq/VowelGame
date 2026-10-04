@@ -88,6 +88,7 @@ var grelot_n := 0         # Collier à grelot : actions de familiers comptées
 var fam_dealt := {}       # dégâts infligés par familier (id -> total), pour les mesures
 var whistle: Enemy        # Sifflet : cible désignée aux familiers
 var whistle_t := 0.0
+var whistle_cd := 0.0     # Sifflet : prochain « Rappel au pied » possible
 var banana_kills := 0
 var spy_zoom := 1.5       # Longue-vue : zoom visé
 var void_f := 0.0         # Toile Blanche : part effacée de chaque bord (0 = rien, 0.113 = zone à 60 %)
@@ -599,6 +600,8 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		"sifflet":
 			whistle = e
 			whistle_t = 3.0
+			if whistle_cd <= 0.0 and not familiars.is_empty():
+				_whistle_call(e)
 		"fouet":
 			whip_t = 3.0
 			whip_stacks = mini(5, whip_stacks + 1)
@@ -1412,6 +1415,7 @@ func _tick_pets(delta: float) -> void:
 	if whip_t <= 0.0:
 		whip_stacks = 0
 	whistle_t -= delta
+	whistle_cd -= delta
 	if whistle_t <= 0.0:
 		whistle = null
 	if not shrooms.is_empty():
@@ -2157,3 +2161,19 @@ func banana_strike(pos: Vector2) -> void:
 	float_text(pos + Vector2(0, -22), "STRIKE !", Color("f2d23a"))
 	burst(pos, Color("f2d23a"), 18, 120.0)
 	marks.queue_redraw()
+
+
+## Sifflet : RAPPEL AU PIED ! tous les familiers foncent sur l'ennemi touché, capacités rechargées.
+## (Yuki, Pavel et la Pie restent à leur poste : ce sont des familiers de soutien.)
+func _whistle_call(e: Enemy) -> void:
+	whistle_cd = 3.0
+	float_text(player.position + Vector2(0, -28), "FIIIT !", Pal.ACCENT)
+	Sfx.play("zap")
+	for fm in familiars:
+		if fm.id in ["yuki", "pavel", "pie"]:
+			continue
+		fm.cd = 0.0
+		fm.rush_t = 1.0
+		fm.target = e
+		fm.goal = e.position
+		burst(fm.position, Pal.ACCENT, 4, 50.0)

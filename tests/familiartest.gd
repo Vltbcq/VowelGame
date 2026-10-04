@@ -122,8 +122,27 @@ func _ready() -> void:
 	var t: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(120, 40), false)
 	t.max_hp = 1000000.0   # qu'il survive aux 12 familiers pendant le test
 	t.hp = t.max_hp
+	var gr0: Familiar = null
+	for fm in arena.familiars:
+		if fm.id == "grenouille":
+			gr0 = fm
+	gr0.cd = 5.0
+	var d0 := gr0.position.distance_to(t.position)
+	arena.whistle_cd = 0.0
 	arena.hit_enemy(t, 1.0, {"type": "sifflet", "style": "shot"}, Vector2.RIGHT, 0.0)
 	_check(arena.whistle == t, "Sifflet : l'ennemi touché devient la cible")
+	var rushing := arena.familiars.filter(func(f): return f.rush_t > 0.0).size()
+	var support := arena.familiars.filter(func(f): return f.id in ["yuki", "pavel", "pie"] and f.rush_t > 0.0).size()
+	_check(rushing >= 8 and support == 0 and gr0.cd <= 0.0, "Rappel au pied : %d familiers foncent, capacités rechargées (pas Yuki, Pavel, Pie)" % rushing)
+	gr0.rush_t = 1.0
+	for f in 20:
+		arena.player.inv = 999.0
+		gr0.tick(1.0 / 60.0)
+	_check(gr0.position.distance_to(t.position) < d0, "la Grenouille accourt vers la cible (%.0f → %.0f)" % [d0, gr0.position.distance_to(t.position)])
+	for fm in arena.familiars:
+		fm.rush_t = 0.0
+	arena.hit_enemy(t, 1.0, {"type": "sifflet", "style": "shot"}, Vector2.RIGHT, 0.0)
+	_check(arena.familiars.filter(func(f): return f.rush_t > 0.0).is_empty(), "pas de nouveau rappel avant 3 s")
 	for f in 120:
 		arena.player.inv = 999.0
 		arena._process(1.0 / 60.0)
