@@ -50,6 +50,10 @@ var redo_stack: Array[Image] = []
 var view: CanvasView
 var ink_bar: Control
 var stats_label: Label
+var color_box: Control     # petit cercle des faiblesses + couleur principale du dessin, en direct
+var color_ring: Control
+var main_color_label: Label
+var main_color := 0
 var color_label: Label
 var warn_label: Label
 var tool_btns := {}
@@ -218,7 +222,22 @@ Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
 	UI.put(self, UI.label("APERÇU", 10, Pal.DIM), Vector2(426, 144))
 	stats_label = UI.label("", 10, Pal.TEXT)
 	stats_label.clip_text = false
-	UI.put(self, stats_label, Vector2(426, 158), Vector2(206, 150))
+	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
+	if with_color:
+		stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(self, stats_label, Vector2(426, 158), Vector2(124 if with_color else 206, 150))
+	if with_color:
+		# Cercle des faiblesses à côté des stats, et la couleur principale du dessin en direct
+		color_box = Control.new()
+		color_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.put(self, color_box, Vector2(552, 164), Vector2(84, 130))
+		UI.cercle(color_box, Vector2.ZERO, true)
+		color_ring = Control.new()
+		color_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		color_ring.draw.connect(_draw_color_ring)
+		UI.put(color_box, color_ring, Vector2.ZERO, Vector2(84, 98))
+		main_color_label = UI.label("", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		UI.put(color_box, main_color_label, Vector2(0, 100), Vector2(84, 28))
 	if Run.active and Run.character != null and cfg.kind in ["melee", "ranged", "bullet", "amulet", "mark"]:
 		_build_body_preview()
 
@@ -228,11 +247,6 @@ Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
 		bx += 70
 	if cfg.get("random", false):
 		UI.put(self, UI.button("Au hasard", _random_monster), Vector2(bx, 318), Vector2(66, 16))
-	if cfg.kind in ["character", "melee", "ranged", "bullet"]:
-		# petit cercle des couleurs : ouvre l'explication en grand
-		var cb := UI.button("Couleurs", func(): UI.cercle_popup(self))
-		cb.tooltip_text = "Cercle des faiblesses : quelle couleur bat laquelle"
-		UI.put(self, cb, Vector2(566, 318), Vector2(66, 16))
 	if cfg.get("cancel", false):
 		UI.put(self, UI.hotkey(UI.button(cfg.get("cancel_label", "Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(426, 338), Vector2(66, 16))
 	UI.put(self, UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER]), Vector2(496, 338), Vector2(136, 16))
@@ -393,6 +407,8 @@ func _toggle_body_view() -> void:
 func _set_body_view(on: bool) -> void:
 	body_view.visible = on
 	stats_label.visible = not on
+	if color_box:
+		color_box.visible = not on
 	view_btn.text = "Voir : les stats" if on else "Voir : sur le perso"
 
 
@@ -735,6 +751,34 @@ func _changed() -> void:
 	view.queue_redraw()
 	ink_bar.queue_redraw()
 	stats_label.text = Stats.preview(cfg, img, effect)
+	if color_box:
+		# arme (et ses balles) : 30 % du dessin ; le reste : 25 %
+		var need := 0.3 if cfg.kind in ["melee", "ranged", "bullet"] else 0.25
+		main_color = Pal.color_of(Analyzer.analyze(img).frac, need)
+		main_color_label.text = "Couleur\n" + (Pal.color_name(main_color) if main_color != 0 else "aucune")
+		main_color_label.add_theme_color_override("font_color", Pal.DIM if main_color == 0 else (Pal.SHADES[0][2] if main_color == Pal.NOIR else Pal.SHADES[main_color][2]))
+		color_ring.queue_redraw()
+
+
+## Entoure la couleur principale du dessin sur le petit cercle (mêmes positions que docs/cercle_elements.py).
+func _draw_color_ring() -> void:
+	if main_color == 0:
+		return
+	var pos := Vector2.ZERO
+	var rad := 7.0
+	var k := Pal.CYCLE.find(main_color)
+	if k >= 0:
+		var a := -PI / 2.0 + k * TAU / 5.0
+		pos = Vector2(42, 40) + Vector2(cos(a), sin(a)) * 31.0
+		pos = pos.round()
+	elif main_color == Pal.LUMIERE:
+		pos = Vector2(25, 88)
+		rad = 6.0
+	else:
+		pos = Vector2(59, 88)
+		rad = 6.0
+	color_ring.draw_arc(pos + Vector2(0.5, 0.5), rad + 3.0, 0.0, TAU, 24, Pal.ACCENT, 1.0)
+	color_ring.draw_arc(pos + Vector2(0.5, 0.5), rad + 4.0, 0.0, TAU, 24, Color(Pal.ACCENT, 0.5), 1.0)
 
 
 # ------------------------------------------------------------------ Sélection (rectangle)
