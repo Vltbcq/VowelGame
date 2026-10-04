@@ -92,5 +92,5 @@ func _weapon_guide() -> void:
 	draw_line(Vector2(x0, y), Vector2(x1, y), col, 3.0)
 	draw_colored_polygon(PackedVector2Array([Vector2(x1 + 10, y), Vector2(x1 - 8, y - 10), Vector2(x1 - 8, y + 10)]), col)
 	var tip := "CANON" if screen.cfg.kind == "ranged" else "POINTE"
-	draw_string(UI.font, Vector2(6, y - 8), "CROSSE" if screen.cfg.kind == "ranged" else "MANCHE", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(Pal.INK, 0.3))
-	draw_string(UI.font, Vector2(0, y - 8), tip + " →", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 6, 10, Color(Pal.INK, 0.3))
+	draw_string(UI.font, Vector2(6, y - 8), "CROSSE" if screen.cfg.kind == "ranged" else "MANCHE", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Color(Pal.INK, 0.3))
+	draw_string(UI.font, Vector2(0, y - 8), tip + " →", HORIZONTAL_ALIGNMENT_RIGHT, size.x - 6, UI.fs(10), Color(Pal.INK, 0.3))

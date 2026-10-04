@@ -32,19 +32,19 @@ static func map_choice() -> Control:
 static func slots() -> Control:
 	var s := _Screen.new()
 	s.build = func(root: _Screen):
-		UI.put(root, UI.label("PAINT IT UNTIL YOU MAKE IT", 26, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 20), Vector2(640, 36))
-		UI.put(root, UI.label("Choisis ta sauvegarde", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 62), Vector2(640, 14))
+		UI.logo(root, 320.0, 4.0, 220.0)
+		UI.put(root, UI.label("Choisis ta sauvegarde", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 70), Vector2(640, 14))
 		for i in Meta.SLOTS:
 			var n := i + 1
 			var sm := Meta.slot_summary(n)
 			var p := UI.panel(Pal.PANEL, Pal.ACCENT if n == Meta.slot else Pal.BORDER, 2)
 			UI.put(root, p, Vector2(40 + i * 192, 90), Vector2(176, 200))
-			UI.put(p, UI.label("Sauvegarde %d" % n, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(176, 24))
+			UI.put(p, UI.label("Sauvegarde %d" % n, 16, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 12), Vector2(176, 22))
 			var txt := "Vide : une toile blanche."
 			if not sm.is_empty():
-				txt = "◆ %d pigments\nParties : %d · Victoires : %d\nRecord : vague %d\nGalerie : %d dessins" % [
+				txt = "◆ %d pigments\nParties : %d\nVictoires : %d\nRecord : vague %d\nGalerie : %d dessins" % [
 					sm.pigments, sm.runs, sm.wins, sm.best_wave, sm.drawings]
-				txt += "\n\nPartie en cours :\n" + String(sm.get("run", "aucune"))
+				txt += "\nEn cours : " + String(sm.get("run", "aucune"))
 			var l := UI.label(txt, 10, Pal.TEXT if not sm.is_empty() else Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UI.put(p, l, Vector2(8, 44), Vector2(160, 100))

@@ -12,9 +12,14 @@ const FLOOR := Color("6b4a2a")
 const CARTEL := Color("efe6cf")
 const SELECTED := Color("7a5214")   # onglet / choix sélectionné
 
+## Police du jeu : Yoster Island (codeman38, libre dans un jeu), complétée par docs/yoster_glyphs.py.
 var font: FontFile
-var font_menu: FontFile   # Yoster Island (codeman38, libre dans un jeu) : menu de l'écran titre
+var font_menu: FontFile   # (même police : gardé pour l'écran titre)
 var theme: Theme
+
+## Couleurs du logo : texte crème des boutons (« paint »), contour sombre des titres.
+const BTN_TEXT := Color("e9dcbc")
+const TITLE_OUTLINE := Color("2a1015")
 
 ## Yoster Island : ses pixels font 85/1024 de la taille, donc 12 ≈ 1 pixel de jeu (net), 24 = 2.
 const MENU_FONT_PATH := "res://assets/fonts/YosterIsland.ttf"
@@ -24,23 +29,29 @@ const MENU_TITLE := 36   # 3 pixels de jeu par pixel de police
 const MENU_MARGIN := 2   # marge verticale dans les boutons du menu
 
 
+## Taille réelle pour une taille « historique » (10 = texte normal) : ×1,2, arrondie au demi-pixel
+## de police (6) pour rester net.
+func fs(size: int) -> int:
+	return maxi(12, roundi(size * 1.2 / 6.0) * 6)
+
+
 func _ready() -> void:
-	font = PixelFont.build()
 	font_menu = (load(MENU_FONT_PATH) as FontFile).duplicate()
 	font_menu.antialiasing = TextServer.FONT_ANTIALIASING_NONE
 	font_menu.hinting = TextServer.HINTING_NONE
 	font_menu.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
 	font_menu.generate_mipmaps = false
 	font_menu.allow_system_fallback = false
-	font_menu.fallbacks = [font]   # au cas où un caractère manquerait (voir docs/yoster_glyphs.py)
+	font_menu.fallbacks = [PixelFont.build()]   # au cas où un caractère manquerait encore
+	font = font_menu
 	theme = _build_theme()
 	# Appliqué au thème par défaut : l'héritage de thème est coupé par les Node/CanvasLayer.
 	var dt := ThemeDB.get_default_theme()
 	dt.merge_with(theme)
 	dt.default_font = font
-	dt.default_font_size = PixelFont.SIZE
+	dt.default_font_size = fs(PixelFont.SIZE)
 	ThemeDB.fallback_font = font
-	ThemeDB.fallback_font_size = PixelFont.SIZE
+	ThemeDB.fallback_font_size = fs(PixelFont.SIZE)
 	get_tree().root.theme = theme
 
 
@@ -60,7 +71,7 @@ func sb(bg: Color, border: Color = Color.TRANSPARENT, bw := 0, mx := 6, my := 3)
 func _build_theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = font
-	t.default_font_size = PixelFont.SIZE
+	t.default_font_size = fs(PixelFont.SIZE)
 
 	t.set_stylebox("normal", "Button", _shadowed(sb(WOOD, GOLD_DARK, 1)))
 	t.set_stylebox("hover", "Button", _shadowed(sb(WOOD_PANEL, GOLD, 1)))
@@ -68,7 +79,7 @@ func _build_theme() -> Theme:
 	t.set_stylebox("hover_pressed", "Button", sb(GOLD, GOLD, 1))
 	t.set_stylebox("disabled", "Button", sb(Color("2a1a12"), Color("4a3524"), 1))
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
-	t.set_color("font_color", "Button", GOLD)
+	t.set_color("font_color", "Button", BTN_TEXT)
 	t.set_color("font_hover_color", "Button", Pal.ACCENT)
 	t.set_color("font_pressed_color", "Button", Pal.INK)
 	t.set_color("font_hover_pressed_color", "Button", Pal.INK)
@@ -139,8 +150,12 @@ func toast(text: String) -> void:
 func label(text: String, size := 10, color := Pal.TEXT, align := HORIZONTAL_ALIGNMENT_LEFT) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.add_theme_font_size_override("font_size", size)
+	l.add_theme_font_size_override("font_size", fs(size))
 	l.add_theme_color_override("font_color", color)
+	if size >= 20:
+		# grands titres : contour sombre, comme les lettres du logo
+		l.add_theme_constant_override("outline_size", 4)
+		l.add_theme_color_override("font_outline_color", TITLE_OUTLINE)
 	l.horizontal_alignment = align
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return l
@@ -150,7 +165,7 @@ func button(text: String, cb: Callable, size := 10) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_size_override("font_size", fs(size))
 	b.pressed.connect(func():
 		Sfx.play("click")
 		cb.call())
@@ -218,7 +233,34 @@ func put(parent: Node, c: Control, pos: Vector2, size := Vector2.ZERO) -> Contro
 	c.position = pos
 	if size != Vector2.ZERO:
 		c.size = size
+		fit(c, size.x)
 	return c
+
+
+## Texte trop large pour sa case : on réduit sa taille jusqu'à ce qu'il tienne (au plus jusqu'à 9).
+## (want = largeur voulue : un Label s'élargit tout seul à la taille de son texte.)
+func fit(c: Control, want := -1.0) -> void:
+	var text := ""
+	var room := want if want > 0.0 else c.size.x
+	if c is Button:
+		text = (c as Button).text
+		room -= 14.0   # marges du bouton
+	elif c is Label and (c as Label).autowrap_mode == TextServer.AUTOWRAP_OFF:
+		text = (c as Label).text
+	if text == "" or room <= 0.0:
+		return
+	var sz := c.get_theme_font_size("font_size")
+	var widest := func(n: int) -> float:
+		var w := 0.0
+		for line in text.split("\n"):
+			w = maxf(w, font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, n).x)
+		return w
+	var n := sz
+	while n > 9 and widest.call(n) > room:
+		n -= 1
+	if n != sz:
+		c.add_theme_font_size_override("font_size", n)
+		c.size = Vector2(want if want > 0.0 else c.size.x, c.size.y)
 
 
 ## Fond d'écran. Sans couleur : le mur de la galerie (papier peint rayé, cimaise, parquet).

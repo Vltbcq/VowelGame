@@ -133,7 +133,7 @@ class _TipOverlay extends Control:
 		var w := 420.0
 		body.custom_minimum_size = Vector2(w - 28, 0)
 		# Hauteur réelle du texte avec la police pixel (+ interligne), pour que rien ne déborde
-		var ts := UI.font.get_multiline_string_size(t[1], HORIZONTAL_ALIGNMENT_LEFT, w - 28, 10)
+		var ts := UI.font.get_multiline_string_size(t[1], HORIZONTAL_ALIGNMENT_LEFT, w - 28, UI.fs(10))
 		var lines := String(t[1]).count("\n") + 1 + int(ts.x > w - 28)
 		var text_h := ts.y + lines * 2.0 + 10.0
 		var h := minf(340.0, 90.0 + text_h)

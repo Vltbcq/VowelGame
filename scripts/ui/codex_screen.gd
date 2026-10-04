@@ -155,7 +155,7 @@ func _build() -> void:
 	picker = null
 	UI.fill_bg(self)
 	UI.put(self, UI.label("CODEX", 20, Pal.ACCENT), Vector2(12, 8))
-	UI.put(self, UI.label("Choisis le dessin par défaut de chaque objet : il sera proposé en premier en partie.", 10, Pal.DIM), Vector2(130, 14))
+	UI.put(self, UI.label("Choisis le dessin par défaut de chaque objet : il sera proposé en premier en partie.", 10, Pal.DIM), Vector2(130, 14), Vector2(500, 14))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(250, 16))

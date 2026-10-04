@@ -68,7 +68,7 @@ func _build() -> void:
 		_artwork(i, Vector2(x0 + i * (fw + 10.0), 44), fw)
 
 	# --- Ta collection (sur le lambris)
-	UI.put(self, UI.label("TA COLLECTION  %d/%d" % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
+	UI.put(self, UI.label("COLLECTION %d/%d" % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
 	var syn_txt := ""
 	var counts := Run.synergy_counts()
 	for e in counts:
@@ -443,7 +443,7 @@ func _style_museum(b: Button) -> void:
 	b.add_theme_stylebox_override("hover", UI.sb(WOOD_PANEL, GOLD, 1))
 	b.add_theme_stylebox_override("pressed", UI.sb(GOLD, GOLD, 1))
 	b.add_theme_stylebox_override("disabled", UI.sb(Color("2a1a12"), Color("4a3524"), 1))
-	b.add_theme_color_override("font_color", GOLD)
+	b.add_theme_color_override("font_color", UI.BTN_TEXT)
 	b.add_theme_color_override("font_hover_color", Pal.ACCENT)
 
 
@@ -1359,7 +1359,7 @@ class _CaseStrip extends Control:
 			draw_texture_rect(tex, Rect2(r.get_center() - ts * sc / 2.0 - Vector2(0, 9), ts * sc), false)
 			# nom de l'objet (utile quand il n'est pas encore dessiné)
 			var font := get_theme_default_font()
-			draw_string(font, Vector2(r.position.x + 2, r.end.y - 9), shop._item_name(it), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 4, 10, Pal.INK)
+			draw_string(font, Vector2(r.position.x + 2, r.end.y - 9), shop._item_name(it), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 4, UI.fs(10), Pal.INK)
 		# curseur central
 		draw_rect(Rect2(Vector2(mid - 1, 0), Vector2(2, size.y)), ShopScreen.GOLD)
 		draw_colored_polygon(PackedVector2Array([Vector2(mid - 6, 0), Vector2(mid + 6, 0), Vector2(mid, 8)]), ShopScreen.GOLD)
