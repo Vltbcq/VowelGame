@@ -77,7 +77,9 @@ var stop_t := 0.0         # Horloge : temps arrêté
 var wave_len := 0.0       # durée de la vague (Cadran solaire)
 var patron_mult := 1.0    # Mécène : ennemis en plus
 var spy_t := 2.0          # Longue-vue : prochain changement de zoom (s)
-var peels: Array = []     # La Banane : peaux au sol {pos, t, a}
+var peels: Array = []     # La Banane : peaux au sol {pos, t, a} (+ from, to, ft pendant un lancer)
+var mash: Array = []      # La Banane : purée après un STRIKE {pos, r, t} (ralentit les ennemis)
+var banana_throw_t := 3.0 # La Banane : prochain lancer de peau
 var familiars: Array = [] # familiers sur la page
 var shrooms: Array = []   # Teemeo : champignons {pos, dmg}
 var whip_t := 0.0         # Fouet de dresseur : bonus des familiers (durée)
@@ -756,10 +758,10 @@ func kill_enemy(e: Enemy) -> void:
 		return
 	e.dead = true
 	Run.kills += 1
-	# La Banane : une peau toutes les 15 éliminations
+	# La Banane : une peau toutes les 8 éliminations
 	if Run.amulet_count("banane") > 0:
 		banana_kills += 1
-		if banana_kills >= 15:
+		if banana_kills >= 8:
 			banana_kills = 0
 			peels.append({"pos": e.position, "t": 20.0, "a": randf() * TAU})
 	if e.elite:
@@ -1077,11 +1079,35 @@ func _tick_void(delta: float) -> void:
 
 
 func _tick_peels(delta: float) -> void:
+	# La Banane : toutes les 6 s, tu lances une peau devant l'ennemi le plus proche
+	if Run.amulet_count("banane") > 0:
+		banana_throw_t -= delta
+		if banana_throw_t <= 0.0:
+			banana_throw_t = 6.0
+			var tg := nearest(player.position, 220.0)
+			if tg:
+				var to := tg.position + (player.position - tg.position).normalized() * 18.0   # sur son chemin vers toi
+				peels.append({"pos": player.position, "from": player.position, "to": to, "ft": 0.0, "t": 20.0, "a": randf() * TAU})
+				Sfx.play("swing")
+	# Purée de banane (STRIKE) : ralentit les ennemis dedans
+	if not mash.is_empty():
+		for m in mash:
+			m.t -= delta
+			for e in near(m.pos, m.r):
+				e.slow_t = maxf(e.slow_t, 0.3)
+		mash = mash.filter(func(m): return m.t > 0.0)
 	if peels.is_empty():
 		return
 	var keep := []
 	for pl in peels:
 		pl.t -= delta
+		if pl.has("ft") and pl.ft < 0.4:
+			# peau en vol (lancer en cloche) : pas encore posée
+			pl.ft += delta
+			pl.pos = (pl.from as Vector2).lerp(pl.to, minf(1.0, pl.ft / 0.4)) + Vector2(0, -sin(minf(1.0, pl.ft / 0.4) * PI) * 18.0)
+			pl.a += delta * 14.0
+			keep.append(pl)
+			continue
 		var used := false
 		for e in near(pl.pos, 8.0):
 			if not e.is_boss and e.slip_t <= 0.0:
@@ -1886,6 +1912,10 @@ class _Marks extends Node2D:
 			draw_rect(Rect2(c + Vector2(-3, -4), Vector2(1.5, 1.5)), Color.WHITE)
 			draw_rect(Rect2(c + Vector2(1, -5), Vector2(1.5, 1.5)), Color.WHITE)
 			draw_rect(Rect2(c + Vector2(3, -3), Vector2(1, 1)), Color.WHITE)
+		for m in arena.mash:
+			var ma := clampf(m.t / 1.0, 0.0, 1.0)
+			draw_circle(m.pos, m.r, Color(0.95, 0.85, 0.35, 0.28 * ma))
+			draw_circle(m.pos + Vector2(-6, 4), m.r * 0.5, Color(0.98, 0.9, 0.5, 0.3 * ma))
 		for pl in arena.peels:
 			# peau de banane : 3 lanières jaunes autour d'un petit centre
 			var c: Vector2 = pl.pos
@@ -2119,3 +2149,11 @@ func add_bird(tex: Texture2D, effect: String, outline: bool, dmg: float, fr: Arr
 func fam_credit(id: String, amount: float) -> void:
 	if amount > 0.0:
 		fam_dealt[id] = float(fam_dealt.get(id, 0.0)) + amount
+
+
+## La Banane : STRIKE ! une glissade a percuté 3 ennemis : flaque de purée qui ralentit.
+func banana_strike(pos: Vector2) -> void:
+	mash.append({"pos": pos, "r": 30.0, "t": 4.0})
+	float_text(pos + Vector2(0, -22), "STRIKE !", Color("f2d23a"))
+	burst(pos, Color("f2d23a"), 18, 120.0)
+	marks.queue_redraw()

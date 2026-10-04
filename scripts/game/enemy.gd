@@ -69,6 +69,7 @@ var slip_t := 0.0            # La Banane : assommé après avoir glissé
 var firefly := false         # aura de la Luciole : +15 % de dégâts subis
 var slide := Vector2.ZERO    # La Banane : glissade (ralentit doucement)
 var slide_hits := {}         # ennemis déjà percutés pendant cette glissade
+var slip_chain := {}         # réaction en chaîne de la Banane (nombre d'ennemis à terre, STRIKE déjà fait)
 var wet_t := 0.0             # Brumisateur : mouillé
 var gust_t := 0.0            # Éventail : projeté (choc contre un bord)
 var gust_dmg := 0.0
@@ -149,9 +150,17 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 
 
 ## La Banane : glisse sur une peau (assommé 2 s, part en patinant dans la direction où il allait).
-func slip(dir: Vector2) -> void:
+## chain : la réaction en chaîne (partagée entre tous les ennemis qui glissent à cause de la même peau).
+func slip(dir: Vector2, chain = null) -> void:
 	if is_boss or dead:
 		return
+	if chain == null:
+		chain = {"n": 0, "struck": false}   # nouvelle peau : nouvelle chaîne
+	chain.n = int(chain.n) + 1
+	slip_chain = chain
+	if chain.n >= 3 and not chain.struck:
+		chain.struck = true   # 3 ennemis à terre à cause d'une seule peau : STRIKE !
+		arena.banana_strike(position)
 	slip_t = 2.0
 	slide = dir.normalized() * 260.0
 	slide_hits = {}
@@ -171,6 +180,9 @@ func _slide_hits() -> void:
 		o.hurt(d, false, slide.normalized() * 120.0)
 		hurt(d * 0.5, false, Vector2.ZERO)
 		arena.burst(o.position, Color("f2d23a"), 6, 80.0)
+		# Effet domino : il glisse à son tour (réaction en chaîne)
+		if not o.dead and not o.is_boss and o.slip_t <= 0.0:
+			o.slip(slide.normalized().rotated(randf_range(-0.5, 0.5)), slip_chain)
 
 
 ## Pouvoirs des élites (Huile et plus) : [nom affiché, couleur de l'aura]
