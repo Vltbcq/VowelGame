@@ -145,12 +145,13 @@ func _build() -> void:
 	var pf := _frame_panel(FRAME[3], 5)
 	UI.put(self, pf, Vector2(322, 218), Vector2(64, 76))
 	UI.put(pf, UI.thumb(Run.build_player_image(), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
+	pf.tooltip_text = "Ton perso\n" + Pal.color_line(Run.char_a.get("frac", []))
 	# Sous l'autoportrait : taille du perso (pixels dessinés) et couleurs, utiles pour Silhouette / Nuancier
 	var npx := int(Run.char_a.get("pixels", 0))
 	var ncol := int(Run.char_a.get("elements", 0))
 	var px := UI.label("%d px\n%d couleur%s" % [npx, ncol, "s" if ncol > 1 else ""], 10, GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	px.mouse_filter = Control.MOUSE_FILTER_STOP
-	px.tooltip_text = "Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d" % [npx, ncol]
+	px.tooltip_text = "Autoportrait\nTaille de ton perso : %d pixels dessinés\nCouleurs (éléments) sur ton perso : %d\n%s" % [npx, ncol, Pal.color_line(Run.char_a.get("frac", []))]
 	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
@@ -565,6 +566,7 @@ func _weapon_tip(w: Dictionary) -> String:
 	var st: Dictionary = w.st
 	var nm: String = WeaponDB.get_def(w.type).name
 	var ratio := ("\n" + Stats.scale_text(st.scale)) if String(st.get("scale", "")) != "" else ""
+	ratio += "\n" + Pal.color_line(st.get("frac", []), 0.3)
 	if st.kind == "melee":
 		return "%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
 	var tot := 0.0

@@ -84,6 +84,12 @@ static func weakness(att: int, def: int) -> float:
 	return 1.0
 
 
+## Ligne d'infobulle : la couleur principale d'un dessin (cercle des faiblesses).
+static func color_line(frac: Array, need := 0.25) -> String:
+	var c := color_of(frac, need)
+	return "Couleur principale : " + (color_name(c) if c != 0 else "aucune")
+
+
 ## Nom d'une couleur du cercle (« Ombre » pour NOIR).
 static func color_name(c: int) -> String:
 	return "Ombre" if c == NOIR else (NAMES[c] if c > 0 else "aucune")
