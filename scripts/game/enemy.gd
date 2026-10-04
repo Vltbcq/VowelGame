@@ -5,6 +5,8 @@ extends Node2D
 
 const BOSS_DMG := 1.3
 const BOSS_SPEED := 1.12
+const BOSS_EASE := 0.85        # PV et dégâts des boss (réglage global)
+const BOSS_EASE_FIRST := 0.75  # le premier boss de la carte (vague 5)
 
 var arena: Arena
 var id := ""
@@ -130,6 +132,11 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		# Les boss frappent plus fort et bougent plus vite que leurs stats de base
 		dmg *= BOSS_DMG
 		speed *= BOSS_SPEED
+		# ... mais restent abordables : -15 % de PV et de dégâts, -25 % pour le 1er boss (vague 5)
+		var ease := BOSS_EASE_FIRST if Run.wave <= 5 else BOSS_EASE
+		max_hp *= ease
+		hp = max_hp
+		dmg *= ease
 	radius = mods.radius * (0.6 if small else 1.0)
 	element = mods.element
 	color = Pal.color_of(art.a.frac) if art.has("a") else element
