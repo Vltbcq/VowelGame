@@ -16,7 +16,7 @@ const DIFFICULTIES := [
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.9, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
-const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "speed": 1.0, "zoom": 1.5, "tips": true}
+const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "speed": 1.0, "zoom": 1.5, "tips": true, "show_amulets": true}
 
 var data := {}
 var settings := {}

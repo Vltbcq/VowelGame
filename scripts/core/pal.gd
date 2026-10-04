@@ -5,7 +5,7 @@ extends RefCounted
 enum { NEUTRE, FEU, GLACE, FOUDRE, POISON, ARCANE, LUMIERE }
 const COUNT := 7
 
-const NAMES := ["Neutre", "Feu", "Glace", "Foudre", "Poison", "Arcane", "Lumière"]
+const NAMES := ["Ombre", "Feu", "Glace", "Foudre", "Poison", "Arcane", "Lumière"]
 const COLOR_NAMES := ["Noir", "Rouge", "Bleu", "Jaune", "Vert", "Violet", "Blanc"]
 const UNLOCK := ["", "pack_primaires", "pack_primaires", "pack_primaires", "pack_secondaires", "pack_secondaires", "pack_secondaires"]
 
@@ -43,10 +43,10 @@ const RARITY_NAMES := ["Commun", "Rare", "Épique", "Légendaire"]
 const RARITY_NAMES_F := ["Commune", "Rare", "Épique", "Légendaire"]
 
 ## Cercle des faiblesses (cercle chromatique des peintres) : chaque couleur bat la suivante.
-## Feu → Foudre → Poison → Glace → Arcane → Feu ; la Lumière et le Noir se battent l'un l'autre.
+## Feu → Foudre → Poison → Glace → Arcane → Feu ; la Lumière et l'Ombre (le noir) se battent l'un l'autre.
 ## Une attaque qui bat la couleur de sa cible fait ×1,5 ; dans l'autre sens ×0,75.
 const CYCLE := [FEU, FOUDRE, POISON, GLACE, ARCANE]
-const NOIR := -1   # « couleur » d'un dessin surtout noir (le noir n'est pas un élément)
+const NOIR := -1   # l'Ombre : un dessin surtout noir
 const WEAK_MULT := 1.5
 const STRONG_MULT := 0.75
 
@@ -84,21 +84,10 @@ static func weakness(att: int, def: int) -> float:
 	return 1.0
 
 
-## Nom d'une couleur du cercle (« Noir » pour NOIR).
+## Nom d'une couleur du cercle (« Ombre » pour NOIR).
 static func color_name(c: int) -> String:
-	return "Noir" if c == NOIR else (NAMES[c] if c > 0 else "aucune")
+	return "Ombre" if c == NOIR else (NAMES[c] if c > 0 else "aucune")
 
-
-## « bat X, craint Y » pour une couleur.
-static func color_hint(c: int) -> String:
-	if c == LUMIERE:
-		return "bat le Noir, craint le Noir"
-	if c == NOIR:
-		return "bat la Lumière, craint la Lumière"
-	var i := CYCLE.find(c)
-	if i < 0:
-		return ""
-	return "bat %s, craint %s" % [NAMES[CYCLE[(i + 1) % CYCLE.size()]], NAMES[CYCLE[(i - 1 + CYCLE.size()) % CYCLE.size()]]]
 
 
 static func main_color(el: int) -> Color:

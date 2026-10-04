@@ -10,6 +10,7 @@ var hint_label: Label
 var hint_t := 0.0
 var hurt_flash := 0.0
 var dev_panel: DevPanel     # OUTIL DE DEV (Ctrl+P) — à retirer avant de publier
+var _amulet_btn: Button
 
 
 func _ready() -> void:
@@ -29,12 +30,29 @@ func _ready() -> void:
 	hint_label.add_theme_stylebox_override("normal", UI.sb(Color(Pal.BG, 0.85), Pal.ACCENT, 1, 8, 3))
 	hint_label.visible = false
 	add_child(hint_label)
+	# Afficher / cacher les amulettes sur ton perso (réglage gardé d'une partie à l'autre)
+	var ab := UI.button("", _toggle_amulets)
+	ab.tooltip_text = "Afficher ou cacher les amulettes posées sur ton perso"
+	UI.put(self, ab, Vector2(8, 54), Vector2(96, 14))
+	_amulet_btn = ab
+	_refresh_amulet_btn()
 	if Run.wave == 1:
 		var holder := Control.new()
 		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(holder)
 		(func(): Tips.show(holder, "controls", true)).call_deferred()
+
+
+func _toggle_amulets() -> void:
+	Meta.set_setting("show_amulets", not bool(Meta.setting("show_amulets")))
+	_refresh_amulet_btn()
+	if arena and arena.player:
+		arena.player.refresh_image()
+
+
+func _refresh_amulet_btn() -> void:
+	_amulet_btn.text = "Amulettes : " + ("oui" if bool(Meta.setting("show_amulets")) else "non")
 
 
 func _process(delta: float) -> void:
@@ -294,12 +312,9 @@ func toggle_pause() -> void:
 	var mid := UI.label("ARMES\n" + ws + "\nAMULETTES\n" + (am if am != "" else "aucune") + "\n\nSYNERGIES\n" + (syn if syn != "" else "aucune"), 10, Pal.TEXT)
 	mid.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.put(pause_menu, mid, Vector2(240, 64), Vector2(160, 280))
-	# Cercle des faiblesses + la couleur de ton perso
+	# Cercle des faiblesses
 	UI.put(pause_menu, UI.label("FAIBLESSES", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(400, 60), Vector2(236, 12))
 	UI.cercle(pause_menu, Vector2(400, 74))
-	var pc := UI.label(UI.perso_color_line(), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
-	pc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.put(pause_menu, pc, Vector2(404, 246), Vector2(228, 40))
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)
 	UI.put(pause_menu, vb, Vector2(40, 270), Vector2(160, 80))

@@ -1,6 +1,6 @@
 """Visuel du cercle des faiblesses (pixel art, couleurs du jeu).
 Chaque couleur bat la suivante (sens des flèches) : Feu → Foudre → Poison → Glace → Arcane → Feu ;
-Lumière et Noir se battent l'un l'autre.
+Lumière et Ombre se battent l'un l'autre.
 Écrit assets/ui/cercle.png (avec les noms), assets/ui/cercle_mini.png (sans les noms, petit)
 et docs/cercle_elements_x4.png (aperçu agrandi). Usage : python docs/cercle_elements.py"""
 import math
@@ -31,7 +31,7 @@ ICON = {   # 7×7 : '#' = blanc (ou encre sur fond clair), 'o' = teinte claire
 	'noir': [".#####.", "##...##", "#.....#", "#..#..#", "#.....#", "##...##", ".#####."],
 }
 NAMES = {'feu': 'Feu', 'foudre': 'Foudre', 'poison': 'Poison', 'glace': 'Glace', 'arcane': 'Arcane',
-	'lumiere': 'Lumière', 'noir': 'Noir'}
+	'lumiere': 'Lumière', 'noir': 'Ombre'}
 CYCLE = ['feu', 'foudre', 'poison', 'glace', 'arcane']
 
 
@@ -131,7 +131,7 @@ def build(with_names: bool):
 	disc(lx, y, rr, SH['lumiere']); icon(lx, y, 'lumiere')
 	disc(nx, y, rr, SH['noir']); icon(nx, y, 'noir')
 	if with_names:
-		for text, x, col, right in (("Lumière", lx - rr - 5, SH['lumiere'][1], True), ("Noir", nx + rr + 5, SH['noir'][2], False)):
+		for text, x, col, right in (("Lumière", lx - rr - 5, SH['lumiere'][1], True), ("Ombre", nx + rr + 5, SH['noir'][2], False)):
 			tw = d.textlength(text, font=font)
 			tx = x - tw if right else x
 			d.text((round(tx) + 1, y - 6), text, font=font, fill=INK)

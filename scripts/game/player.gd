@@ -45,7 +45,7 @@ func setup(a: Arena) -> void:
 	body = Node2D.new()
 	add_child(body)
 	mat = Gfx.material(Run.char_effect, Run.char_outline)
-	pimg = Gfx.padded(Run.build_player_image())
+	pimg = Gfx.padded(Run.build_player_image(bool(Meta.setting("show_amulets"))))
 	ptex = ImageTexture.create_from_image(pimg)
 	sprite = Gfx.sprite(ptex, mat)
 	sprite.centered = false
@@ -245,7 +245,7 @@ func rebuild_weapons() -> void:
 
 ## Redessine le perso (après avoir ajouté / retiré des amulettes en cours de vague).
 func refresh_image() -> void:
-	pimg = Gfx.padded(Run.build_player_image())
+	pimg = Gfx.padded(Run.build_player_image(bool(Meta.setting("show_amulets"))))
 	ptex = ImageTexture.create_from_image(pimg)
 	sprite.texture = ptex
 

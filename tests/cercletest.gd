@@ -67,6 +67,20 @@ func _ready() -> void:
 	p.take_hit(10.0, 0, src)
 	var lost_norm := 100.0 - p.hp
 	_check(lost_norm > 0.0 and absf(lost_weak / lost_norm - 1.5) < 0.1, "perso rouge : ×1,5 d'un ennemi violet (%.1f contre %.1f)" % [lost_weak, lost_norm])
+	# Bouton « Amulettes : oui / non » : cache les amulettes du perso, et revient
+	Meta.settings = Meta.settings.duplicate()
+	Meta.settings.show_amulets = true
+	var am := Image.create_empty(6, 6, false, Image.FORMAT_RGBA8)
+	am.fill(Pal.main_color(Pal.GLACE))
+	Run.set_amulet_art("oeil", am, "")
+	Run.add_amulet("oeil", am, Vector2i(Run.PAD + 8, Run.PAD + 8))
+	p.refresh_image()
+	var with_am: PackedByteArray = p.pimg.get_data()
+	arena.hud._toggle_amulets()
+	var without: PackedByteArray = p.pimg.get_data()
+	_check(with_am != without and not bool(Meta.setting("show_amulets")) and arena.hud._amulet_btn.text.ends_with("non"), "bouton : les amulettes disparaissent du perso")
+	arena.hud._toggle_amulets()
+	_check(p.pimg.get_data() == with_am, "bouton : elles reviennent")
 	# Captures : menu pause, puis la fenêtre du cercle
 	p.hp = p.max_hp
 	arena.hud.toggle_pause()
@@ -76,7 +90,7 @@ func _ready() -> void:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(args[0])
 	arena.hud.toggle_pause()
-	var pop := UI.cercle_popup(self, UI.perso_color_line())
+	var pop := UI.cercle_popup(self)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	if args.size() > 1:

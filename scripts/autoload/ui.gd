@@ -368,7 +368,7 @@ func logo(parent: Node, center_x: float, y: float, w := 230.0) -> TextureRect:
 
 # ------------------------------------------------------------------ Cercle des faiblesses
 
-const CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vise sa flèche, et ×0,75 à celle d'avant. La Lumière et le Noir se battent l'un l'autre.\nCe qui compte : la couleur principale de ton perso, de chaque arme et de chaque ennemi (au moins un quart du dessin)."
+const CERCLE_TEXT := "Chaque couleur fait ×1,5 de dégâts à celle que vise sa flèche, et ×0,75 à celle d'avant. La Lumière et l'Ombre se battent l'un l'autre.\nCe qui compte : la couleur principale de ton perso, de chaque arme et de chaque ennemi (au moins un quart du dessin)."
 
 
 ## Image du cercle (assets/ui/cercle.png, ou la petite version sans les noms).
@@ -403,11 +403,3 @@ func cercle_popup(parent: Node, extra := "", with_text := true) -> Control:
 	var close := hotkey(button("Fermer", func(): ov.queue_free()), [KEY_ESCAPE])
 	put(p, close, Vector2(120, ph - 24.0), Vector2(100, 16))
 	return ov
-
-
-## Couleur principale de ton perso, pour les textes d'aide.
-func perso_color_line() -> String:
-	var c := Pal.color_of(Run.char_a.get("frac", []))
-	if c == 0:
-		return "Ton perso n'a pas de couleur principale : aucune faiblesse."
-	return "Ton perso est %s : %s." % [Pal.color_name(c), Pal.color_hint(c)]
