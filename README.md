@@ -247,7 +247,7 @@ Tout est dans `scripts/core/stats.gd`. C'est le fichier à modifier pour équili
 
 ### Couleurs = éléments
 
-**Cercle des faiblesses** (cercle chromatique des peintres) : Feu → Foudre → Poison → Glace → Arcane → Feu, et Lumière ⇄ Noir. Une attaque dont la couleur bat celle de sa cible fait ×1,5, dans l'autre sens ×0,75. Comptent : la couleur principale de ton perso (≥ 25 % du dessin), de l'arme qui frappe (≥ 30 %, balles comprises) et de l'ennemi (≥ 25 % ; « Noir » s'il est surtout noir). « FAIBLE ! » / « RÉSISTE » / « FAIBLESSE ! » s'affichent en jeu. Visuel : `assets/ui/cercle.png` (refait par `docs/cercle_elements.py`), affiché dans le menu pause, dans le Codex (bouton « Cercle des couleurs ») et sur l'écran de dessin (bouton « Couleurs ») ; l'aperçu du dessin indique sa couleur et ce qu'elle bat / craint.
+**Cercle des faiblesses** (cercle chromatique des peintres) : Feu → Foudre → Poison → Glace → Arcane → Feu, et Lumière ⇄ Noir. Une attaque dont la couleur bat celle de sa cible fait ×1,5, dans l'autre sens ×0,75. Comptent : la couleur principale de ton perso (≥ 25 % du dessin), de l'arme qui frappe (≥ 30 %, balles comprises) et de l'ennemi (≥ 25 % ; « Noir » s'il est surtout noir). « FAIBLE ! » / « RÉSISTE » / « FAIBLESSE ! » s'affichent en jeu. Visuel : `assets/ui/cercle.png` (refait par `docs/cercle_elements.py`), affiché dans le menu pause, dans le Codex (bouton « Cercle des couleurs », image seule) et sur l'écran de dessin (bouton « Couleurs ») ; l'aperçu du dessin indique sa couleur et ce qu'elle bat / craint.
 
 | Couleur | Sur le perso | Sur une arme |
 |---|---|---|

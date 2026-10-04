@@ -384,21 +384,24 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 
 ## Fenêtre « Cercle des faiblesses » par-dessus un écran (Échap ou Fermer pour la fermer).
 ## extra : une ligne en plus (ex. la couleur de ton perso).
-func cercle_popup(parent: Node, extra := "") -> Control:
+## with_text = false : juste l'image du cercle, sans l'explication (Codex).
+func cercle_popup(parent: Node, extra := "", with_text := true) -> Control:
 	var ov := Control.new()
 	ov.process_mode = Node.PROCESS_MODE_ALWAYS
 	ov.mouse_filter = Control.MOUSE_FILTER_STOP
 	put(parent, ov, Vector2.ZERO, Vector2(640, 360))
 	fill_bg(ov, Color(0, 0, 0, 0.6))
 	var p := panel(Pal.PANEL, Pal.BORDER, 2)
-	put(ov, p, Vector2(150, 16), Vector2(340, 328))
+	var ph := 328.0 if with_text else 232.0
+	put(ov, p, Vector2(150, (360.0 - ph) / 2.0), Vector2(340, ph))
 	put(p, label("CERCLE DES FAIBLESSES", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(340, 24))
 	cercle(p, Vector2(52, 32))
-	var t := label(CERCLE_TEXT + ("\n" + extra if extra != "" else ""), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-	t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	put(p, t, Vector2(12, 202), Vector2(316, 98))
+	if with_text:
+		var t := label(CERCLE_TEXT + ("\n" + extra if extra != "" else ""), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		t.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		put(p, t, Vector2(12, 202), Vector2(316, 98))
 	var close := hotkey(button("Fermer", func(): ov.queue_free()), [KEY_ESCAPE])
-	put(p, close, Vector2(120, 304), Vector2(100, 16))
+	put(p, close, Vector2(120, ph - 24.0), Vector2(100, 16))
 	return ov
 
 
