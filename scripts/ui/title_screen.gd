@@ -35,6 +35,10 @@ func _ready() -> void:
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "?")), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	ver.z_index = 10
 	UI.put(self, ver, Vector2(480, 346), Vector2(154, 12))
+	# Crédit obligatoire des musiques (licence de soundimage.org)
+	var cr := UI.label("Musique : Eric Matyas · soundimage.org", 10, Pal.DIM)
+	cr.z_index = 10
+	UI.put(self, cr, Vector2(6, 346), Vector2(300, 12))
 
 	# Mur de l'expo (papier) derrière les cadres et le défilé
 	var rail := ColorRect.new()

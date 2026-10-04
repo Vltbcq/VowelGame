@@ -1,10 +1,24 @@
 extends Node
-## Bruitages 8 bits générés en code (aucun fichier audio nécessaire).
+## Bruitages 8 bits générés en code, et musiques (assets/music, par Eric Matyas – soundimage.org).
 
 const RATE := 22050
 var sounds := {}
 var players: Array[AudioStreamPlayer] = []
 var last_played := {}
+
+## Musiques : menus, entre les vagues (niveaux, boutique, dessins), pendant les vagues.
+const MUSIC := {
+	"menu": "res://assets/music/Bozos-Arcade.ogg",
+	"transition": "res://assets/music/Bumbling-Burglars_Looping.ogg",
+	"vague": "res://assets/music/Cartoon-Chaos.ogg",
+}
+const MUSIC_DB := -10.0      # la musique reste sous les bruitages
+const FADE := 0.8            # fondu entre deux musiques (s)
+var music_players: Array[AudioStreamPlayer] = []
+var music_now := ""
+var _music_i := 0
+var _fade_out: Tween
+var _fade_in: Tween
 
 
 func _ready() -> void:
@@ -14,6 +28,11 @@ func _ready() -> void:
 		p.volume_db = -8.0
 		add_child(p)
 		players.append(p)
+	for i in 2:
+		var mp := AudioStreamPlayer.new()
+		mp.volume_db = -80.0
+		add_child(mp)
+		music_players.append(mp)
 	sounds.click = _tone([[700, 700, 0.03]], "square", 0.25)
 	sounds.paint = _tone([[500, 520, 0.02]], "tri", 0.2)
 	sounds.shoot = _tone([[900, 450, 0.06]], "square", 0.18)
@@ -81,3 +100,32 @@ func play(snd: String, pitch_var := 0.08) -> void:
 			p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 			p.play()
 			return
+
+
+## Change de musique avec un fondu (rien si c'est déjà celle-là). "" = silence.
+func music(id: String) -> void:
+	if id == music_now:
+		return
+	music_now = id
+	var old := music_players[_music_i]
+	_music_i = 1 - _music_i
+	var nw := music_players[_music_i]
+	if _fade_out:
+		_fade_out.kill()
+	if _fade_in:
+		_fade_in.kill()
+	_fade_out = create_tween()
+	_fade_out.tween_property(old, "volume_db", -80.0, FADE)
+	_fade_out.tween_callback(func():
+		if music_players[_music_i] != old:   # (si on n'est pas revenu dessus entre-temps)
+			old.stop())
+	if id == "" or not MUSIC.has(id) or not ResourceLoader.exists(MUSIC[id]):
+		return
+	var st := load(MUSIC[id]) as AudioStream
+	if st is AudioStreamOggVorbis:
+		(st as AudioStreamOggVorbis).loop = true
+	nw.stream = st
+	nw.volume_db = -80.0
+	nw.play()
+	_fade_in = create_tween()
+	_fade_in.tween_property(nw, "volume_db", MUSIC_DB, FADE)

@@ -15,6 +15,8 @@ func _swap(n: Node) -> void:
 		current.queue_free()
 	current = n
 	add_child(n)
+	# Musique : vagues / entre les vagues (partie en cours) / menus
+	Sfx.music("vague" if n is Arena else ("transition" if Run.active else "menu"))
 	# Les écrans sont posés sous un Node : sans taille explicite ils font 0×0, et leurs
 	# voiles / fenêtres (conseils, confirmations...) ne bloqueraient pas les clics.
 	if n is Control:
