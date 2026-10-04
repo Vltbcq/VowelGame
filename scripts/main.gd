@@ -24,6 +24,27 @@ func _swap(n: Node) -> void:
 		(n as Control).size = get_viewport().get_visible_rect().size
 
 
+## Échap sur un écran qui n'a pas de « retour » (choix de niveau, pose d'objet, dessin obligatoire...) :
+## on ouvre les options par-dessus. (Pendant les vagues, Échap = pause.)
+var _esc_panel: Control
+
+
+func _unhandled_input(ev: InputEvent) -> void:
+	if not (ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_ESCAPE):
+		return
+	if current == null or current is Arena or get_tree().paused:
+		return
+	if is_instance_valid(_esc_panel):
+		return
+	var op := OptionsPanel.new()
+	_esc_panel = op
+	current.add_child(op)
+	op.done.connect(func(_r):
+		op.queue_free()
+		Engine.time_scale = float(Meta.setting("speed")))
+	get_viewport().set_input_as_handled()
+
+
 ## Affiche un écran et attend son signal done(result).
 func _ask(n: Node):
 	_swap(n)
@@ -51,8 +72,10 @@ func _choose_slot() -> void:
 				if ok:
 					Meta.delete_slot(r.n)
 			"quit":
-				get_tree().quit()
-				return
+				var sure = await _ask(ChoiceScreens.confirm("Quitter le jeu ?", "À bientôt !", "Quitter", "Rester"))
+				if sure:
+					get_tree().quit()
+					return
 	_title()
 
 

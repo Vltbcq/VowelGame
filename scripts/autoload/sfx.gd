@@ -23,14 +23,17 @@ var _fade_in: Tween
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Meta.apply_settings()   # crée les bus Musique / Bruitages avant d'y brancher les lecteurs
 	for i in 12:
 		var p := AudioStreamPlayer.new()
 		p.volume_db = -8.0
+		p.bus = Meta.BUS_SFX
 		add_child(p)
 		players.append(p)
 	for i in 2:
 		var mp := AudioStreamPlayer.new()
 		mp.volume_db = -80.0
+		mp.bus = Meta.BUS_MUSIC
 		add_child(mp)
 		music_players.append(mp)
 	sounds.click = _tone([[700, 700, 0.03]], "square", 0.25)

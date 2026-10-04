@@ -54,6 +54,7 @@ func _ready() -> void:
 	# Défilé en bas (derrière le menu)
 	parade = Control.new()
 	parade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parade.z_index = 20   # les dessins qui se baladent passent devant le menu
 	parade.draw.connect(_draw_parade)
 	UI.put(self, parade, Vector2.ZERO, Vector2(640, 360))
 
@@ -69,7 +70,7 @@ func _ready() -> void:
 	# Menu au centre, dans un panneau
 	var mp := UI.panel(Color(Pal.BG, 0.92), Pal.BORDER, 2)
 	UI.put(self, mp, Vector2(208, 74), Vector2(224, 232))
-	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S])
+	var sb := UI.hotkey(UI.button("Sauvegarde %d  ·  changer" % Meta.slot, func(): done.emit("slots")), [KEY_S, KEY_ESCAPE])
 	UI.put(mp, sb, Vector2(22, 6), Vector2(180, 16))
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 6)

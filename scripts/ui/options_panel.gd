@@ -1,6 +1,6 @@
 class_name OptionsPanel
 extends Control
-## Options : volume, plein écran, vitesse du jeu, zoom par défaut. Émet done(null) en fermant.
+## Options : volumes (général, musique, bruitages), plein écran, vitesse du jeu, zoom par défaut. Émet done(null) en fermant.
 
 signal done(result)
 
@@ -17,19 +17,22 @@ func _ready() -> void:
 	UI.fill_bg(self)
 	UI.put(self, UI.label("OPTIONS", 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 20), Vector2(640, 36))
 
-	var y := 90.0
-	UI.put(self, UI.label("Volume", 10, Pal.TEXT), Vector2(150, y + 2))
-	var sl := HSlider.new()
-	sl.min_value = 0.0
-	sl.max_value = 1.0
-	sl.step = 0.05
-	sl.value = float(Meta.setting("volume"))
-	sl.focus_mode = Control.FOCUS_NONE
-	sl.value_changed.connect(func(v): Meta.set_setting("volume", v))
-	sl.drag_ended.connect(func(_c): Sfx.play("click"))
-	UI.put(self, sl, Vector2(280, y), Vector2(200, 16))
+	var y := 70.0
+	for v in [["volume", "Volume général"], ["music_volume", "Musique"], ["sfx_volume", "Bruitages"]]:
+		var key: String = v[0]
+		UI.put(self, UI.label(v[1], 10, Pal.TEXT), Vector2(150, y + 2))
+		var sl := HSlider.new()
+		sl.min_value = 0.0
+		sl.max_value = 1.0
+		sl.step = 0.05
+		sl.value = float(Meta.setting(key))
+		sl.focus_mode = Control.FOCUS_NONE
+		sl.value_changed.connect(func(val): Meta.set_setting(key, val))
+		sl.drag_ended.connect(func(_c): Sfx.play("click"))
+		UI.put(self, sl, Vector2(280, y), Vector2(200, 16))
+		y += 26
 
-	y += 40
+	y += 10
 	UI.put(self, UI.label("Plein écran", 10, Pal.TEXT), Vector2(150, y + 2))
 	var fs := UI.button("", func(): pass)
 	fs.pressed.connect(func():
@@ -38,11 +41,11 @@ func _ready() -> void:
 	fs.text = "Oui" if Meta.setting("fullscreen") else "Non"
 	UI.put(self, fs, Vector2(280, y), Vector2(80, 16))
 
-	y += 40
+	y += 34
 	UI.put(self, UI.label("Vitesse du jeu", 10, Pal.TEXT), Vector2(150, y + 2))
 	_choices("speed", SPEEDS, Vector2(280, y))
 
-	y += 40
+	y += 34
 	UI.put(self, UI.label("Zoom par défaut", 10, Pal.TEXT), Vector2(150, y + 2))
 	_choices("zoom", ZOOMS, Vector2(280, y))
 	UI.put(self, UI.label("(en jeu : molette ou + / -)", 10, Pal.DIM), Vector2(280, y + 20))

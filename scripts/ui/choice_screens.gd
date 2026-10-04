@@ -52,7 +52,7 @@ static func slots() -> Control:
 				func(): root.done.emit({"a": "play", "n": n})), Vector2(28, 148), Vector2(120, 20))
 			if not sm.is_empty():
 				UI.put(p, UI.button("Supprimer", func(): root.done.emit({"a": "delete", "n": n})), Vector2(48, 174), Vector2(80, 16))
-		UI.put(root, UI.button("Quitter le jeu", func(): root.done.emit({"a": "quit"})), Vector2(20, 330), Vector2(110, 18))
+		UI.put(root, UI.hotkey(UI.button("Quitter le jeu", func(): root.done.emit({"a": "quit"})), [KEY_ESCAPE]), Vector2(20, 330), Vector2(110, 18))
 	return s
 
 

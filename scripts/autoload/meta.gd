@@ -16,7 +16,7 @@ const DIFFICULTIES := [
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.9, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
-const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "speed": 1.0, "zoom": 1.5, "tips": true, "show_amulets": true}
+const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "speed": 1.0, "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
 
 var data := {}
 var settings := {}
@@ -219,8 +219,25 @@ func _save_settings() -> void:
 		f.store_string(JSON.stringify(settings, "\t"))
 
 
+## Bus audio : « Musique » et « Bruitages » (sous le volume général, bus 0).
+const BUS_MUSIC := "Musique"
+const BUS_SFX := "Bruitages"
+
+
+func _bus(bus_name: String) -> int:
+	var i := AudioServer.get_bus_index(bus_name)
+	if i < 0:
+		AudioServer.add_bus()
+		i = AudioServer.bus_count - 1
+		AudioServer.set_bus_name(i, bus_name)
+		AudioServer.set_bus_send(i, "Master")
+	return i
+
+
 func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(0.0001, float(setting("volume")))))
+	AudioServer.set_bus_volume_db(_bus(BUS_MUSIC), linear_to_db(maxf(0.0001, float(setting("music_volume")))))
+	AudioServer.set_bus_volume_db(_bus(BUS_SFX), linear_to_db(maxf(0.0001, float(setting("sfx_volume")))))
 	# On ne touche à la fenêtre que si le plein écran change : une fenêtre agrandie (maximisée)
 	# n'est pas « fenêtrée », et la repasser en fenêtré la rétrécissait (ex. à chaque cran de zoom).
 	var fs := bool(setting("fullscreen"))
