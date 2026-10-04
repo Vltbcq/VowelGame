@@ -388,11 +388,15 @@ func nearest(p: Vector2, max_r: float) -> Enemy:
 
 # ------------------------------------------------------------------ Apparitions
 
+## Réglage global du nombre d'ennemis par vague (0,75 = 25 % de moins qu'à l'origine).
+const SPAWN_MULT := 0.75
+
+
 func _spawn(delta: float) -> void:
 	if boss_id != "" and not boss_spawned and elapsed > 1.5:
 		boss_spawned = true
 		telegraphs.append({"pos": _spawn_pos(160.0), "id": boss_id, "t": 1.5})
-	var rate: float = (1.1 + 0.26 * Run.eff_wave()) * Run.diff().spawn * patron_mult
+	var rate: float = (1.1 + 0.26 * Run.eff_wave()) * Run.diff().spawn * patron_mult * SPAWN_MULT
 	# Mécène : élites promises
 	if not patron_elites.is_empty() and elapsed >= float(patron_elites[0]) * (wave_len if wave_len > 0.0 else 40.0):
 		patron_elites.pop_front()
