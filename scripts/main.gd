@@ -476,7 +476,14 @@ func _ink_pot(i: int) -> void:
 	var add := int(Run.HEALS[o.id].ink)
 	var cfg := DrawCfg.character()
 	cfg.base = Run.character
-	cfg.ink = int(cfg.ink) + Run.char_ink_bonus + add
+	# Pile +40 : l'encre déjà utilisée par le perso + le pot (l'encre restante ne s'ajoute pas)
+	var need := Analyzer.ink_cost(Run.character) + add
+	var budget := need
+	if Run.char_effect != "":
+		# l'effet du perso coûte une part de l'encre : on l'ajoute pour qu'il ne grignote pas le pot
+		while budget - ceili(budget * Stats.EFFECT_COST) < need:
+			budget += 1
+	cfg.ink = budget
 	cfg.effect = Run.char_effect
 	cfg.outline = Run.char_outline
 	cfg.title = "Retouche ton perso (+%d d'encre)" % add

@@ -7,7 +7,7 @@ static func character() -> Dictionary:
 	var s := 32 + Meta.canvas_bonus()
 	return {"kind": "character", "gallery": "character", "size": Vector2i(s, s), "ink": Meta.base_ink(),
 		"title": "Dessine ton personnage",
-		"sub": "Seuls les traits coûtent de l'encre : remplir est gratuit.",
+		"sub": "Seuls les contours coûtent de l'encre : remplir l'intérieur est gratuit.",
 		"cancel": true, "min": 12}
 
 

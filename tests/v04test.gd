@@ -115,8 +115,9 @@ func _ready() -> void:
 		var cur: Node = main.current
 		if cur is DrawScreen and not seen.has("dessin"):
 			seen.append("dessin")
-			_check(int(cur.budget) >= 40 + int(DrawCfg.character().ink), "pot d'encre : +40 d'encre au budget (%d)" % cur.budget)
-			cur.img.fill_rect(Rect2i(2, 2, 6, 20), Pal.SHADES[1][1])   # on ajoute un bras
+			var had := Analyzer.ink_cost(Run.character)
+			_check(cur.eff_budget() == had + 40, "pot d'encre : pile +40 sur l'encre déjà utilisée (%d → %d)" % [had, cur.eff_budget()])
+			cur.img.fill_rect(Rect2i(2, 2, 4, 14), Pal.SHADES[1][1])   # on ajoute un bras (32 de contour)
 			cur._recount()
 			cur._validate()
 		elif cur is ArrangeScreen and not seen.has("rangement"):

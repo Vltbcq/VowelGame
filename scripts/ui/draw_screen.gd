@@ -295,7 +295,7 @@ func _draw_ink_bar() -> void:
 	if mi > 0:
 		var mx := 1 + (w - 2) * float(mi) / budget
 		ink_bar.draw_rect(Rect2(mx, 0, 2, 12), Pal.GOOD if used >= mi else Pal.BAD)
-	var txt := "ENCRE  %d / %d   (seuls les traits coûtent)" % [used, eb]
+	var txt := "ENCRE  %d / %d   (seuls les contours coûtent)" % [used, eb]
 	if mi > 0:
 		txt = "ENCRE  %d / %d   (minimum %d)" % [used, eb, mi]
 	ink_bar.draw_string(UI.font, Vector2(0, 10), txt, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Pal.TEXT)
@@ -692,6 +692,9 @@ func _flood(start: Vector2i) -> void:
 		img.copy_from(backup)
 		_warn("Pas assez d'encre : la zone n'est pas fermée ?")
 	else:
+		if cost < used:
+			# remplir un trou fait disparaître son contour intérieur : on le dit, sinon ça surprend
+			_warn("Contour intérieur rempli : −%d encre" % (used - cost))
 		used = cost
 
 
