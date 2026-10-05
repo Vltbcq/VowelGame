@@ -67,6 +67,7 @@ var squares: Array = []   # Tampon encreur {pos, half, t, dur, dmg, col}
 var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, dmg}
 var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit, gaps}
 var dark_t := 0.0         # Nuit d'encre
+var blotters: Array = []  # Encrier renversé : buvards qui nettoient tes taches {pos, t}
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
 # Armes épiques / légendaires et Horloge
 var allies: Array = []    # Retouche : ennemis redessinés dans ton camp
@@ -539,7 +540,7 @@ func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, te
 	return p
 
 
-func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0) -> void:
+func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0, light := false) -> Projectile:
 	var p := Projectile.new()
 	p.hang = hang
 	p.hostile = true
@@ -564,6 +565,13 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0) -> 
 		p.radius = 3.0
 		p.element = src.element
 		tex = _dot(src.element)
+	if light:
+		# Éclat de LUMIÈRE (Encrier) : ×1,5 sur un perso Ombre, et il brille dans la nuit d'encre
+		p.light = true
+		p.radius = 3.5
+		p.element = Pal.LUMIERE
+		tex = _light_tex()
+		effect = ""
 	# Trompe-l'œil : certains tirs ennemis partent de travers
 	if randf() < 0.3 * Run.amulet_count("trompe_oeil"):
 		vel = vel.rotated(randf_range(0.9, 1.7) * (1.0 if randf() < 0.5 else -1.0))
@@ -572,6 +580,25 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0) -> 
 	bullet_layer.add_child(p)
 	p.setup(tex, effect, outline)
 	bullets.append(p)
+	return p
+
+
+## Éclat de lumière : petite étoile blanche au cœur jaune pâle.
+func _light_tex() -> Texture2D:
+	if not dot_tex.has("light"):
+		var rows := ["...#...", "..#o#..", ".#ooo#.", "#oo@oo#", ".#ooo#.", "..#o#..", "...#..."]
+		var img := Image.create_empty(7, 7, false, Image.FORMAT_RGBA8)
+		for y in 7:
+			for x in 7:
+				match rows[y][x]:
+					"#":
+						img.set_pixel(x, y, Color("f0c43a"))
+					"o":
+						img.set_pixel(x, y, Color("fbe79a"))
+					"@":
+						img.set_pixel(x, y, Color.WHITE)
+		dot_tex["light"] = Gfx.texture(img)
+	return dot_tex["light"]
 
 
 # ------------------------------------------------------------------ Dégâts
@@ -1036,14 +1063,14 @@ func hazard_effect(pos: Vector2, r: float) -> Array:
 
 
 ## Tir en cloche : un pâté d'encre part de src et retombe sur `to` après `dur` secondes.
-func lob(src: Enemy, to: Vector2, dur: float, r := 22.0) -> void:
+func lob(src: Enemy, to: Vector2, dur: float, r := 22.0, from := Vector2.INF) -> void:
 	var tex: Texture2D = _dot(src.element)
 	if Run.eproj_art.has(src.id):
 		if not eproj_tex.has(src.id):
 			eproj_tex[src.id] = Gfx.texture(Analyzer.trim(Run.eproj_art[src.id].image))
 		tex = eproj_tex[src.id]
-	lobs.append({"from": src.position, "to": to, "t": 0.0, "dur": dur, "dmg": src.dmg, "r": r,
-		"el": src.element, "tex": tex, "col": src.ink_col})
+	lobs.append({"from": src.position if from == Vector2.INF else from, "to": to, "t": 0.0, "dur": dur, "dmg": src.dmg, "r": r,
+		"el": src.element, "tex": tex, "col": src.ink_col, "src": src})
 	Sfx.play("enemy_shot")
 
 
@@ -1127,6 +1154,7 @@ func _tick_peels(delta: float) -> void:
 func _tick_effects(delta: float) -> void:
 	_tick_void(delta)
 	_tick_peels(delta)
+	_tick_blotters(delta)
 	for h in hazards:
 		h.t -= delta
 	hazards = hazards.filter(func(h): return h.t > 0.0)
@@ -1157,7 +1185,8 @@ func _tick_effects(delta: float) -> void:
 		# Atterrissage
 		explosion(lb.to, lb.r, Color(lb.col, 0.7))
 		if lb.to.distance_to(player.position) < lb.r + player.radius:
-			player.take_hit(lb.dmg, lb.el, null)
+			var lsrc = lb.get("src")
+			player.take_hit(lb.dmg, lb.el, lsrc if is_instance_valid(lsrc) else null)
 		add_hazard(lb.to, lb.r * 0.7, 3.0, 0.5, 0.0, lb.col)
 	lobs = keep
 	keep = []
@@ -1695,6 +1724,36 @@ func player_vel() -> Vector2:
 	return player.vel if player else Vector2.ZERO
 
 
+## Buvard (Encrier renversé) : ramasse-le pour effacer les taches d'encre de ton perso.
+func spawn_blotter(avoid: Vector2) -> void:
+	var p := Vector2.ZERO
+	for k in 30:
+		p = Vector2(randf_range(40.0, W - 40.0), randf_range(40.0, H - 40.0))
+		if p.distance_to(avoid) > 120.0 and p.distance_to(player.position) > 70.0:
+			break
+	blotters.append({"pos": p, "t": 10.0})
+	float_text(p + Vector2(0, -14), "BUVARD", BLOTTER)
+
+
+const BLOTTER := Color("f2a0b8")
+
+
+func _tick_blotters(delta: float) -> void:
+	if blotters.is_empty():
+		return
+	var keep := []
+	for b in blotters:
+		b.t -= delta
+		if b.pos.distance_to(player.position) < player.radius + 9.0:
+			player.clean()
+			burst(b.pos, BLOTTER, 12, 80.0)
+			Sfx.play("pickup")
+			continue
+		if b.t > 0.0:
+			keep.append(b)
+	blotters = keep
+
+
 func darkness(sec: float) -> void:
 	dark_t = sec
 
@@ -2042,6 +2101,14 @@ class _Marks extends Node2D:
 				else:
 					draw_rect(Rect2(s[0], sc.y - 6, s[1] - s[0], 12), Color(0.6, 1.0, 0.7, 0.18))
 					draw_line(Vector2(s[0], sc.y), Vector2(s[1], sc.y), Color(0.75, 1.0, 0.8, 0.95), 2.0)
+		# Buvards (Encrier) : rose, ils clignotent avant de disparaître
+		for b in arena.blotters:
+			var bl := 1.0 if b.t > 2.5 or int(b.t * 8.0) % 2 == 0 else 0.35
+			var r := Rect2(b.pos - Vector2(8, 6), Vector2(16, 12))
+			draw_rect(r.grow(1.0), Color(Pal.INK, 0.85 * bl))
+			draw_rect(r, Color(Arena.BLOTTER, bl))
+			draw_line(r.position + Vector2(2, 4), r.position + Vector2(14, 4), Color(1, 1, 1, 0.5 * bl), 1.0)
+			draw_line(r.position + Vector2(2, 8), r.position + Vector2(14, 8), Color(1, 1, 1, 0.5 * bl), 1.0)
 		for g in arena.telegraphs_fx:
 			if g.get("boss", false):
 				# arrivée d'un boss : cercle rouge qui se resserre + croix qui clignote

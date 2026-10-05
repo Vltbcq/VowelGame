@@ -29,7 +29,12 @@ var power := ""             # Huile+ : pouvoir de l'élite (shield, fast, vampir
 var shield_up := false      # élite « bouclier » : ignore le premier coup
 var summon_cd := 0.0        # élite « invocatrice »
 var frenzy_on := false      # Chef-d'œuvre : boss en fureur sous 25 % de PV
-var toile_phase := 1        # Toile Blanche : phase 1, 2 ou 3
+var toile_phase := 1        # Toile Blanche / Encrier renversé : phase 1, 2 ou 3
+var light_shots := false    # Encrier (phase 2+) : ses tirs sont des éclats de LUMIÈRE
+var reflet: Enemy           # Encrier (phase 3) : son reflet de Rorschach
+var reflet_of: Enemy        # ... et pour le reflet : l'Encrier qu'il copie
+var blot_cd := 3.0          # Encrier : prochain buvard
+var hit_at := Vector2.INF   # coup reçu par le reflet : le chiffre s'affiche sur lui
 var boss_inv := 0.0         # boss intouchable (passage de phase)
 var contact := true
 var body: Node2D
@@ -256,6 +261,9 @@ func _draw() -> void:
 func tick(delta: float) -> void:
 	if dead:
 		return
+	if reflet_of != null:
+		_reflet_tick(delta)
+		return
 	weak_t -= delta
 	if ally:
 		_ally_tick(delta)
@@ -477,6 +485,13 @@ func _update_tint() -> void:
 func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	if dead or boss_inv > 0.0:
 		return
+	if reflet_of != null:
+		# Reflet de Rorschach : les coups vont à l'Encrier (PV partagés)
+		if is_instance_valid(reflet_of) and not reflet_of.dead:
+			flash = 1.0
+			reflet_of.hit_at = position
+			reflet_of.hurt(amount, crit, Vector2.ZERO, el)
+		return
 	if shield_up:
 		shield_up = false   # élite « bouclier » : le premier coup est bloqué
 		flash = 1.0
@@ -502,7 +517,8 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	squash = 1.0 if not is_boss else 0.4
 	if def.beh != "dvd" and not is_boss:
 		knock += kb * (0.25 if def.get("heavy", false) else 1.0)
-	arena.damage_number(position, amount, crit, el)
+	arena.damage_number(position if hit_at == Vector2.INF else hit_at, amount, crit, el)
+	hit_at = Vector2.INF
 	arena.hit_fx(self, crit, kb)
 	if hp <= 0.0:
 		arena.kill_enemy(self)
@@ -961,16 +977,39 @@ func _boss_copy(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	return dirp.orthogonal() * speed * 0.8 + dirp * speed * (0.4 if dist > 160.0 else -0.4)
 
 
-## L'Encrier renversé : inondations, spirales, charges qui laissent de l'encre ;
-## en rage, la NUIT D'ENCRE (on ne voit plus que près de soi).
+## L'Encrier renversé, boss final du Tableau noir, en 3 PHASES (66 % et 33 % de PV) :
+## 1. L'encre se renverse : inondation (grosses gouttes), spirale, charge qui laisse une traînée d'encre.
+##    Ses gouttes et ses coups TACHENT ton perso (ta couleur tire vers l'Ombre) ; des BUVARDS
+##    apparaissent pour te nettoyer.
+## 2. Éclats de lumière : ses tirs deviennent de la LUMIÈRE (×1,5 sur un perso Ombre), projecteur
+##    (double anneau) et NUIT D'ENCRE, où seuls ses éclats de lumière brillent.
+## 3. Taches de Rorschach : il se dédouble en MIROIR ; le reflet copie chaque attaque (PV partagés).
 func _boss_ink(delta: float, dirp: Vector2, dist: float) -> Vector2:
-	var fast := 1.3 if _enraged() else 1.0
+	var want := 1 if hp > max_hp * 0.66 else (2 if hp > max_hp * 0.33 else 3)
+	if want > toile_phase:
+		toile_phase = want
+		_ink_transition()
+	if boss_inv > 0.0:
+		boss_inv -= delta
+		flash = 0.6 if int(t * 12.0) % 2 == 0 else 0.1
+		return Vector2.ZERO
+	light_shots = toile_phase >= 2
+	var fast: float = [1.0, 1.0, 1.15, 1.3][toile_phase]
+	var twin := is_instance_valid(reflet) and not reflet.dead
+	# Buvards : de quoi se nettoyer quand on est taché
+	blot_cd -= delta
+	if blot_cd <= 0.0:
+		blot_cd = 7.0
+		if arena.player.stains > 0 and arena.blotters.size() < (2 if toile_phase >= 3 else 1):
+			arena.spawn_blotter(position)
 	if state == "dash":
 		st_t -= delta
 		cd3 -= delta
 		if cd3 <= 0.0:
 			cd3 = 0.05
 			arena.add_hazard(position, 8.0, 3.0, 0.8, dmg * 0.35, ink_col)
+			if twin:
+				arena.add_hazard(reflet.position, 8.0, 3.0, 0.8, dmg * 0.35, ink_col)
 		if st_t <= 0.0:
 			state = "walk"
 			_ring(18, randf() * TAU, 0.9)
@@ -998,12 +1037,15 @@ func _boss_ink(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	cd2 -= delta
 	if cd <= 0.0:
 		cd = 3.0
-		pattern = (pattern + 1) % 3
+		pattern = (pattern + 1) % (3 if toile_phase == 1 else 4)
 		match pattern:
 			0:
-				# Inondation : grosses gouttes en cloche qui laissent de larges flaques
+				# Inondation : grosses gouttes en cloche qui TACHENT et laissent de larges flaques
 				for k in 5:
 					arena.lob(self, arena.player.position + Vector2.from_angle(randf() * TAU) * randf_range(0.0, 90.0), 1.2, 34.0)
+				if twin:
+					for k in 3:
+						arena.lob(self, arena.player.position + Vector2.from_angle(randf() * TAU) * randf_range(20.0, 90.0), 1.3, 34.0, reflet.position)
 			1:
 				state = "spiral"
 				st_t = 2.4
@@ -1012,17 +1054,91 @@ func _boss_ink(delta: float, dirp: Vector2, dist: float) -> Vector2:
 				st_t = 0.6
 				dash_dir = dirp
 				arena.add_ruler(position, _wall_point(position, dirp), 0.6)
-	if _enraged() and cd2 <= 0.0:
+				if twin:
+					var md := Vector2(-dirp.x, dirp.y)
+					arena.add_ruler(reflet.position, _wall_point(reflet.position, md), 0.6)
+			3:
+				# Projecteur : deux anneaux de lumière, le 2e décalé (on se glisse entre les éclats)
+				var a0 := randf() * TAU
+				_ring(16, a0, 0.75)
+				var me := self
+				arena._after(0.45, func():
+					if is_instance_valid(me) and not me.dead and not arena.ended:
+						me._ring(16, a0 + PI / 16.0, 0.95))
+				arena.float_text(position + Vector2(0, -40), "PROJECTEUR !", Pal.ACCENT)
+	if toile_phase >= 2 and cd2 <= 0.0:
 		cd2 = 14.0
 		arena.darkness(6.0)
 		arena.float_text(position + Vector2(0, -40), "NUIT D'ENCRE !", Pal.BAD)
 	return dirp * speed * (1.0 if dist > 120.0 else 0.3)
 
 
+## Passage de phase de l'Encrier : intouchable 1,5 s, onde qui repousse ; en phase 3, il se dédouble.
+func _ink_transition() -> void:
+	boss_inv = 1.5
+	state = "walk"
+	cd = 1.8
+	cd2 = 4.0
+	arena.hud.announce("ÉCLATS DE LUMIÈRE !" if toile_phase == 2 else "TACHES DE RORSCHACH !", Pal.BAD)
+	arena.shake(12.0)
+	arena.hitstop(0.2)
+	Sfx.play("boss")
+	arena.explosion(position, 140.0, Color(ink_col, 0.9))
+	var p := arena.player
+	var away := (p.position - position).normalized()
+	p.position = (p.position + away * 70.0).clamp(Vector2(12, 12), Vector2(Arena.W - 12, Arena.H - 12))
+	if toile_phase == 3:
+		_split()
+
+
+## Taches de Rorschach : un reflet de l'Encrier apparaît en miroir (axe vertical au centre de la page).
+## Il copie chaque mouvement et chaque tir ; les coups qu'il prend vont à l'Encrier (PV partagés).
+func _split() -> void:
+	if absf(position.x - Arena.W / 2.0) < 90.0:
+		position.x = Arena.W * (0.28 if position.x < Arena.W / 2.0 else 0.72)
+	var tw := arena._spawn_enemy_raw(id, Vector2(Arena.W - position.x, position.y), false)
+	arena.boss = self
+	if tw == null:
+		return
+	tw.reflet_of = self
+	tw.is_boss = false
+	tw.max_hp = 1e9
+	tw.hp = 1e9
+	tw.loot = 0.0
+	tw.dmg = dmg
+	tw.boss_inv = boss_inv
+	reflet = tw
+	arena.burst(tw.position, ink_col, 30, 140.0)
+	arena.burst(position, ink_col, 30, 140.0)
+
+
+## Le reflet de Rorschach : il suit l'Encrier en miroir, ne pense pas tout seul.
+func _reflet_tick(delta: float) -> void:
+	var m := reflet_of
+	if not is_instance_valid(m) or m.dead:
+		dead = true
+		arena.burst(position, ink_col, 24, 120.0)
+		arena.enemies.erase(self)
+		queue_free()
+		return
+	t += delta
+	position = Vector2(Arena.W - m.position.x, m.position.y)
+	contact = m.contact
+	boss_inv = m.boss_inv
+	flash = maxf(m.flash, maxf(0.0, flash - delta * 7.0))
+	body.scale = Vector2(-m.body.scale.x, m.body.scale.y)
+	body.rotation = -m.body.rotation
+	body.position = m.body.position
+	mat.set_shader_parameter("flash", flash)
+
+
 # ------------------------------------------------------------------ Attaques
 
 func _shoot(dir: Vector2, speed_mult: float) -> void:
-	arena.spawn_enemy_bullet(self, position, dir * 140.0 * speed_mult)
+	arena.spawn_enemy_bullet(self, position, dir * 140.0 * speed_mult, 0.0, light_shots)
+	if is_instance_valid(reflet) and not reflet.dead:
+		# Rorschach : le reflet tire la même chose, en miroir
+		arena.spawn_enemy_bullet(self, reflet.position, Vector2(-dir.x, dir.y) * 140.0 * speed_mult, 0.0, light_shots)
 
 
 func _ring(n: int, offset := 0.0, speed_mult := 1.0) -> void:

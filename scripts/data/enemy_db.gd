@@ -51,7 +51,7 @@ const TYPES := {
 	"photocopieuse": {"name": "La Photocopieuse", "beh": "b_copy", "map": 2, "boss": 2, "hp": 6500.0, "dmg": 13.0, "spd": 40.0, "wave": 10, "canvas": 80, "ink": 400, "loot": 60, "shoots": true,
 		"desc": "Boss (vague 10). Ses tirs ont une COPIE qui arrive du côté opposé, et son scanner balaie tout l'écran : mets-toi dans une bande non scannée ! Parfois : bourrage papier !"},
 	"encrier": {"name": "L'Encrier renversé", "beh": "b_ink", "map": 2, "boss": 2, "hp": 18000.0, "dmg": 18.0, "spd": 45.0, "wave": 15, "canvas": 88, "ink": 540, "loot": 0, "shoots": true,
-		"desc": "Boss final (vague 15). Inonde le tableau d'encre, puis plonge la classe dans la NUIT D'ENCRE."},
+		"desc": "Boss final (vague 15). 3 phases : il TACHE ton perso (tu passes à l'Ombre, ramasse les buvards !), puis tire des éclats de LUMIÈRE dans la nuit d'encre, puis se dédouble en taches de Rorschach."},
 }
 
 

@@ -160,7 +160,7 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	var att := element
 	if src is Enemy:
 		att = (src as Enemy).color
-	var wmult := Pal.weakness(att, Pal.color_of(Run.char_a.get("frac", [])))
+	var wmult := Pal.weakness(att, main_color())
 	if wmult != 1.0:
 		dmg *= wmult
 		if weak_t <= 0.0:
@@ -199,6 +199,9 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			return
 	hp -= d
 	was_hurt = true
+	# L'Encrier renversé (et son reflet) TACHE ton perso
+	if src is Enemy and ((src as Enemy).def.get("beh", "") == "b_ink" or (src as Enemy).reflet_of != null):
+		stain()
 	if Run.amulet_count("encre_invisible") > 0:
 		invis_t = 1.0
 	arena.squid_cloud(position)
@@ -253,6 +256,60 @@ func refresh_image() -> void:
 func refresh_max_hp() -> void:
 	max_hp = maxf(1.0, roundf(st.max_hp * erase_mult))
 	hp = minf(hp, max_hp)
+
+
+## Taches de l'Encrier renversé : chacune noircit 16 % de ton perso (80 % au plus).
+## Au-delà, ta couleur principale devient l'OMBRE... que ses éclats de lumière frappent ×1,5.
+var stains := 0
+const STAIN_MAX := 5
+
+
+## Ta couleur dans le cercle des faiblesses (taches comprises).
+func main_color() -> int:
+	var frac: Array = Run.char_a.get("frac", [])
+	if stains <= 0 or frac.is_empty():
+		return Pal.color_of(frac)
+	var s := minf(0.8, stains * 0.16)
+	var f := []
+	for e in frac.size():
+		f.append(float(frac[e]) * (1.0 - s) + (s if e == 0 else 0.0))
+	return Pal.color_of(f)
+
+
+func stain() -> void:
+	if stains >= STAIN_MAX:
+		return
+	var before := main_color()
+	stains += 1
+	var w := pimg.get_width()
+	var h := pimg.get_height()
+	var c := Vector2i(-1, -1)
+	for i in 400:
+		var q := Vector2i(randi() % w, randi() % h)
+		if pimg.get_pixelv(q).a > 0.5:
+			c = q
+			break
+	if c.x >= 0:
+		var r := 4
+		for y in range(-r, r + 1):
+			for x in range(-r, r + 1):
+				var q := c + Vector2i(x, y)
+				if x * x + y * y <= r * r + randi() % 3 and q.x >= 0 and q.y >= 0 and q.x < w and q.y < h and pimg.get_pixelv(q).a > 0.5:
+					pimg.set_pixelv(q, Pal.SHADES[0][0])
+		ptex.update(pimg)
+	if main_color() == Pal.NOIR and before != Pal.NOIR:
+		arena.float_text(position + Vector2(0, -30), "TU PASSES À L'OMBRE !", Pal.BAD)
+	else:
+		arena.float_text(position + Vector2(0, -22), "TACHÉ !", Pal.DIM)
+
+
+## Buvard : les taches s'en vont.
+func clean() -> void:
+	if stains == 0:
+		return
+	stains = 0
+	refresh_image()
+	arena.float_text(position + Vector2(0, -22), "NETTOYÉ !", Pal.GOOD)
 
 
 ## La Toile Blanche gomme un morceau de ton dessin : -12% PV max jusqu'à la fin de la vague.

@@ -9,6 +9,7 @@ var pierce := 0
 var life := 1.0
 var hostile := false
 var element := 0
+var light := false       # tir de LUMIÈRE (Encrier) : brille dans la nuit d'encre
 var wst: Dictionary = {}
 var knock := 20.0
 var hit_ids := {}

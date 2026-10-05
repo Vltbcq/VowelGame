@@ -165,6 +165,14 @@ func _draw_hud() -> void:
 		draw_layer.draw_rect(Rect2(0, sp.y + half, 640, maxf(0.0, 360 - sp.y - half)), ink)
 		draw_layer.draw_rect(Rect2(0, sp.y - half, maxf(0.0, sp.x - half), half * 2.0), ink)
 		draw_layer.draw_rect(Rect2(sp.x + half, sp.y - half, maxf(0.0, 640 - sp.x - half), half * 2.0), ink)
+		# Les éclats de LUMIÈRE de l'Encrier brillent dans le noir
+		var xf := arena.get_viewport().get_canvas_transform()
+		var z: float = arena.cam.zoom.x
+		for b in arena.bullets:
+			if is_instance_valid(b) and b.light:
+				var bp: Vector2 = xf * b.global_position
+				draw_layer.draw_circle(bp, 6.0 * z, Color(1.0, 0.92, 0.6, 0.3 * a))
+				draw_layer.draw_circle(bp, 2.5 * z, Color(1, 1, 1, 0.95 * a))
 	# Voile rouge sur les bords quand on prend un coup
 	if hurt_flash > 0.0:
 		var c := Color(Pal.BAD, 0.45 * hurt_flash)
