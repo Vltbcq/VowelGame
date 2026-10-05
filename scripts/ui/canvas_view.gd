@@ -5,6 +5,8 @@ extends Control
 var screen: DrawScreen
 var px := 8
 var hover := Vector2i(-1, -1)
+var edges := PackedVector2Array()   # pixels de contour (ceux qui coûtent de l'encre)
+var pulse_t := 0.0
 
 
 func _init(s: DrawScreen, scale_px: int) -> void:
@@ -14,6 +16,24 @@ func _init(s: DrawScreen, scale_px: int) -> void:
 	mouse_exited.connect(func():
 		hover = Vector2i(-1, -1)
 		queue_redraw())
+
+
+## Recalcule les pixels de contour (appelé à chaque modification du dessin).
+func refresh_edges() -> void:
+	edges.clear()
+	var img := screen.img
+	for y in img.get_height():
+		for x in img.get_width():
+			if Analyzer.is_edge(img, Vector2i(x, y)):
+				edges.append(Vector2(x, y))
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	# les points des contours pulsent doucement (on redessine ~20 fois par seconde)
+	pulse_t += delta
+	if not edges.is_empty() and int(pulse_t * 20.0) != int((pulse_t - delta) * 20.0):
+		queue_redraw()
 
 
 func cell_at(p: Vector2) -> Vector2i:
@@ -50,6 +70,7 @@ func _draw() -> void:
 	if screen.cfg.get("kind", "") in ["melee", "ranged"]:
 		_weapon_guide()
 	draw_texture_rect(screen.tex, Rect2(Vector2.ZERO, size), false)
+	_draw_edges()
 	if screen.mirror:
 		var mx := s.x * px / 2.0
 		draw_line(Vector2(mx, 0), Vector2(mx, size.y), Color(Pal.BAD, 0.6), 1.0)
@@ -68,6 +89,18 @@ func _draw() -> void:
 		var r := Rect2((hover.x + off) * px, (hover.y + off) * px, b * px, b * px)
 		draw_rect(r, Color(Pal.INK, 0.8), false, 1.0)
 		draw_rect(r.grow(-1), Color(1, 1, 1, 0.6), false, 1.0)
+
+
+## Contours qui coûtent de l'encre : un petit point clair qui pulse au centre de chaque pixel.
+func _draw_edges() -> void:
+	var a := 0.45 + 0.35 * sin(pulse_t * 4.0)
+	var d := maxf(1.0 if px < 4 else 2.0, roundf(px * 0.34))
+	var o := (px - d) / 2.0
+	for e in edges:
+		var r := Rect2(e.x * px + o, e.y * px + o, d, d)
+		if px >= 6:
+			draw_rect(r.grow(1.0), Color(Pal.INK, a * 0.6))
+		draw_rect(r, Color(1, 1, 1, a))
 
 
 func _dashed(r: Rect2) -> void:

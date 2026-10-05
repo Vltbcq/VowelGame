@@ -295,7 +295,7 @@ func _draw_ink_bar() -> void:
 	if mi > 0:
 		var mx := 1 + (w - 2) * float(mi) / budget
 		ink_bar.draw_rect(Rect2(mx, 0, 2, 12), Pal.GOOD if used >= mi else Pal.BAD)
-	var txt := "ENCRE  %d / %d   (seuls les contours coûtent)" % [used, eb]
+	var txt := "ENCRE  %d / %d  · contours seulement" % [used, eb]
 	if mi > 0:
 		txt = "ENCRE  %d / %d   (minimum %d)" % [used, eb, mi]
 	ink_bar.draw_string(UI.font, Vector2(0, 10), txt, HORIZONTAL_ALIGNMENT_CENTER, w, UI.fs(10), Pal.TEXT)
@@ -751,7 +751,7 @@ func _changed() -> void:
 	if preview_tex:
 		preview_tex.update(Gfx.padded(img))
 		preview_mat.set_shader_parameter("effect", Gfx.FX_ID.get(effect, 0))
-	view.queue_redraw()
+	view.refresh_edges()
 	ink_bar.queue_redraw()
 	stats_label.text = Stats.preview(cfg, img, effect)
 	if color_box:
