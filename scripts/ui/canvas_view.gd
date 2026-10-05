@@ -5,7 +5,8 @@ extends Control
 var screen: DrawScreen
 var px := 8
 var hover := Vector2i(-1, -1)
-var edges := PackedVector2Array()   # pixels de contour (ceux qui coûtent de l'encre)
+var edges := PackedVector2Array()
+var edge_light := PackedByteArray()   # 1 = pixel clair (blanc, jaune pâle...) : point foncé   # pixels de contour (ceux qui coûtent de l'encre)
 var pulse_t := 0.0
 
 
@@ -21,11 +22,13 @@ func _init(s: DrawScreen, scale_px: int) -> void:
 ## Recalcule les pixels de contour (appelé à chaque modification du dessin).
 func refresh_edges() -> void:
 	edges.clear()
+	edge_light.clear()
 	var img := screen.img
 	for y in img.get_height():
 		for x in img.get_width():
 			if Analyzer.is_edge(img, Vector2i(x, y)):
 				edges.append(Vector2(x, y))
+				edge_light.append(1 if img.get_pixel(x, y).get_luminance() > 0.6 else 0)
 	queue_redraw()
 
 
@@ -96,11 +99,14 @@ func _draw_edges() -> void:
 	var a := 0.45 + 0.35 * sin(pulse_t * 4.0)
 	var d := maxf(1.0 if px < 4 else 2.0, roundf(px * 0.34))
 	var o := (px - d) / 2.0
-	for e in edges:
+	for i in edges.size():
+		var e := edges[i]
 		var r := Rect2(e.x * px + o, e.y * px + o, d, d)
+		# point blanc sur les couleurs foncées, point d'encre sur les couleurs claires
+		var light := edge_light[i] == 1
 		if px >= 6:
-			draw_rect(r.grow(1.0), Color(Pal.INK, a * 0.6))
-		draw_rect(r, Color(1, 1, 1, a))
+			draw_rect(r.grow(1.0), Color(Color.WHITE if light else Pal.INK, a * 0.6))
+		draw_rect(r, Color(Pal.INK if light else Color.WHITE, a + (0.2 if light else 0.0)))
 
 
 func _dashed(r: Rect2) -> void:
