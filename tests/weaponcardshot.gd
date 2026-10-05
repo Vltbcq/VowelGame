@@ -1,6 +1,7 @@
 extends Node
 ## Capture : fiches des armes en vente (dessinée, à ratio, pas encore dessinée, éventail).
-## Godot --path . res://tests/weaponcardshot.tscn -- <capture.png>
+## Godot --path . res://tests/weaponcardshot.tscn -- <capture.png> [etroit]
+## « etroit » : 7 offres (fiches étroites), descriptions défilées jusqu'en bas.
 
 
 func _ready() -> void:
@@ -21,14 +22,23 @@ func _ready() -> void:
 		{"type": "weapon", "wtype": "pistolet", "rar": 1, "price": 30, "sold": false},
 		{"type": "weapon", "wtype": "rouleau", "rar": 0, "price": 19, "sold": false},
 		{"type": "weapon", "wtype": "tromblon", "rar": 2, "price": 50, "sold": false},
-		{"type": "weapon", "wtype": "cutter", "rar": 0, "price": 14, "sold": false},
-		{"type": "amulet", "id": "gouache", "rar": 0, "price": 14, "sold": false},
+		{"type": "weapon", "wtype": "baguette", "rar": 0, "price": 14, "sold": false},
+		{"type": "weapon", "wtype": "agrafeuse", "rar": 2, "price": 50, "sold": false},
 	]
+	var narrow := OS.get_cmdline_user_args().size() > 1
+	if narrow:
+		Run.shop_offers.append({"type": "weapon", "wtype": "arc", "rar": 0, "price": 14, "sold": false})
+		Run.shop_offers.append({"type": "weapon", "wtype": "cutter", "rar": 1, "price": 28, "sold": false})
 	var shop := ShopScreen.new()
 	shop.size = Vector2(640, 360)
 	add_child(shop)
 	for f in 10:
 		await get_tree().process_frame
+	if narrow:
+		for sc in shop.find_children("*", "ScrollContainer", true, false):
+			sc.scroll_vertical = 1000
+		for f in 3:
+			await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(OS.get_cmdline_user_args()[0])
 	Run.active = false

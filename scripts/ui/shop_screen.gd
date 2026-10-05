@@ -61,11 +61,12 @@ func _build() -> void:
 
 	# --- Les tableaux accrochés
 	var n := Run.shop_offers.size()
-	var fw := minf(112.0, (616.0 - (n - 1) * 10.0) / n)
-	var total := n * fw + (n - 1) * 10.0
+	var gap := 10.0 if n <= 4 else 6.0   # 5 offres et plus : on serre pour garder des fiches lisibles
+	var fw := minf(120.0, (628.0 - (n - 1) * gap) / n)
+	var total := n * fw + (n - 1) * gap
 	var x0 := (640.0 - total) / 2.0
 	for i in n:
-		_artwork(i, Vector2(x0 + i * (fw + 10.0), 44), fw)
+		_artwork(i, Vector2(x0 + i * (fw + gap), 44), fw)
 
 	# --- Ta collection (sur le lambris)
 	UI.put(self, UI.label("COLLECTION %d/%d" % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
@@ -530,9 +531,21 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		lines.append(["Allonge", "%s%d" % [approx, roundi(st.reach)], ""])
 	else:
 		lines.append(["Portée", "%s%d" % [approx, roundi(st.range)], ""])
-	var y := 26.0
-	for ln in lines:
-		y = _card_line(ct, Vector2(4, y), fw - 4, ln[0], ln[1], ln[2])
+	# Stats + description dans une zone qui défile (barre de défilement si ça déborde du cadre)
+	var desc := String(def.desc)
+	for pre in ["Épique+. ", "Légendaire. "]:
+		desc = desc.trim_prefix(pre)
+	var box_h := 55.0
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.mouse_filter = Control.MOUSE_FILTER_PASS
+	UI.put(ct, sc, Vector2(2, 26), Vector2(fw + 1, box_h))
+	_style_card_scroll(sc)
+	var content := _card_content(lines, desc, fw - 2)
+	if content.custom_minimum_size.y > box_h:
+		content.free()
+		content = _card_content(lines, desc, fw - 10)   # place pour la barre
+	sc.add_child(content)
 	# En bas à gauche (à côté du prix) : où en est son dessin, ou la fusion
 	var foot := ""
 	var foot_col := CARTEL_DIM
@@ -549,6 +562,61 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		UI.put(ct, fl, Vector2(4, 85), Vector2(fw - 56, 12))
 
 
+## Contenu de la fiche (largeur w) : les lignes de stats, puis la description (« • … »).
+func _card_content(lines: Array, desc: String, w: float) -> Control:
+	var content := Control.new()
+	content.mouse_filter = Control.MOUSE_FILTER_PASS
+	var y := 0.0
+	for ln in lines:
+		y = _card_line(content, Vector2(2, y), w - 2, ln[0], ln[1], ln[2])
+	if desc != "":
+		y += 2.0
+		for ln in _wrap("• " + desc, w - 4):
+			_card_text(content, Vector2(2, y), ln, Pal.INK)
+			y += 11.0
+	content.custom_minimum_size = Vector2(w, y + 3.0)
+	return content
+
+
+## Coupe un texte en lignes de largeur w (mot par mot ; un mot trop long est coupé).
+func _wrap(text: String, w: float) -> Array:
+	var out := []
+	var cur := ""
+	for word in text.split(" ", false):
+		var tryl := word if cur == "" else cur + " " + word
+		if _text_w(tryl) <= w:
+			cur = tryl
+			continue
+		if cur != "":
+			out.append(cur)
+		cur = word
+		while _text_w(cur) > w and cur.length() > 1:
+			var k := cur.length() - 1
+			while k > 1 and _text_w(cur.substr(0, k)) > w:
+				k -= 1
+			out.append(cur.substr(0, k))
+			cur = cur.substr(k)
+	if cur != "":
+		out.append(cur)
+	return out
+
+
+## Barre de défilement fine, aux couleurs du cartel.
+func _style_card_scroll(sc: ScrollContainer) -> void:
+	var bar := sc.get_v_scroll_bar()
+	bar.custom_minimum_size.x = 6
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color("d9ccae")
+	bar.add_theme_stylebox_override("scroll", bg)
+	var gr := StyleBoxFlat.new()
+	gr.bg_color = GOLD_DARK
+	bar.add_theme_stylebox_override("grabber", gr)
+	var grh := StyleBoxFlat.new()
+	grh.bg_color = GOLD
+	bar.add_theme_stylebox_override("grabber_highlight", grh)
+	bar.add_theme_stylebox_override("grabber_pressed", grh)
+
+
 ## Une ligne de la fiche : « Libellé : valeur (ratio) », le libellé en laiton, le ratio en vert.
 ## Le ratio passe à la ligne s'il ne tient pas. Retourne le y de la ligne suivante.
 func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, ratio: String) -> float:
@@ -557,8 +625,12 @@ func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, r
 	var sep := " : "
 	if _text_w(lab + sep + val) > w:
 		sep = ": "   # ligne trop longue : on serre un peu
-	for part in [[lab + sep, CARD_LABEL], [val, Pal.INK]]:
-		x = _card_text(ct, Vector2(x, y), part[0], part[1])
+	x = _card_text(ct, Vector2(x, y), lab + sep, CARD_LABEL)
+	if x + _text_w(val) > pos.x + w:
+		# même serrée, la valeur ne tient pas (fiche étroite) : elle passe à la ligne
+		y += 11.0
+		x = pos.x + 6.0
+	x = _card_text(ct, Vector2(x, y), val, Pal.INK)
 	if ratio != "":
 		var rw := _text_w(" " + ratio)
 		if x + rw > pos.x + w:
