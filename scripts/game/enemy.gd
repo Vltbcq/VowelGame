@@ -1341,8 +1341,8 @@ func _boss_orbit(delta: float, dirp: Vector2, dist: float) -> Vector2:
 	cd2 -= delta
 	if cd2 <= 0.0:
 		cd2 = 1.6 if _enraged() else 2.3   # (le 1er boss tire moins souvent)
-		for k in range(-2, 3):
-			_shoot(dirp.rotated(k * 0.2), 1.1)
+		for k in range(-1, 2):   # éventail de 3 tirs (le 1er boss reste abordable)
+			_shoot(dirp.rotated(k * 0.25), 1.1)
 		Sfx.play("enemy_shot")
 	if cd <= 0.0:
 		cd = 4.5 if _enraged() else 5.5

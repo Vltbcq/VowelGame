@@ -39,7 +39,7 @@ const TYPES := {
 		"desc": "TANK. Avance lentement et « calcule » : chaque résultat est une nouvelle punaise."},
 	# Boss
 	"rature": {"name": "Le Raturé", "beh": "b_orbit", "boss": 2, "hp": 2400.0, "dmg": 10.4, "spd": 55.0, "wave": 5, "canvas": 64, "ink": 300, "loot": 30, "shoots": true,
-		"desc": "Boss (vague 5). Tourne autour de toi en tirant en éventail, disparaît et réapparaît près de toi dans un anneau de projectiles."},
+		"desc": "Boss (vague 5). Tourne autour de toi en tirant des éventails de 3 projectiles, disparaît et réapparaît près de toi dans un anneau de projectiles."},
 	"critique": {"name": "Le Critique", "beh": "b_critique", "boss": 2, "hp": 7000.0, "dmg": 13.0, "spd": 42.0, "wave": 10, "canvas": 80, "ink": 420, "loot": 60, "shoots": true,
 		"desc": "Boss (vague 10). Spirales de projectiles et appelle des renforts."},
 	"muse": {"name": "La Muse", "beh": "b_hatch", "boss": 2, "hp": 5000.0, "dmg": 12.5, "spd": 60.0, "wave": 10, "canvas": 64, "ink": 340, "loot": 60, "shoots": true,
