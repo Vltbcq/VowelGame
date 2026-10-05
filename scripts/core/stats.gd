@@ -413,12 +413,43 @@ static func _apply_effect(st: Dictionary, effect: String) -> void:
 
 # ------------------------------------------------------------------ Ennemis
 
-static func enemy_art(a: Dictionary, ink: int) -> Dictionary:
+## Stats d'un ennemi d'après son dessin : les MÊMES règles que pour ton perso (voir character_part),
+## mais seulement PV, vitesse, esquive, armure (en %), dégâts et résistances, et deux fois moins fortes.
+## La taille est comptée par rapport à l'encre de l'ennemi (un dessin plein = un perso plein).
+## Plus il a de stats, plus il lâche de butin : bien dessiner reste intéressant.
+static func enemy_art(a: Dictionary, ink: int, effect := "") -> Dictionary:
 	var fill := clampf(float(a.pixels) / (ink * FILL_REF), 0.0, 1.0)
-	return {
-		"hp": 0.6 + 0.8 * fill, "loot": 0.5 + 1.5 * fill, "element": a.dominant,
+	var m := {
+		"hp": 0.6 + 0.8 * fill, "element": a.dominant,
 		"radius": clampf(sqrt(float(a.pixels)) * 0.5, 3.0, 40.0),
+		"speed": 1.0, "dodge": 0.0, "armor": 0.0, "dmg": 0.0, "res": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
 	}
+	var loot := 0.5 + 1.5 * fill
+	if a.pixels <= 0:
+		m.loot = loot
+		return m
+	var pe := fill * 400.0   # « pixels de perso » équivalents
+	m.speed = 1.0 + (clampf(1.4 - pe / 650.0, 0.5, 1.35) - 1.0) * 0.5   # gros = lent
+	var f: Array = a.frac
+	var armor := roundf(a.solidity * 4.0) + roundf(f[Pal.GLACE] * 8.0)   # plein / bleu = armure
+	if a.bw > a.bh:
+		armor += roundf(minf(4.0, (float(a.bw) / a.bh - 1.0) * 3.0))      # large = armure
+	m.armor = minf(35.0, armor * 0.5 * 4.0)                               # en % (1 point = 4 %)
+	m.dodge = (a.sym * 12.0 + f[Pal.LUMIERE] * 15.0) * 0.5                 # symétrique / blanc = esquive
+	m.dmg = f[Pal.FEU] * 30.0 * 0.5                                       # rouge = dégâts
+	var best_res := 0.0
+	for e in range(1, Pal.COUNT):
+		m.res[e] = f[e] * 60.0 * 0.5                                      # chaque couleur résiste à son élément
+	match effect:
+		"shimmer":
+			m.dodge += 2.5
+		"rainbow":
+			for e in range(1, Pal.COUNT):
+				m.res[e] += 2.5
+	for e in range(1, Pal.COUNT):
+		best_res = maxf(best_res, m.res[e])
+	m.loot = loot * (1.0 + (m.dodge + m.armor + m.dmg + best_res * 0.5) / 100.0)
+	return m
 
 
 static func eproj_art(a: Dictionary) -> Dictionary:
@@ -501,12 +532,23 @@ static func preview(cfg: Dictionary, img: Image, effect: String) -> String:
 				L.append("Recharge : %.2fs" % st.cooldown)
 				_el_lines(L, st.frac)
 		"enemy", "boss":
-			var e := enemy_art(a, cfg.ink)
+			var e := enemy_art(a, cfg.ink, effect)
 			L.append("PV : x%.2f" % e.hp)
+			L.append("Vitesse : x%.2f" % e.speed)
+			if e.dodge >= 0.5:
+				L.append("Esquive : %d%%" % roundi(e.dodge))
+			if e.armor >= 0.5:
+				L.append("Armure : -%d%% dégâts" % roundi(e.armor))
+			if e.dmg >= 0.5:
+				L.append("Dégâts : +%d%%" % roundi(e.dmg))
+			var rl := []
+			for el in range(1, Pal.COUNT):
+				if e.res[el] >= 0.5:
+					rl.append("%s %d%%" % [Pal.NAMES[el], roundi(e.res[el])])
+			if not rl.is_empty():
+				L.append("Rés. " + " · ".join(rl))
 			L.append("Butin : x%.2f" % e.loot)
 			L.append("Élément : %s" % Pal.NAMES[e.element])
-			if e.element > 0:
-				L.append("(résiste au %s)" % Pal.NAMES[e.element].to_lower())
 		"eproj":
 			var e := eproj_art(a)
 			L.append("Vitesse : x%.2f" % e.speed)

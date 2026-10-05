@@ -18,6 +18,9 @@ var speed := 50.0
 var radius := 8.0
 var element := 0
 var color := 0              # couleur dans le cercle des faiblesses (Pal.color_of)
+var dodge := 0.0            # stats tirées du dessin (Stats.enemy_art) : esquive en %,
+var armor := 0.0            # armure = % de dégâts en moins sur les coups,
+var res: Array = []         # résistance (%) à chaque élément
 var weak_t := 0.0           # affichage « FAIBLE ! » / « RÉSISTE » (pas à chaque coup)
 var ink_col := Color.BLACK
 var loot := 1.0
@@ -122,7 +125,11 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	max_hp = def.hp * wave_hp * d.hp * mods.hp * (0.45 if small else 1.0) * (3.0 if elite else 1.0)
 	hp = max_hp
 	dmg = def.dmg * wave_dmg * d.dmg * (1.3 if elite else 1.0)
-	speed = def.spd * randf_range(0.9, 1.1) * (1.1 if Run.difficulty >= 2 else 1.0)
+	speed = def.spd * randf_range(0.9, 1.1) * (1.1 if Run.difficulty >= 2 else 1.0) * float(mods.get("speed", 1.0))
+	dmg *= 1.0 + float(mods.get("dmg", 0.0)) / 100.0
+	dodge = float(mods.get("dodge", 0.0))
+	armor = float(mods.get("armor", 0.0))
+	res = mods.get("res", [])
 	# Huile et plus : chaque élite a un pouvoir
 	if elite and Run.difficulty >= 3:
 		power = TRAITS.keys().pick_random()
@@ -505,6 +512,8 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 		amount *= 1.15   # Luciole
 	if state == "jam":
 		amount *= 1.5   # Photocopieuse en bourrage papier : vulnérable
+	if el > 0:
+		amount *= 1.0 - res_to(el) / 100.0   # résistance de son dessin à cet élément
 	if wet_t > 0.0 and (el == Pal.FOUDRE or el == Pal.GLACE):
 		amount *= 1.25   # Brumisateur : mouillé
 	# Agrafeuse : l'ennemi agrafé à celui-ci prend 50 % des dégâts
@@ -522,6 +531,10 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	arena.hit_fx(self, crit, kb)
 	if hp <= 0.0:
 		arena.kill_enemy(self)
+
+
+func res_to(el: int) -> float:
+	return float(res[el]) if el > 0 and el < res.size() else 0.0
 
 
 func burn(tick_dmg: float) -> void:

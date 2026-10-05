@@ -606,6 +606,12 @@ func _light_tex() -> Texture2D:
 func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: float) -> void:
 	if e.dead:
 		return
+	# Esquive tirée de son dessin (symétrique, blanc)
+	if e.dodge > 0.0 and randf() * 100.0 < e.dodge:
+		if e.weak_t <= 0.0:
+			e.weak_t = 0.6
+			float_text(e.position + Vector2(0, -16), "ESQUIVE", Pal.DIM)
+		return
 	var s := Run.stats
 	var scale: String = wst.get("scale", "")
 	if scale != "":
@@ -617,7 +623,10 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
 	dmg *= _amulet_dmg_mult(e, wst)
 	# Cercle des faiblesses : couleur principale de l'arme contre celle de l'ennemi
-	var wmult := Pal.weakness(Pal.color_of(wst.get("frac", []), 0.3), e.color)
+	var wcol := Pal.color_of(wst.get("frac", []), 0.3)
+	var wmult := Pal.weakness(wcol, e.color)
+	# Armure (en %) et résistance à la couleur de l'arme, tirées du dessin de l'ennemi
+	dmg *= (1.0 - e.armor / 100.0) * (1.0 - e.res_to(wcol) / 100.0)
 	if wmult != 1.0:
 		dmg *= wmult
 		if e.weak_t <= 0.0:

@@ -382,8 +382,9 @@ func _stats_text(id: String) -> String:
 				" (95 %% minimum)" if def.has("boss") else ""])
 			var d = Meta.bestiary_get(id)
 			if d != null:
-				var m := Stats.enemy_art(Analyzer.analyze(d.image), def.ink)
-				L.append("Avec ton dessin : PV ×%.2f, butin ×%.2f, élément %s" % [m.hp, m.loot, Pal.NAMES[m.element]])
+				var m := Stats.enemy_art(Analyzer.analyze(d.image), def.ink, d.get("effect", ""))
+				L.append("Avec ton dessin : PV ×%.2f, vitesse ×%.2f, esquive %d%%, armure %d%%, dégâts +%d%%, butin ×%.2f, élément %s" % [
+					m.hp, m.speed, roundi(m.dodge), roundi(m.armor), roundi(m.dmg), m.loot, Pal.NAMES[m.element]])
 	return "\n".join(L)
 
 

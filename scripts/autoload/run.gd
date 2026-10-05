@@ -390,14 +390,14 @@ func _ink_blob(img: Image, c: Vector2i) -> void:
 func set_enemy_art(id: String, img: Image, effect: String, outline := false) -> void:
 	var def := EnemyDB.get_def(id)
 	var a := Analyzer.analyze(img)
-	enemy_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, def.ink), "outline": outline}
+	enemy_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, def.ink, effect), "outline": outline}
 
 
 ## Version élite : le dessin de base + des ajouts du joueur (plus d'encre).
 func set_elite_art(id: String, img: Image, effect: String, outline := false) -> void:
 	var def := EnemyDB.get_def(id)
 	var a := Analyzer.analyze(img)
-	elite_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, roundi(def.ink * 1.4)), "outline": outline}
+	elite_art[id] = {"image": img, "effect": effect, "a": a, "mods": Stats.enemy_art(a, roundi(def.ink * 1.4), effect), "outline": outline}
 
 
 ## Élément dominant d'une arme (arme + balles), ou 0 si aucun ne domine.
