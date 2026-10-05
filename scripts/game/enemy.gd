@@ -280,7 +280,7 @@ func tick(delta: float) -> void:
 	if dead:
 		return
 	var p := arena.player
-	var to_p := arena.target_pos(position) - position   # le joueur, le leurre de la Lanterne ou Pavel
+	var to_p := arena.target_pos(position) - position   # le joueur, le leurre de la Lanterne ou Woinic
 	var dist := maxf(0.01, to_p.length())
 	var dirp := to_p / dist
 	blind_t -= delta

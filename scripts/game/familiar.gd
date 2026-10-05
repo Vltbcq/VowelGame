@@ -19,7 +19,7 @@ var ang := 0.0
 var target: Enemy
 var rush_t := 0.0       # Sifflet : il fonce sur la cible du rappel
 var hit_cd := {}        # ennemi -> temps avant de pouvoir le retoucher
-var hp := 0.0           # Pavel
+var hp := 0.0           # Woinic
 var max_hp := 0.0
 var ko_t := 0.0
 var line_to := Vector2.ZERO   # langue de la grenouille / fléchette de Teemeo
@@ -498,7 +498,7 @@ func _pavel(delta: float) -> void:
 		arena.float_text(position + Vector2(0, -18), "PAVEL K.O.", Pal.BAD)
 
 
-## Pavel est-il là pour attirer les ennemis ?
+## Woinic est-il là pour attirer les ennemis ?
 func pavel_up() -> bool:
 	return id == "pavel" and ko_t <= 0.0
 

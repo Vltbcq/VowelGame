@@ -1,5 +1,5 @@
 extends Node
-## Test : les familiers (boutique, 12 comportements, Pavel, oiseaux de la Cage, Sifflet, Fouet, sauvegarde).
+## Test : les familiers (boutique, 12 comportements, Woinic, oiseaux de la Cage, Sifflet, Fouet, sauvegarde).
 ## Godot --path . res://tests/familiartest.tscn [-- <capture.png> <capture_boutique.png>]
 
 var fails := 0
@@ -108,15 +108,15 @@ func _ready() -> void:
 	_check(not arena.shrooms.is_empty() or Run.kills > 0, "Teemeo plante des champignons")
 	_check(arena.player.hp > arena.player.max_hp * 0.2, "Yuki soigne (%.0f / %.0f PV)" % [arena.player.hp, arena.player.max_hp])
 
-	# Pavel attire les ennemis proches
+	# Woinic attire les ennemis proches
 	var pavel: Familiar = null
 	for fm in arena.familiars:
 		if fm.id == "pavel":
 			pavel = fm
 	pavel.ko_t = 0.0
 	pavel.visible = true
-	_check(arena.target_pos(pavel.position + Vector2(20, 0)) == pavel.position, "Pavel attire les ennemis près de lui")
-	_check(arena.target_pos(pavel.position + Vector2(400, 0)) != pavel.position or arena.player.position == pavel.position, "les ennemis loin de Pavel visent toujours toi")
+	_check(arena.target_pos(pavel.position + Vector2(20, 0)) == pavel.position, "Woinic attire les ennemis près de lui")
+	_check(arena.target_pos(pavel.position + Vector2(400, 0)) != pavel.position or arena.player.position == pavel.position, "les ennemis loin de Woinic visent toujours toi")
 
 	# Sifflet : la cible est désignée aux familiers
 	var t: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(120, 40), false)
@@ -133,7 +133,7 @@ func _ready() -> void:
 	_check(arena.whistle == t, "Sifflet : l'ennemi touché devient la cible")
 	var rushing := arena.familiars.filter(func(f): return f.rush_t > 0.0).size()
 	var support := arena.familiars.filter(func(f): return f.id in ["yuki", "pavel", "pie"] and f.rush_t > 0.0).size()
-	_check(rushing >= 8 and support == 0 and gr0.cd <= 0.0, "Rappel au pied : %d familiers foncent, capacités rechargées (pas Yuki, Pavel, Pie)" % rushing)
+	_check(rushing >= 8 and support == 0 and gr0.cd <= 0.0, "Rappel au pied : %d familiers foncent, capacités rechargées (pas Yuki, Woinic, Pie)" % rushing)
 	gr0.rush_t = 1.0
 	for f in 20:
 		arena.player.inv = 999.0

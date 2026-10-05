@@ -1427,7 +1427,7 @@ func toxic_burst(e: Enemy) -> void:
 
 
 ## Où les ennemis visent : le joueur, ou le leurre de la Lanterne magique.
-## Ce que les ennemis visent : toi, le leurre de la Lanterne, ou Pavel s'il est près d'eux.
+## Ce que les ennemis visent : toi, le leurre de la Lanterne, ou Woinic s'il est près d'eux.
 func target_pos(from := Vector2.INF) -> Vector2:
 	if lure_t > 0.0:
 		return lure_pos
@@ -2270,7 +2270,7 @@ func banana_strike(pos: Vector2) -> void:
 
 
 ## Sifflet : RAPPEL AU PIED ! tous les familiers foncent sur l'ennemi touché, capacités rechargées.
-## (Yuki, Pavel et la Pie restent à leur poste : ce sont des familiers de soutien.)
+## (Yuki, Woinic et la Pie restent à leur poste : ce sont des familiers de soutien.)
 func _whistle_call(e: Enemy) -> void:
 	whistle_cd = 3.0
 	float_text(player.position + Vector2(0, -28), "FIIIT !", Pal.ACCENT)

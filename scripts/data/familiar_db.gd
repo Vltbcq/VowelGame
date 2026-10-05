@@ -2,7 +2,7 @@ class_name FamiliarDB
 extends RefCounted
 ## Familiers : des compagnons que tu DESSINES, qui se baladent sur la page avec chacun son
 ## comportement (attaquer, soigner, gêner, encaisser...). Tous uniques, nombre illimité.
-## « Pavel » : en hommage au chien de Theorus. « Yuki » et « Teemeo » : clins d'œil à League of Legends.
+## « Woinic » : en hommage au chien de Theorus. « Yuki » et « Teemeo » : clins d'œil à League of Legends.
 
 const LIST := [
 	# Communs
@@ -29,7 +29,7 @@ const LIST := [
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,
 		"desc": "Reste sur toi : te soigne, bloque des coups et t'accélère quand tu es en danger."},
-	{"id": "pavel", "name": "Pavel", "rar": 3, "ink": 80,
+	{"id": "pavel", "name": "Woinic", "rar": 3, "ink": 80,
 		"desc": "Tank de poche : les ennemis proches l'attaquent lui. Revient après un K.O."},
 	{"id": "teemeo", "name": "Teemeo", "rar": 3, "ink": 70,
 		"desc": "Plante des champignons empoisonnés et tire des fléchettes qui aveuglent et empoisonnent."},
