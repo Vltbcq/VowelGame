@@ -5,6 +5,7 @@ extends RefCounted
 ##
 ## ink / bink : encre pour l'arme / pour ses balles. dmg, cd, reach, speed : multiplicateurs.
 ## scale : arme à RATIO, ses dégâts grandissent avec une stat (voir Stats.scaled_damage).
+## card : description courte pour la fiche de la boutique (le ratio y est déjà écrit à part).
 
 const TYPES := {
 	# --- Mêlée
@@ -42,31 +43,31 @@ const TYPES := {
 	# --- Armes à RATIO : leurs dégâts suivent une stat (toutes raretés, pas au choix de départ)
 	"plume": {"name": "Plume solitaire", "kind": "ranged", "style": "shot", "ink": 60, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"dmg": 0.8, "cd": 1.0, "speed": 1.2, "scale": "free_slots",
-		"desc": "+60% de dégâts par emplacement d'arme LIBRE. Seule, elle est redoutable."},
+		"desc": "+60% de dégâts par emplacement d'arme LIBRE. Seule, elle est redoutable.", "card": "Seule, elle est redoutable."},
 	"rouleau": {"name": "Rouleau à peinture", "kind": "melee", "style": "sweep", "ink": 102, "canvas": 32,
 		"dmg": 0.7, "cd": 1.3, "reach": 1.2, "scale": "max_hp",
-		"desc": "Balayage large. + 15% de tes PV max en dégâts."},
+		"desc": "Balayage large. + 15% de tes PV max en dégâts.", "card": "Balayage large."},
 	"chevalet_bouclier": {"name": "Chevalet-bouclier", "kind": "melee", "style": "slam", "ink": 102, "canvas": 32,
 		"dmg": 0.7, "cd": 1.5, "reach": 1.0, "scale": "armor",
-		"desc": "Onde de choc. +1,5 dégât par point d'armure."},
+		"desc": "Onde de choc. +1,5 dégât par point d'armure.", "card": "Onde de choc."},
 	"aerographe": {"name": "Aérographe", "kind": "ranged", "style": "spread", "ink": 80, "bink": 14, "canvas": 32, "bcanvas": 12,
 		"dmg": 0.5, "cd": 1.4, "speed": 1.0, "pellets": 3, "scale": "speed",
-		"desc": "Éventail (×3). +1% de dégâts par % de vitesse de déplacement."},
+		"desc": "Éventail (×3). +1% de dégâts par % de vitesse de déplacement.", "card": "Éventail (×3)."},
 	"cutter": {"name": "Cutter", "kind": "melee", "style": "thrust", "ink": 45, "canvas": 24,
 		"dmg": 0.6, "cd": 0.6, "reach": 0.85, "crit": 10.0, "scale": "crit",
-		"desc": "Estoc rapide. Ses critiques font ×(2 + critique ÷ 35) au lieu de ×2."},
+		"desc": "Estoc rapide. Ses critiques font ×(2 + critique ÷ 35) au lieu de ×2.", "card": "Estoc rapide."},
 	"compte_gouttes": {"name": "Compte-gouttes", "kind": "ranged", "style": "homing", "ink": 50, "bink": 14, "canvas": 24, "bcanvas": 12,
 		"dmg": 0.6, "cd": 0.9, "speed": 0.8, "scale": "luck",
-		"desc": "Gouttes chercheuses. +0,25 dégât par point de chance, et plus d'effets élémentaires."},
+		"desc": "Gouttes chercheuses. +0,25 dégât par point de chance, et plus d'effets élémentaires.", "card": "Gouttes chercheuses. La chance donne aussi plus d'effets élémentaires."},
 	"pinceau_dore": {"name": "Pinceau doré", "kind": "melee", "style": "thrust", "ink": 80, "canvas": 32,
 		"dmg": 0.7, "cd": 1.0, "reach": 1.1, "scale": "gold",
-		"desc": "+1 dégât par tranche de 12 or dans ta bourse. Dépenser ou garder ?"},
+		"desc": "+1 dégât par tranche de 12 or dans ta bourse. Dépenser ou garder ?", "card": "Estoc. Dépenser ou garder ?"},
 	"regle": {"name": "Règle graduée", "kind": "melee", "style": "thrust", "ink": 90, "canvas": 40,
 		"dmg": 0.8, "cd": 1.2, "reach": 1.6, "scale": "range",
-		"desc": "Estoc très long. +1,5% de dégâts par % de portée."},
+		"desc": "Estoc très long. +1,5% de dégâts par % de portée.", "card": "Estoc très long."},
 	"nuancier": {"name": "Nuancier", "kind": "ranged", "style": "shot", "ink": 70, "bink": 25, "canvas": 32, "bcanvas": 16,
 		"dmg": 0.6, "cd": 0.9, "speed": 1.0, "scale": "colors",
-		"desc": "+35% de dégâts par COULEUR différente sur ton perso."},
+		"desc": "+35% de dégâts par COULEUR différente sur ton perso.", "card": "Tir simple. Plus ton perso a de couleurs, mieux c'est."},
 	# --- Familiers ("pet" : proposées seulement si tu as au moins un familier)
 	"sifflet": {"name": "Sifflet", "kind": "ranged", "style": "shot", "ink": 50, "bink": 20, "canvas": 24, "bcanvas": 12, "pet": true,
 		"dmg": 0.8, "cd": 0.8, "speed": 1.1,
@@ -76,10 +77,10 @@ const TYPES := {
 		"desc": "Épique+. Long coup de fouet qui booste les dégâts de tes familiers."},
 	"pipette": {"name": "Pipette", "kind": "melee", "style": "thrust", "ink": 45, "canvas": 24,
 		"dmg": 0.5, "cd": 0.6, "reach": 0.9, "scale": "lifesteal",
-		"desc": "Aspire l'encre des ennemis : vol de vie ×3 sur ses coups, +5% de base."},
+		"desc": "Aspire l'encre des ennemis : vol de vie ×3 sur ses coups, +5% de base.", "card": "Aspire l'encre des ennemis : +5% de vol de vie de base."},
 	"silhouette": {"name": "Silhouette", "kind": "melee", "style": "spin", "ink": 102, "canvas": 32,
 		"dmg": 0.6, "cd": 1.4, "reach": 0.95, "scale": "pixels",
-		"desc": "Tour complet. Dégâts selon la TAILLE de ton perso (pixels dessinés)."},
+		"desc": "Tour complet. Dégâts selon la TAILLE de ton perso (pixels dessinés).", "card": "Tour complet."},
 	# --- Épiques ou plus (min_rar = 2) : très liées au dessin
 	"pinceau": {"name": "Pinceau", "kind": "melee", "style": "trail", "ink": 102, "canvas": 32, "min_rar": 2,
 		"dmg": 0.75, "cd": 1.0, "reach": 1.1,

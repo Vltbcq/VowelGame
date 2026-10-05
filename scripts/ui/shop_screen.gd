@@ -536,7 +536,7 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 	else:
 		lines.append(["Portée", "%s%d" % [approx, roundi(st.range)], ""])
 	# Stats + description dans une zone qui défile (barre de défilement si ça déborde du cadre)
-	var desc := String(def.desc)
+	var desc := String(def.get("card", def.desc))   # le ratio est déjà sur la ligne des dégâts
 	for pre in ["Épique+. ", "Légendaire. "]:
 		desc = desc.trim_prefix(pre)
 	var foot := ""
