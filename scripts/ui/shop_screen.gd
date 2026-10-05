@@ -128,19 +128,43 @@ func _build() -> void:
 			fb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			_style_museum(fb)
 			frow.add_child(fb)
-	# Vitrine des amulettes
+	# Vitrine des amulettes : les doublons s'empilent (×N), et elle défile si elle est pleine
 	var vit := UI.panel(Color(0.75, 0.85, 1.0, 0.12), Color(0.8, 0.9, 1.0, 0.5), 1)
-	UI.put(self, vit, Vector2(12, 307), Vector2(300, 22))
+	UI.put(self, vit, Vector2(12, 307), Vector2(300, 26))
 	if Run.amulets.is_empty() and Run.familiars.is_empty():
 		UI.put(vit, UI.label("vitrine des amulettes et familiers (vide)", 10, CARTEL_DIM), Vector2(6, 5))
-	var ax := 4
+	var vsc := ScrollContainer.new()
+	vsc.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.put(vit, vsc, Vector2(1, 1), Vector2(298, 24))
+	_style_card_scroll(vsc, true)
+	var shelf := Control.new()
+	vsc.add_child(shelf)
+	var groups := {}    # id -> [amulettes]
+	var order := []
 	for am in Run.amulets:
+		if not groups.has(am.id):
+			groups[am.id] = []
+			order.append(am.id)
+		groups[am.id].append(am)
+	var ax := 3
+	for aid in order:
+		var ams: Array = groups[aid]
+		var am: Dictionary = ams[0]
+		var def := AmuletDB.get_def(aid)
 		var th := UI.thumb(am.image, Vector2(16, 16))
-		var def := AmuletDB.get_def(am.id)
 		th.mouse_filter = Control.MOUSE_FILTER_STOP
-		th.tooltip_text = "%s (%s)\n%s" % [def.name, am.zone, AmuletDB.describe(def, am.mag)]
-		UI.put(vit, th, Vector2(ax, 3), Vector2(16, 16))
-		ax += 18
+		var zones := []
+		for x in ams:
+			zones.append(String(x.zone))
+		th.tooltip_text = "%s%s (%s)\n%s" % [def.name, " ×%d" % ams.size() if ams.size() > 1 else "", ", ".join(zones), AmuletDB.describe(def, am.mag)]
+		UI.put(shelf, th, Vector2(ax, 2), Vector2(16, 16))
+		if ams.size() > 1:
+			var nl := UI.label("×%d" % ams.size(), 10, Pal.TEXT)
+			nl.add_theme_constant_override("outline_size", 3)
+			nl.add_theme_color_override("font_outline_color", Pal.INK)
+			UI.put(shelf, nl, Vector2(ax + 9, 7), Vector2(_text_w("×%d" % ams.size()) + 1, 12))
+			ax += 6
+		ax += 19
 	# Familiers : à la suite, dans un petit cadre brun (patte)
 	if not Run.familiars.is_empty() and not Run.amulets.is_empty():
 		ax += 4
@@ -149,11 +173,12 @@ func _build() -> void:
 		var fr := UI.panel(Color(0.55, 0.35, 0.17, 0.25), Pal.RARITY[int(fdef.rar)], 1)
 		fr.mouse_filter = Control.MOUSE_FILTER_STOP
 		fr.tooltip_text = "Familier : %s (%s)\n%s" % [fdef.name, Pal.RARITY_NAMES[int(fdef.rar)].to_lower(), fdef.desc]
-		UI.put(vit, fr, Vector2(ax - 1, 2), Vector2(18, 18))
+		UI.put(shelf, fr, Vector2(ax - 1, 1), Vector2(18, 18))
 		var fth := UI.thumb(Run.familiar_art[fid].image if Run.familiar_art.has(fid) else _kind_icon("familiar"), Vector2(16, 16))
 		fth.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UI.put(fr, fth, Vector2(1, 1), Vector2(16, 16))
 		ax += 20
+	shelf.custom_minimum_size = Vector2(ax + 2, 20)
 
 	# --- Ton portrait + cartel de stats
 	var pf := _frame_panel(FRAME[3], 5)
@@ -615,9 +640,12 @@ func _wrap(text: String, w: float) -> Array:
 
 
 ## Barre de défilement fine, aux couleurs du cartel.
-func _style_card_scroll(sc: ScrollContainer) -> void:
-	var bar := sc.get_v_scroll_bar()
-	bar.custom_minimum_size.x = 6
+func _style_card_scroll(sc: ScrollContainer, horizontal := false) -> void:
+	var bar: ScrollBar = sc.get_h_scroll_bar() if horizontal else sc.get_v_scroll_bar()
+	if horizontal:
+		bar.custom_minimum_size.y = 4
+	else:
+		bar.custom_minimum_size.x = 6
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color("d9ccae")
 	bar.add_theme_stylebox_override("scroll", bg)
