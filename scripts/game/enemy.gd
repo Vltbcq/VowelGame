@@ -936,8 +936,8 @@ func _boss_prof(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		arena.quiz(4 if _enraged() else 3, dmg * 1.3)
 	if cd <= 0.0:
 		cd = 1.6 if _enraged() else 2.3
-		for k in range(-3, 4):
-			_shoot(dirp.rotated(k * 0.16), 1.0)
+		for k in range(-2, 3):   # éventail de 5 craies (le 1er boss reste abordable)
+			_shoot(dirp.rotated(k * 0.18), 1.0)
 		Sfx.play("enemy_shot")
 	if cd3 <= 0.0:
 		cd3 = 11.0
