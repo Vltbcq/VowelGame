@@ -196,6 +196,8 @@ func _retouch_rarity(type: String, rar: int, base: Dictionary, cancel := true) -
 	cfg.base = base.image
 	cfg.effect = base.effect
 	cfg.outline = base.outline
+	if base.get("bullet") != null:
+		cfg.bullet_a = Analyzer.analyze(base.bullet)   # couleur finale = arme + balles
 	cfg.random = false
 	cfg.title = "%s %s : retouche ton dessin" % [def.name, Pal.RARITY_NAMES_F[rar].to_lower()]
 	cfg.sub = "Cette rareté a son propre dessin (%d d'encre). Tes armes des autres raretés gardent le leur." % int(cfg.ink)

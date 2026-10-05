@@ -364,10 +364,7 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 			"radius": clampf(maxf(part.size.x, part.size.y) / 2.0, 2.0, 12.0),
 			"pierce": _size_pierce(float(part.count) / (def.bink * FILL_REF)) + int(def.get("pierce", 0)),  # grosse = perforante
 		})
-	var frac := []
-	for e in Pal.COUNT:
-		frac.append(a.frac[e] if nobullet else a.frac[e] * 0.4 + b.frac[e] * 0.6)
-	st.frac = frac
+	st.frac = a.frac.duplicate() if nobullet else mix_frac(a, b)
 	_apply_rarity(st, w.rar)
 	for bl in st.bullets:
 		if bl.pierce > 0:   # la rareté renforce les balles qui perforent déjà (les petites, jamais)
@@ -375,6 +372,17 @@ static func ranged(w: Dictionary, def: Dictionary) -> Dictionary:
 	_apply_effect(st, w.effect)
 	_apply_effect(st, w.get("beffect", ""))
 	return st
+
+
+## Couleurs d'une arme à distance : arme + balles comptées ensemble, au nombre de pixels
+## (une balle minuscule ne change presque pas la couleur, une grosse balle pèse beaucoup).
+static func mix_frac(a: Dictionary, b: Dictionary) -> Array:
+	var pa := float(a.pixels)
+	var pb := float(b.pixels)
+	var frac := []
+	for e in Pal.COUNT:
+		frac.append((float(a.frac[e]) * pa + float(b.frac[e]) * pb) / maxf(1.0, pa + pb))
+	return frac
 
 
 ## Bonus communs à toutes les armes selon la rareté.

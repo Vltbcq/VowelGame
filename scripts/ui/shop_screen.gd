@@ -89,6 +89,9 @@ func _build() -> void:
 		UI.put(self, f, Vector2(x, 230), Vector2(46, 40))
 		UI.put(f, UI.thumb(Run.weapon_image(w), Vector2(36, 30)), Vector2(5, 5), Vector2(36, 30))
 		f.tooltip_text = _weapon_tip(w)
+		var wart := Run.art_of(w)
+		if wart.get("bullet") != null and not WeaponDB.get_def(w.type).get("nobullet", false):
+			_bullet_badge(Vector2(x + 32, 256), 16, Analyzer.trim(wart.bullet))
 		if Run.weapons.size() > 1:
 			var refund := _refund(w)
 			var idx := i
@@ -191,6 +194,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	var desc := ""
 	var full := false
 	var icon: Image = Gfx.icon(Gfx.ICON_UNKNOWN)   # pas encore dessiné : un point d'interrogation
+	var bullet_icon: Image = null   # arme à distance déjà dessinée : ses balles, en médaillon
 	var frame_cols: Array = FRAME[o.rar]
 	match o.type:
 		"weapon":
@@ -203,6 +207,11 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 				icon = dflt
 			elif not near.is_empty():
 				icon = Analyzer.trim(near.image)
+			if def.kind == "ranged" and not def.get("nobullet", false):
+				if not near.is_empty() and near.get("bullet") != null:
+					bullet_icon = Analyzer.trim(near.bullet)
+				else:
+					bullet_icon = _default_img("balle_" + o.wtype)
 			oname = def.name
 			kind = "%s · %s" % ["Mêlée" if def.kind == "melee" else "Distance", Pal.RARITY_NAMES_F[o.rar].to_lower()]
 			desc = def.desc
@@ -306,6 +315,8 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	spots.append(Rect2(pos, Vector2(fw, 64)))
 	var pic := UI.thumb(icon, Vector2(fw - 16, 48))
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
+	if bullet_icon:
+		_bullet_badge(pos + Vector2(fw - 20, 44), 18, bullet_icon)
 	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type in ["heal", "case"] else Pal.RARITY_NAMES_F[o.rar]
 	# Petite icône : arme ou amulette (aussi pour les caisses et les enchères)
 	var ik := ""
@@ -407,6 +418,14 @@ func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
 # ------------------------------------------------------------------ Styles « musée »
 
 ## Dessin par défaut du Codex (montré en vitrine tant que l'objet n'est pas acheté).
+## Médaillon des balles d'une arme à distance, posé dans le coin du cadre.
+func _bullet_badge(at: Vector2, n: int, img: Image) -> void:
+	var badge := UI.panel(CARTEL, GOLD_DARK, 1)
+	badge.tooltip_text = "Ses balles"
+	UI.put(self, badge, at, Vector2(n, n))
+	UI.put(badge, UI.thumb(img, Vector2(n - 4, n - 4)), Vector2(2, 2), Vector2(n - 4, n - 4))
+
+
 func _default_img(key: String) -> Image:
 	if not default_cache.has(key):
 		var d = Meta.bestiary_get(key)

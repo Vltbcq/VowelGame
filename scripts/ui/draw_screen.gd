@@ -757,7 +757,13 @@ func _changed() -> void:
 	if color_box:
 		# arme (et ses balles) : 30 % du dessin ; le reste : 25 %
 		var need := 0.3 if cfg.kind in ["melee", "ranged", "bullet"] else 0.25
-		main_color = Pal.color_of(Analyzer.analyze(img).frac, need)
+		var frac: Array = Analyzer.analyze(img).frac
+		# arme à distance : la couleur finale mélange l'arme et ses balles (au nombre de pixels)
+		if cfg.kind == "bullet" and cfg.has("weapon_a"):
+			frac = Stats.mix_frac(cfg.weapon_a, Analyzer.analyze(img))
+		elif cfg.kind == "ranged" and cfg.has("bullet_a"):
+			frac = Stats.mix_frac(Analyzer.analyze(img), cfg.bullet_a)
+		main_color = Pal.color_of(frac, need)
 		main_color_label.text = "Couleur\n" + (Pal.color_name(main_color) if main_color != 0 else "aucune")
 		main_color_label.add_theme_color_override("font_color", Pal.DIM if main_color == 0 else (Pal.SHADES[0][2] if main_color == Pal.NOIR else Pal.SHADES[main_color][2]))
 		color_ring.queue_redraw()
