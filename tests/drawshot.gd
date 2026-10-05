@@ -1,5 +1,5 @@
 extends Node
-## Capture : écran de dessin (perso par défaut, ou arme) -- <capture.png> [perso|arme]
+## Capture : écran de dessin (perso par défaut, ou arme) -- <capture.png> [perso|arme|boss]
 
 
 func _ready() -> void:
@@ -14,7 +14,9 @@ func _ready() -> void:
 	var cfg := DrawCfg.weapon("epee", 0) if args.size() > 1 and args[1] == "arme" else DrawCfg.character()
 	if args.size() > 1 and args[1] == "arme":
 		cfg.base = img
-	elif true:
+	elif args.size() > 1 and args[1] == "boss":
+		cfg = DrawCfg.enemy("toile")   # la plus grande toile de boss
+	else:
 		cfg.base = img
 	var ds := DrawScreen.new(cfg)
 	add_child(ds)

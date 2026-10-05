@@ -59,6 +59,13 @@ static func _order(rar: int, name: String) -> String:
 
 
 ## Ennemi / boss d'une carte pas encore débloquée : on ne sait pas ce que c'est.
+## Cet objet a-t-il quelque chose à débloquer ? (sinon il ne compte pas dans le % débloqué)
+func _lockable(id: String) -> bool:
+	if tab == "ennemis":
+		return int(EnemyDB.get_def(id).get("map", 1)) > 1
+	return ItemUnlockDB.CONDS.has(_item_key(id))
+
+
 func _locked(id: String) -> bool:
 	if tab != "ennemis":
 		return not Meta.item_open(_item_key(id))   # arme / amulette pas encore débloquée : « ??? »
@@ -129,15 +136,16 @@ func _completion(only := "") -> Array:
 			continue
 		tab = t[0]
 		for id in _items():
-			items_n += 1
-			if not _locked(id):
-				open += 1
+			if _lockable(id):   # seulement ce qui se débloque (succès, nouvelle carte)
+				items_n += 1
+				if not _locked(id):
+					open += 1
 			for k in _slot_keys(id):
 				slots_n += 1
 				if (Meta.data.get("bestiary", {}) as Dictionary).has(k):
 					drawn += 1
 	tab = keep
-	return [100.0 * drawn / maxi(1, slots_n), 100.0 * open / maxi(1, items_n)]
+	return [100.0 * drawn / maxi(1, slots_n), 100.0 * open / items_n if items_n > 0 else 100.0]
 
 
 func _default_or_blank(key: String, size: Vector2i) -> Image:

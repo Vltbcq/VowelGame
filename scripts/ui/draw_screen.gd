@@ -105,6 +105,10 @@ func _build_ui() -> void:
 	UI.put(self, UI.label(cfg.title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 22))
 	var sub := UI.label(cfg.get("sub", ""), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub.max_lines_visible = 2
+	sub.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	sub.mouse_filter = Control.MOUSE_FILTER_STOP
+	sub.tooltip_text = cfg.get("sub", "")
 	UI.put(self, sub, Vector2(20, 30), Vector2(600, 26))
 
 	# --- Outils (gauche)
@@ -184,11 +188,11 @@ Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
 	var scale_px := maxi(2, mini(284 / s.x, 264 / s.y))
 	view = CanvasView.new(self, scale_px)
 	var vs := Vector2(s * scale_px)
-	UI.put(self, view, Vector2(134 + (284 - vs.x) / 2.0, 62 + (264 - vs.y) / 2.0), vs)
+	UI.put(self, view, Vector2(maxf(156.0, 134 + (284 - vs.x) / 2.0), 62 + (264 - vs.y) / 2.0), vs)
 	ink_bar = Control.new()
 	ink_bar.draw.connect(_draw_ink_bar)
 	UI.put(self, ink_bar, Vector2(134, 332), Vector2(284, 12))
-	warn_label = UI.label("", 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER)
+	warn_label = UI.label(INK_HINT, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(self, warn_label, Vector2(134, 346), Vector2(284, 12))
 
 	# --- Couleurs + aperçu (droite)
@@ -436,11 +440,17 @@ func _set_effect(f: String) -> void:
 	_changed()
 
 
+const INK_HINT := "Seuls les contours comptent dans l'encre utilisée"
+
+
 func _warn(t: String) -> void:
 	warn_label.text = t
+	warn_label.add_theme_color_override("font_color", Pal.BAD)
 	var tw := create_tween()
 	tw.tween_interval(1.8)
-	tw.tween_callback(func(): warn_label.text = "")
+	tw.tween_callback(func():
+		warn_label.text = INK_HINT
+		warn_label.add_theme_color_override("font_color", Pal.DIM))
 
 
 func _unhandled_input(ev: InputEvent) -> void:

@@ -898,7 +898,7 @@ func kill_enemy(e: Enemy) -> void:
 	# Pinceau de Midas : +1 or par ennemi tué
 	Run.gold += Run.amulet_count("midas")
 	# Bulle de soin : goutte qui soigne
-	if randf() < 0.08 * Run.amulet_count("bulle_soin"):
+	if randf() < 0.04 * Run.amulet_count("bulle_soin"):
 		var hp := Pickup.new()
 		hp.heal = 3.0
 		hp.xp = 0

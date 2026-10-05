@@ -46,7 +46,7 @@ static func enemy(id: String) -> Dictionary:
 	if boss:
 		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
 		min_ink = ceili(def.ink * 0.95)
-		sub = "%s  Un boss doit utiliser au moins 95%% de l'encre (%d) ! Sa couleur = son élément." % [def.desc, min_ink]
+		sub = "Un boss doit utiliser au moins 95%% de l'encre (%d) ! Sa couleur = son élément.  %s" % [min_ink, def.desc]
 	return {"kind": "boss" if boss else "enemy", "gallery": "boss" if boss else "enemy",
 		"size": Vector2i(def.canvas, def.canvas), "ink": def.ink, "title": title, "sub": sub,
 		"cancel": false, "min": 6, "min_ink": min_ink, "random": true}

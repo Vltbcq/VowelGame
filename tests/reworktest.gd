@@ -193,7 +193,7 @@ func _ready() -> void:
 	add_child(cx)
 	await get_tree().process_frame
 	var comp: Array = cx._completion()
-	_check(comp[0] >= 0.0 and comp[0] <= 100.0 and comp[1] > 0.0 and comp[1] <= 100.0, "Codex : complétion %d%% dessiné · %d%% débloqué" % [roundi(comp[0]), roundi(comp[1])])
+	_check(comp[0] >= 0.0 and comp[0] <= 100.0 and comp[1] >= 0.0 and comp[1] <= 100.0, "Codex : complétion %d%% dessiné · %d%% débloqué" % [roundi(comp[0]), roundi(comp[1])])
 	await _shot("codex_completion")
 	# Tri : par rareté, puis ordre alphabétique (armes et amulettes)
 	for tb in ["armes", "amulettes"]:

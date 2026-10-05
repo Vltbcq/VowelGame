@@ -64,7 +64,7 @@ const LIST := [
 	{"id": "taille_douce", "ink": 34, "name": "Taille-douce", "rar": 1, "flag": true, "desc": "+1% critique par tranche de 3 armure · {m}% vitesse", "malus": ["speed", -5.0]},
 	{"id": "encre_invisible", "ink": 30, "name": "Encre invisible", "rar": 1, "flag": true, "limit": 1, "desc": "Après un coup reçu, les ennemis te perdent de vue 1 s · {m}% dégâts", "malus": ["dmg", -4.0]},
 	{"id": "papier_verre", "ink": 32, "name": "Papier de verre", "rar": 1, "flag": true, "desc": "+3% dégâts par ennemi proche (max +30%) · {m} armure", "malus": ["armor", -1.0]},
-	{"id": "bulle_soin", "ink": 30, "name": "Bulle de soin", "rar": 1, "flag": true, "desc": "Les ennemis tués ont 8% de chances de lâcher une goutte de soin · {m}% dégâts", "malus": ["dmg", -5.0]},
+	{"id": "bulle_soin", "ink": 30, "name": "Bulle de soin", "rar": 1, "flag": true, "desc": "Les ennemis tués ont 4% de chances de lâcher une goutte de soin · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "elastique", "ink": 26, "name": "Élastique", "rar": 1, "flag": true, "desc": "Tes projectiles rebondissent 1 fois sur les bords · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "correcteur", "ink": 28, "name": "Correcteur", "rar": 1, "flag": true, "limit": 1, "desc": "Insensible aux flaques d'encre ennemies · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "cachet_cire", "ink": 32, "name": "Cachet de cire", "rar": 1, "flag": true, "desc": "Les élites lâchent ×2 d'or · {m} chance", "malus": ["luck", -4.0]},

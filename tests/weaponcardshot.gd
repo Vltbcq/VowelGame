@@ -17,6 +17,7 @@ func _ready() -> void:
 	Run.set_character(img, "")
 	Run.set_weapon_art("pistolet", 0, img, "", WeaponDB.orb(Pal.SHADES[Pal.FEU][1]), "")
 	Run.add_weapon("pistolet", 0, 10, Vector2.ZERO)
+	Run.add_weapon("pistolet", 0, 10, Vector2(4, 0))   # 2 armes : boutons « revendre »
 	Run.recompute()
 	Run.shop_offers = [
 		{"type": "weapon", "wtype": "pistolet", "rar": 1, "price": 30, "sold": false},

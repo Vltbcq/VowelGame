@@ -108,8 +108,10 @@ func _build() -> void:
 			var idx := i
 			var sb := UI.button("+%d" % refund, func(): _sell(idx))
 			_style_tag(sb)
-			sb.tooltip_text = "Revendre cette œuvre"
-			UI.put(self, sb, Vector2(x + 6, 272), Vector2(34, 13))
+			sb.icon = _sell_icon()   # étiquette « à vendre »
+			sb.tooltip_text = "Revendre cette œuvre (+● %d)" % refund
+			var sw := minf(44.0, mini(50, 300 / maxi(1, Run.weapons.size())) - 2.0)
+			UI.put(self, sb, Vector2(x + 23 - sw / 2.0, 272), Vector2(sw, 13))
 	# Fusions : un bouton par paire possible (tu choisis laquelle)
 	var pairs := _fusion_pairs()
 	if not pairs.is_empty():
@@ -756,6 +758,25 @@ func _style_price(b: Button) -> void:
 	b.add_theme_stylebox_override("disabled", UI.sb(Color("cfc3a6"), Color("b9a883"), 1, 2, 1))
 	b.add_theme_color_override("font_color", Pal.ACCENT)
 	b.add_theme_color_override("font_disabled_color", CARTEL_DIM)
+
+
+## Petite étiquette de prix (bouton « revendre »).
+var _sell_tex: Texture2D
+
+
+func _sell_icon() -> Texture2D:
+	if _sell_tex == null:
+		var rows := ["...#########", "..#ooooooooo#", ".#ooooooooo#", "#oo##oooooo#", "#oo##oooooo#", ".#ooooooooo#", "..#ooooooooo#", "...#########"]
+		var img := Image.create_empty(13, 8, false, Image.FORMAT_RGBA8)
+		for y in rows.size():
+			for x in rows[y].length():
+				match rows[y][x]:
+					"#":
+						img.set_pixel(x, y, GOLD_DARK)
+					"o":
+						img.set_pixel(x, y, Pal.ACCENT)
+		_sell_tex = ImageTexture.create_from_image(img)
+	return _sell_tex
 
 
 func _style_tag(b: Button) -> void:
