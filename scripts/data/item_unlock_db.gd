@@ -12,6 +12,12 @@ extends RefCounted
 ## parties), "level", "boss" (boss vaincu), "runs" (parties jouées), "syn" (synergie de
 ## l'élément el active à la vague v ou plus), "syn2" (v synergies actives en même temps),
 ## "legend" (arme légendaire), "clean" (vague >= v finie sans perdre de PV), "gallery".
+## v0.8 : "mono6" (vague finie avec 6 armes de la même couleur), "boss_clean" (boss vaincu sans
+## perdre de PV), "boss_total" (boss vaincus, toutes parties), "damage" (dégâts infligés, toutes
+## parties), "boss_crit" (boss achevé d'un critique), "mono_color" (vague v finie avec un perso
+## d'une seule couleur), "spent" (or dépensé, toutes parties), "roulette" (parties gagnées à la
+## roulette), "wave_kills" (ennemis tués en une vague), "maps" (vague finie sur les 2 cartes),
+## "fast_win" (partie gagnée en moins de v minutes), "legend_buys" (légendaires achetées dans une partie).
 
 const CONDS := {
 	# --- Armes à ratio : leur stat
@@ -100,6 +106,21 @@ const CONDS := {
 	"a:autographe": {"kind": "boss", "boss": "professeur"},
 	"a:nuit_etoilee": {"kind": "kills", "v": 20000},
 	"a:derniere_touche": {"kind": "win", "v": 2},
+	# --- v0.8
+	"a:accord_parfait": {"kind": "mono6"},
+	"a:bache": {"kind": "boss_clean"},
+	"a:colle_forte": {"kind": "boss_total", "v": 10},
+	"a:grattoir": {"kind": "damage", "v": 100000},
+	"a:monocle": {"kind": "boss_crit"},
+	"a:pigment_pur": {"kind": "mono_color", "v": 10},
+	"a:toile_tendue": {"kind": "boss", "boss": "photocopieuse"},
+	"a:carnet_commandes": {"kind": "spent", "v": 1000},
+	"a:de_pipe": {"kind": "roulette", "v": 3},
+	"a:performance": {"kind": "wave_kills", "v": 150},
+	"a:reflet": {"kind": "boss", "boss": "encrier"},
+	"a:salle_thematique": {"kind": "maps"},
+	"a:speed_painting": {"kind": "fast_win", "v": 25},
+	"a:vernissage": {"kind": "legend_buys", "v": 3},
 }
 
 const STAT_NAMES := {"max_hp": "PV max", "armor": "d'armure", "speed": "% de vitesse", "crit": "% de critique",
@@ -164,6 +185,30 @@ static func text(c: Dictionary) -> String:
 			return "Termine une vague %d ou plus sans perdre de PV." % int(c.v)
 		"gallery":
 			return "Aie %d dessins dans ta galerie." % int(c.v)
+		"mono6":
+			return "Termine une vague avec 6 armes de la même couleur."
+		"boss_clean":
+			return "Vaincs un boss sans perdre de PV pendant sa vague."
+		"boss_total":
+			return "Vaincs %d boss (toutes parties)." % int(c.v)
+		"damage":
+			return "Inflige %d dégâts (toutes parties)." % int(c.v)
+		"boss_crit":
+			return "Achève un boss d'un coup critique."
+		"mono_color":
+			return "Termine la vague %d avec un perso d'une seule couleur." % int(c.v)
+		"spent":
+			return "Dépense %d or (toutes parties)." % int(c.v)
+		"roulette":
+			return "Gagne %d fois à la roulette (toutes parties)." % int(c.v)
+		"wave_kills":
+			return "Efface %d ennemis en une seule vague." % int(c.v)
+		"maps":
+			return "Termine une vague sur chacune des deux cartes."
+		"fast_win":
+			return "Gagne une partie en moins de %d minutes." % int(c.v)
+		"legend_buys":
+			return "Achète %d objets légendaires dans une même partie." % int(c.v)
 	return "?"
 
 
@@ -208,4 +253,28 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 			return bool(ctx.get("clean", false)) and int(ctx.get("cleared", 0)) >= int(c.v)
 		"gallery":
 			return int(ctx.get("gallery", 0)) >= int(c.v)
+		"mono6":
+			return bool(ctx.get("mono6", false))
+		"boss_clean":
+			return bool(ctx.get("boss_clean", false))
+		"boss_total":
+			return int((ctx.get("counters", {}) as Dictionary).get("bosses", 0)) >= int(c.v)
+		"damage":
+			return float((ctx.get("counters", {}) as Dictionary).get("damage", 0.0)) >= float(c.v)
+		"boss_crit":
+			return bool(ctx.get("boss_crit", false))
+		"mono_color":
+			return int(ctx.get("colors", 99)) <= 1 and int(ctx.get("cleared", 0)) >= int(c.v)
+		"spent":
+			return int((ctx.get("counters", {}) as Dictionary).get("gold_spent", 0)) >= int(c.v)
+		"roulette":
+			return int((ctx.get("counters", {}) as Dictionary).get("roulette_wins", 0)) >= int(c.v)
+		"wave_kills":
+			return int(ctx.get("wave_kills", 0)) >= int(c.v)
+		"maps":
+			return int(ctx.get("maps", 0)) >= 2
+		"fast_win":
+			return bool(ctx.get("win", false)) and float(ctx.get("play_time", 1e9)) < float(c.v) * 60.0
+		"legend_buys":
+			return int(ctx.get("legend_buys", 0)) >= int(c.v)
 	return false

@@ -433,7 +433,7 @@ func _buy(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
 	if o.sold or Run.gold < o.price:
 		return
-	Run.gold -= o.price
+	Run.spend(o.price)
 	var ok := false
 	if o.type == "weapon":
 		var m := Run.fusion_match(o.wtype, o.rar)
@@ -449,9 +449,11 @@ func _buy(i: int) -> void:
 	else:
 		ok = await _get_amulet(o.id)
 	if not ok:
-		Run.gold += o.price
+		Run.refund(o.price)
 		return
 	o.sold = true
+	if int(o.rar) == 3:
+		Run.legend_buys += 1   # succès Vernissage
 	var what := Run.item_label(o.type, o.wtype if o.type == "weapon" else o.id, int(o.rar))
 	if o.has("replace"):
 		Run.log_event("event", "Restaurateur : %s → %s (● %d)" % [AmuletDB.get_def(o.replace.id).name, what, o.price])
@@ -495,7 +497,7 @@ func _ink_pot(i: int) -> void:
 	var r = await _paint(cfg)
 	if r == null:
 		return   # rien payé
-	Run.gold -= o.price
+	Run.spend(o.price)
 	o.sold = true
 	Run.char_ink_bonus += add
 	Run.set_character(r.image, r.effect, r.outline)

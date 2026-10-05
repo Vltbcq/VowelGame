@@ -29,6 +29,7 @@ var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplace
 var sap_t := 0.0            # Élixir de sève
 var weak_t := 0.0   # affichage « FAIBLESSE ! »
 var yuki_t := 0.0           # Yuki : +30 % de vitesse : régénération boostée restante (s)
+var ghost_of: Player        # Reflet : ce perso est le double en miroir de ghost_of
 
 
 func setup(a: Arena) -> void:
@@ -57,8 +58,17 @@ func setup(a: Arena) -> void:
 	for w in Run.weapons:
 		var wn := WeaponNode.new()
 		add_child(wn)
-		wn.setup(self, w)
+		if ghost_of:
+			# Reflet : mêmes armes, 40 % des dégâts
+			var gw: Dictionary = w.duplicate()
+			gw.st = (w.st as Dictionary).duplicate(true)
+			gw.st.ghost = 0.4
+			wn.setup(self, gw)
+		else:
+			wn.setup(self, w)
 		weapons.append(wn)
+	if ghost_of:
+		mat.set_shader_parameter("tint", Color(0.7, 0.8, 1.3))
 
 
 func _draw() -> void:
@@ -87,6 +97,9 @@ func input_dir() -> Vector2:
 
 
 func tick(delta: float) -> void:
+	if ghost_of:
+		_ghost_tick(delta)
+		return
 	weak_t -= delta
 	t += delta
 	var d := input_dir()
@@ -98,7 +111,13 @@ func tick(delta: float) -> void:
 	if yuki_t > 0.0:
 		yuki_t -= delta
 		boost *= 1.3   # Yuki
-	vel = d * st.move * hz[0] * boost
+	if arena.theme == "rapide":
+		boost *= 1.3   # Salle thématique : tout va plus vite
+	var want: Vector2 = d * st.move * hz[0] * boost
+	if arena.theme == "glissant":
+		vel = vel.lerp(want, minf(1.0, 2.5 * delta))   # Salle thématique : sol glissant
+	else:
+		vel = want
 	position += vel * delta
 	if hz[1] > 0.0:
 		take_hit(hz[1], 0, null)
@@ -245,6 +264,21 @@ func rebuild_weapons() -> void:
 		add_child(wn)
 		wn.setup(self, w)
 		weapons.append(wn)
+
+
+## Reflet : suit ton perso en miroir (de l'autre côté de la page), ne prend pas de coups,
+## attaque avec ses propres exemplaires de tes armes.
+func _ghost_tick(delta: float) -> void:
+	t += delta
+	var m := ghost_of
+	position = Vector2(Arena.W - m.position.x, m.position.y)
+	vel = Vector2(-m.vel.x, m.vel.y)
+	body.scale.x = -m.body.scale.x
+	body.position = m.body.position
+	body.rotation = -m.body.rotation
+	mat.set_shader_parameter("alpha", 0.6)
+	for w in weapons:
+		w.tick(delta)
 
 
 ## Redessine le perso (après avoir ajouté / retiré des amulettes en cours de vague).

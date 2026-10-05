@@ -11,6 +11,7 @@ var hint_t := 0.0
 var hurt_flash := 0.0
 var dev_panel: DevPanel     # OUTIL DE DEV (Ctrl+P) — à retirer avant de publier
 var _amulet_btn: Button
+var order_label: Label      # Carnet de commandes : la commande de la vague et où tu en es
 
 
 func _ready() -> void:
@@ -36,6 +37,8 @@ func _ready() -> void:
 	UI.put(self, ab, Vector2(8, 54), Vector2(96, 14))
 	_amulet_btn = ab
 	_refresh_amulet_btn()
+	order_label = UI.label("", 10, Pal.ACCENT)
+	UI.put(self, order_label, Vector2(8, 70), Vector2(300, 12))
 	if Run.wave == 1:
 		var holder := Control.new()
 		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -57,6 +60,15 @@ func _refresh_amulet_btn() -> void:
 
 func _process(delta: float) -> void:
 	hurt_flash = maxf(0.0, hurt_flash - delta * 3.0)
+	var o: Dictionary = Run.order
+	if o.is_empty():
+		order_label.text = ""
+	elif o.done:
+		order_label.text = "Commande réussie ✓"
+	elif o.kind == "hp":
+		order_label.text = "Commande : %s" % o.text
+	else:
+		order_label.text = "Commande : %s (%d/%d)" % [o.text, int(o.progress), int(o.n)]
 	draw_layer.queue_redraw()
 	if hint_t > 0.0:
 		hint_t -= delta
@@ -316,7 +328,7 @@ func toggle_pause() -> void:
 	var syn := ""
 	var counts := Run.synergy_counts()
 	for e in counts:
-		syn += "%s %d/%d%s\n" % [Pal.NAMES[e], counts[e], Run.SYNERGY_NEED, (" ✓ " + Run.SYNERGY_DESC[e]) if counts[e] >= Run.SYNERGY_NEED else ""]
+		syn += "%s %d/%d%s\n" % [Pal.NAMES[e], counts[e], Run.synergy_need(), (" ✓ " + Run.SYNERGY_DESC[e]) if counts[e] >= Run.synergy_need() else ""]
 	var mid := UI.label("ARMES\n" + ws + "\nAMULETTES\n" + (am if am != "" else "aucune") + "\n\nSYNERGIES\n" + (syn if syn != "" else "aucune"), 10, Pal.TEXT)
 	mid.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.put(pause_menu, mid, Vector2(240, 64), Vector2(160, 280))
@@ -332,7 +344,7 @@ func toggle_pause() -> void:
 		pause_menu.add_child(op)
 		op.done.connect(func(_r):
 			op.queue_free()
-			Engine.time_scale = float(Meta.setting("speed")))), [KEY_O]))
+			Engine.time_scale = arena.game_speed())), [KEY_O]))
 	var sq := UI.button("Sauvegarder et quitter", func():
 		get_tree().paused = false
 		arena.ended = true

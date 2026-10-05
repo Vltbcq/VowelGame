@@ -59,6 +59,10 @@ func _build() -> void:
 	_plaque(Vector2(10, 4), Vector2(150, 26), "♥ %d / %d  ·  NIV %d" % [ceili(Run.hp), int(Run.stats.max_hp), Run.level], 10, hp_col)
 	_plaque(Vector2(480, 4), Vector2(150, 26), "BOURSE  ● %d" % Run.gold, 10, Pal.ACCENT)
 
+	# Carnet de commandes : la commande de la prochaine vague
+	if not Run.order.is_empty():
+		UI.put(self, UI.label("COMMANDE : %s  →  +● %d" % [Run.order.text, int(Run.order.reward)], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 31), Vector2(640, 12))
+
 	# --- Les tableaux accrochés
 	var n := Run.shop_offers.size()
 	var gap := 10.0 if n <= 4 else 6.0   # 5 offres et plus : on serre pour garder des fiches lisibles
@@ -74,12 +78,12 @@ func _build() -> void:
 	var counts := Run.synergy_counts()
 	var sx := 130.0
 	for e in counts:
-		var on: bool = counts[e] >= Run.SYNERGY_NEED
-		var txt := "%d/%d%s" % [counts[e], Run.SYNERGY_NEED, " ✓" if on else ""]
+		var on: bool = counts[e] >= Run.synergy_need()
+		var txt := "%d/%d%s" % [counts[e], Run.synergy_need(), " ✓" if on else ""]
 		var tw := _text_w(txt)
 		var it := Control.new()
 		it.mouse_filter = Control.MOUSE_FILTER_STOP
-		it.tooltip_text = "Synergie %s (%d armes %s)%s\n%s" % [Pal.NAMES[e], Run.SYNERGY_NEED, Pal.NAMES[e],
+		it.tooltip_text = "Synergie %s (%d armes %s)%s\n%s" % [Pal.NAMES[e], Run.synergy_need(), Pal.NAMES[e],
 			" : ACTIVE" if on else "", Run.SYNERGY_DESC[e]]
 		UI.put(self, it, Vector2(sx, 215), Vector2(16 + tw, 14))
 		var ic := TextureRect.new()
@@ -873,7 +877,7 @@ func _buy(i: int) -> void:
 		return
 	if Run.gold < o.price:
 		return
-	Run.gold -= o.price
+	Run.spend(o.price)
 	Run.log_event("buy", "Achat : %s (● %d)" % [Run.HEALS[o.id].name, o.price])
 	if Run.HEALS[o.id].has("regen"):
 		Run.regen_boost = float(Run.HEALS[o.id].regen)   # Élixir de sève : vague suivante
@@ -913,7 +917,7 @@ func _reroll() -> void:
 	var p := Run.reroll_price()
 	if Run.gold < p:
 		return
-	Run.gold -= p
+	Run.spend(p)
 	Run.rerolls += 1
 	Run.roll_shop()
 	_build()
@@ -1023,7 +1027,7 @@ func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) 
 	for b in btns:
 		b.disabled = true
 	sl.editable = false
-	Run.gold -= bet
+	Run.spend(bet)
 	Run.shop_offers[roul_offer].sold = true
 	var slot := randi() % 37
 	var res := wheel_color(slot)
@@ -1033,6 +1037,8 @@ func _spin(color: String, wheel: _Wheel, info: Label, btns: Array, sl: HSlider) 
 	var win := res == color
 	var gain: int = bet * int(Run.ROULETTE_PAY[color]) if win else 0
 	Run.gold += gain
+	if win:
+		Meta.count("roulette_wins")   # succès Dé pipé
 	Run.log_event("event", "Roulette : ● %d sur %s → %s, %s" % [bet, color, res, ("gagné ● %d" % gain) if win else "perdu"])
 	info.add_theme_color_override("font_color", Pal.GOOD if win else Color("f06a5d"))
 	info.text = ("%s ! Gagné : ● %d" % [res.to_upper(), gain]) if win else ("%s... Perdu ● %d" % [res.to_upper(), bet])
@@ -1235,7 +1241,7 @@ func _open_scratch(i: int) -> void:
 	var o: Dictionary = Run.shop_offers[i]
 	if Run.gold < o.price or ev_layer:
 		return
-	Run.gold -= o.price
+	Run.spend(o.price)
 	o.sold = true
 	# Tirage : 1 chance sur 3 de gagner (or 60 %, étoile 30 %, diamant 10 %)
 	var syms := []
@@ -1588,7 +1594,7 @@ func _open_case(i: int) -> void:
 	var won := Run.roll_case_item(int(o.tier), String(o.kind))
 	if won.is_empty():
 		return
-	Run.gold -= o.price
+	Run.spend(o.price)
 	o.sold = true
 	Run.log_event("event", "%s (%s) ouverte (● %d) : %s" % [Run.CASE_NAMES[o.tier], "armes" if o.kind == "weapon" else "amulettes", o.price, Run.item_label(won.type, won.get("wtype", won.get("id", "")), int(won.rar))])
 	var inner := _ev_window("%s · %s" % [Run.CASE_NAMES[o.tier].to_upper(), "ARMES" if o.kind == "weapon" else "AMULETTES"], CASE_FRAME[o.tier], 220.0)

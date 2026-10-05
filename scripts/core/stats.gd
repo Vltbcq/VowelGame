@@ -155,6 +155,7 @@ static func player(run: Node) -> Dictionary:
 	s.atk_speed += 0.5 * maxf(0.0, s.speed) * n
 	n = run.amulet_count("taille_douce")
 	s.crit += floorf(maxf(0.0, s.armor) / 3.0) * n
+	s.max_hp += 10.0 * run.bosses * run.amulet_count("toile_tendue")   # Toile tendue : +10 PV max par boss vaincu
 	s.max_hp *= pow(0.8, run.amulet_count("midas")) * pow(0.9, run.amulet_count("derniere_touche"))
 	# Épines : Carapace (+25 % de l'armure), Cactus (+1 par 10 PV max)
 	s.thorns += 0.25 * maxf(0.0, s.armor) * run.amulet_count("carapace")

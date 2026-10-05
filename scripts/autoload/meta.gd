@@ -427,6 +427,20 @@ func _retro_achievements() -> void:
 				data.unlocks[a.unlock] = 1
 
 
+## Compteurs de toutes les parties (dégâts, or dépensé, boss vaincus, roulette...).
+func count(key: String, n := 1.0) -> void:
+	if not data.has("counters"):
+		data.counters = {}
+	data.counters[key] = float(data.counters.get(key, 0.0)) + n
+
+
+## Vague finie sur cette carte (succès « les deux cartes »).
+func map_cleared(map_id: int) -> void:
+	if not data.has("maps_cleared"):
+		data.maps_cleared = {}
+	data.maps_cleared[str(map_id)] = true
+
+
 ## Vérifie tous les succès avec ce contexte. Pendant une partie, l'amélioration gagnée est mise
 ## de côté et n'est appliquée qu'à la fin (apply_pending_unlocks) ; hors partie, tout de suite.
 func check_achievements(ctx: Dictionary) -> void:
@@ -442,6 +456,8 @@ func check_achievements(ctx: Dictionary) -> void:
 	ctx.bosses = bosses
 	ctx.runs = int(data.get("runs", 0)) + (1 if Run.active else 0)
 	ctx.gallery = (data.gallery as Array).size()
+	ctx.counters = data.get("counters", {})
+	ctx.maps = (data.get("maps_cleared", {}) as Dictionary).size()
 	var changed := false
 	# Succès d'objets (armes / amulettes) : conditions visibles dans le Codex
 	if not data.has("item_unlocks"):

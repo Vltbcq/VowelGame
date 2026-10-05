@@ -67,6 +67,13 @@ var squares: Array = []   # Tampon encreur {pos, half, t, dur, dmg, col}
 var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, dmg}
 var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit, gaps}
 var dark_t := 0.0         # Nuit d'encre
+var theme := ""           # Salle thématique : la règle de cette vague
+var ghost: Player         # Reflet : ton double en miroir
+var wave_kills := 0       # ennemis tués pendant cette vague
+var safe_t := 0.0         # Carnet de commandes : temps sans perdre de PV
+var last_hp := 0.0
+const THEMES := {"geants": "ENNEMIS GÉANTS", "minus": "ENNEMIS MINUSCULES", "rapide": "TOUT VA PLUS VITE",
+	"glissant": "SOL GLISSANT", "nuit": "NUIT D'ENCRE"}
 var blotters: Array = []  # Encrier renversé : buvards qui nettoient tes taches {pos, t}
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
 # Armes épiques / légendaires et Horloge
@@ -119,7 +126,9 @@ func _ready() -> void:
 	loot_layer.z_index = -1
 	add_child(loot_layer)
 	syn = Run.active_synergies()
-	Engine.time_scale = float(Meta.setting("speed"))
+	if Run.amulet_count("salle_thematique") > 0:
+		theme = THEMES.keys().pick_random()   # Salle thématique : une règle par vague
+	Engine.time_scale = game_speed()
 	marks = _Marks.new()
 	marks.arena = self
 	marks.z_index = -1
@@ -149,6 +158,14 @@ func _ready() -> void:
 	player.position = Vector2(W / 2.0, H / 2.0)
 	world.add_child(player)
 	player.setup(self)
+	last_hp = player.hp
+	if Run.amulet_count("reflet") > 0:
+		# Reflet : un double en miroir (de l'autre côté de la page) qui attaque avec tes armes
+		ghost = Player.new()
+		ghost.ghost_of = player
+		ghost.position = Vector2(W - player.position.x, player.position.y)
+		world.add_child(ghost)
+		ghost.setup(self)
 	if Run.regen_boost > 0.0 and Run.amulet_count("pacte_sang") > 0:
 		Run.regen_boost = 0.0   # Pacte de sang : l'Élixir de sève ne marche plus
 	if Run.regen_boost > 0.0:
@@ -213,9 +230,23 @@ func _ready() -> void:
 		Sfx.play("boss")
 	else:
 		time_left = minf(20.0 + (Run.eff_wave() - 1) * 2.5, 60.0) * pow(1.25, Run.amulet_count("sablier_brise"))
+		time_left *= pow(0.5, Run.amulet_count("performance"))   # Performance live : vagues 2× plus courtes
 		wave_len = time_left
 		hud.announce("VAGUE %d" % Run.wave, Pal.ACCENT)
 		Sfx.play("wave")
+	if theme != "":
+		_after(1.6, func():
+			if not ended:
+				hud.announce("SALLE : " + String(THEMES[theme]), Pal.ACCENT))
+	if not Run.order.is_empty():
+		_after(3.2, func():
+			if not ended:
+				float_text(player.position + Vector2(0, -34), "COMMANDE : " + String(Run.order.text), Pal.ACCENT))
+
+
+## Vitesse du jeu : le réglage, ×1,25 par Speed painting.
+func game_speed() -> float:
+	return float(Meta.setting("speed")) * pow(1.25, Run.amulet_count("speed_painting"))
 
 
 func _exit_tree() -> void:
@@ -301,6 +332,11 @@ func _process(delta: float) -> void:
 	marks.queue_redraw()
 
 	player.tick(delta)
+	if ghost:
+		ghost.tick(delta)
+	_tick_order(delta)
+	if theme == "nuit":
+		dark_t = maxf(dark_t, 3.0)   # Salle thématique : nuit d'encre permanente
 	for e in enemies.duplicate():
 		if ended:
 			break
@@ -412,6 +448,9 @@ func _spawn(delta: float) -> void:
 			telegraphs.append({"pos": _spawn_pos(120.0), "id": eid, "t": 0.8, "elite": true})
 	if boss_id != "":
 		rate *= 0.45
+	rate *= pow(2.0, Run.amulet_count("performance"))   # Performance live : 2× plus d'ennemis à la fois
+	if theme == "minus":
+		rate *= 1.8
 	spawn_acc += delta * rate
 	while spawn_acc >= 1.0:
 		spawn_acc -= 1.0
@@ -545,7 +584,7 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0, lig
 	p.hang = hang
 	p.hostile = true
 	p.position = pos
-	p.dmg = src.dmg * (0.8 if src.is_boss else 1.0)
+	p.dmg = src.dmg * (0.8 * pow(0.75, Run.amulet_count("bache")) if src.is_boss else 1.0)   # Bâche : -25 %
 	p.life = 6.0
 	var tex: Texture2D
 	var effect := ""
@@ -607,12 +646,13 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if e.dead:
 		return
 	# Esquive tirée de son dessin (symétrique, blanc)
-	if e.dodge > 0.0 and randf() * 100.0 < e.dodge:
+	if e.dodge > 0.0 and Run.amulet_count("monocle") == 0 and randf() * 100.0 < e.dodge:   # Monocle : jamais esquivé
 		if e.weak_t <= 0.0:
 			e.weak_t = 0.6
 			float_text(e.position + Vector2(0, -16), "ESQUIVE", Pal.DIM)
 		return
 	var s := Run.stats
+	base *= float(wst.get("ghost", 1.0))   # Reflet : ton double fait 40 % des dégâts
 	var scale: String = wst.get("scale", "")
 	if scale != "":
 		base = Stats.scaled_damage(base, scale)
@@ -626,7 +666,8 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	var wcol := Pal.color_of(wst.get("frac", []), 0.3)
 	var wmult := Pal.weakness(wcol, e.color)
 	# Armure (en %) et résistance à la couleur de l'arme, tirées du dessin de l'ennemi
-	dmg *= (1.0 - e.armor / 100.0) * (1.0 - e.res_to(wcol) / 100.0)
+	var armor_left := pow(0.5, Run.amulet_count("grattoir"))   # Grattoir : ignore 50 % de l'armure
+	dmg *= (1.0 - e.armor * armor_left / 100.0) * (1.0 - e.res_to(wcol) / 100.0)
 	if wmult != 1.0:
 		dmg *= wmult
 		if e.weak_t <= 0.0:
@@ -730,6 +771,8 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary, hs := 1.0) -> void:
 			continue
 		if el == e.element:
 			chance *= 0.3   # un ennemi résiste à son propre élément
+		if el == player.main_color():
+			chance *= 1.0 + 0.3 * Run.amulet_count("pigment_pur")   # Pigment pur
 		if randf() >= chance:
 			continue
 		_apply_el(e, el, dmg)
@@ -797,6 +840,15 @@ func kill_enemy(e: Enemy) -> void:
 		return
 	e.dead = true
 	Run.kills += 1
+	wave_kills += 1
+	Run.wave_kills_best = maxi(Run.wave_kills_best, wave_kills)
+	if not Run.order.is_empty() and not Run.order.done:
+		if Run.order.kind == "kills" or (Run.order.kind == "elem" and (e.burn_ticks > 0 or e.poison > 0 or e.freeze_t > 0.0 or e.slow_t > 0.0 or e.mark_t > 0.0)):
+			_order_progress(1.0)
+	if e.is_boss:
+		Meta.count("bosses")
+		if not player.was_hurt:
+			Run.boss_clean = true   # succès : boss vaincu sans perdre de PV
 	# La Banane : une peau toutes les 8 éliminations
 	if Run.amulet_count("banane") > 0:
 		banana_kills += 1
@@ -834,6 +886,8 @@ func kill_enemy(e: Enemy) -> void:
 	# L'XP suit le butin de l'ennemi ; l'or en est une fraction (Run.GOLD_MULT).
 	# Moins d'ennemis par vague (SPAWN_MULT) : chacun lâche plus, pour garder le même or / XP par vague
 	var loot: float = e.loot * (1.0 if e.is_boss else 1.0 / SPAWN_MULT)
+	# Performance live, Speed painting : +30 % ; Salle thématique : +25 %
+	loot *= pow(1.3, Run.amulet_count("performance") + Run.amulet_count("speed_painting")) * (1.25 if theme != "" else 1.0)
 	var total := roundi(loot * randf_range(0.8, 1.25))
 	if total == 0 and randf() < loot:
 		total = 1
@@ -952,6 +1006,8 @@ func collect(p: Pickup) -> void:
 	if p.heal > 0.0:
 		player.heal(p.heal)
 	Run.gold += p.value
+	if p.value > 0 and not Run.order.is_empty() and not Run.order.done and Run.order.kind == "gold":
+		_order_progress(p.value)
 	Sfx.play("pickup", 0.2)
 	if p.value > 0:
 		burst(p.position, Pal.ACCENT, 2, 40.0)
@@ -984,6 +1040,14 @@ func _end_wave() -> void:
 	if ended:
 		return
 	ended = true
+	# Carnet de commandes : la commande « PV » se juge à la fin ; une commande pas finie est ratée
+	if not Run.order.is_empty() and not Run.order.done:
+		if Run.order.kind == "hp" and player.hp >= player.max_hp * float(Run.order.n) / 100.0:
+			_order_progress(1e9)
+		else:
+			hud.announce("COMMANDE RATÉE", Pal.DIM)
+	Run.order = {}
+	Meta.map_cleared(Run.map)
 	if Run.wave_dmg > 0.0:
 		Run.wave_dmg = 0.0   # l'étoile du grattage ne dure qu'une vague
 		Run.recompute()
@@ -1078,7 +1142,8 @@ func lob(src: Enemy, to: Vector2, dur: float, r := 22.0, from := Vector2.INF) ->
 		if not eproj_tex.has(src.id):
 			eproj_tex[src.id] = Gfx.texture(Analyzer.trim(Run.eproj_art[src.id].image))
 		tex = eproj_tex[src.id]
-	lobs.append({"from": src.position if from == Vector2.INF else from, "to": to, "t": 0.0, "dur": dur, "dmg": src.dmg, "r": r,
+	var ldmg: float = src.dmg * (pow(0.75, Run.amulet_count("bache")) if src.is_boss else 1.0)
+	lobs.append({"from": src.position if from == Vector2.INF else from, "to": to, "t": 0.0, "dur": dur, "dmg": ldmg, "r": r,
 		"el": src.element, "tex": tex, "col": src.ink_col, "src": src})
 	Sfx.play("enemy_shot")
 
@@ -1731,6 +1796,31 @@ func ghost_volley(src: Enemy, pos: Vector2, n: int, step: float, delay: float) -
 
 func player_vel() -> Vector2:
 	return player.vel if player else Vector2.ZERO
+
+
+## Carnet de commandes : avance la commande ; réussie = de l'or tout de suite.
+func _order_progress(n: float) -> void:
+	var o: Dictionary = Run.order
+	o.progress = minf(float(o.n), float(o.progress) + n)
+	if o.progress >= float(o.n) and not o.done:
+		o.done = true
+		Run.gold += int(o.reward)
+		Sfx.play("level")
+		hud.announce("COMMANDE RÉUSSIE ! +● %d" % int(o.reward), Pal.GOOD)
+		Run.log_event("event", "Commande réussie : %s (+● %d)" % [o.text, int(o.reward)])
+
+
+## Carnet de commandes : « sans perdre de PV pendant N s ».
+func _tick_order(delta: float) -> void:
+	if player.hp < last_hp:
+		safe_t = 0.0
+	last_hp = player.hp
+	safe_t += delta
+	var o: Dictionary = Run.order
+	if not o.is_empty() and not o.done and o.kind == "nohit":
+		o.progress = maxf(float(o.progress), floorf(safe_t))
+		if safe_t >= float(o.n):
+			_order_progress(0.0)
 
 
 ## Buvard (Encrier renversé) : ramasse-le pour effacer les taches d'encre de ton perso.

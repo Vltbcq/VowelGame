@@ -22,7 +22,7 @@ const UPGRADE_MULT := [1.0, 1.5, 2.2, 3.0]
 const PACT_CHANCE := 0.3     # un choix sur 3 peut être un « pacte » : bonus doublé, mais un malus
 
 ## Synergies : 3 armes (ou plus) d'un même élément dominant.
-const SYNERGY_NEED := 3
+const SYNERGY_NEED := 3   # (2 avec Accord parfait : voir synergy_need)
 const SYNERGY_DESC := ["", "Brûlure contagieuse", "Éclats de glace à la mort des ennemis gelés",
 	"Chaînes d'éclairs plus longues (4 cibles)", "Nuage toxique à la mort des empoisonnés",
 	"Marque arcanique doublée (+50% dégâts subis)", "Toutes tes explosions sont 33% plus grandes"]
@@ -92,6 +92,12 @@ var joconde := 0            # vagues finies avec La Joconde (+15% dégâts chacu
 var revived := false        # Renaissance déjà utilisée
 var levelup_choices: Array = []   # les 3 bonus proposés au niveau en attente (sauvegardés)
 var char_ink_bonus := 0     # Pots d'encre achetés : encre en plus pour retoucher le perso
+var order: Dictionary = {}  # Carnet de commandes : {kind, n, progress, reward, done, text}
+var legend_buys := 0        # légendaires achetées dans cette partie (succès Vernissage)
+var boss_clean := false     # un boss vaincu sans perdre de PV (succès Bâche)
+var boss_crit := false      # un boss achevé d'un critique (succès Monocle)
+var wave_kills_best := 0    # record d'ennemis tués en une vague (succès Performance live)
+var play_time := 0.0        # temps de jeu de la partie, en secondes (succès Speed painting)
 var regen_boost := 0.0      # Élixir de sève : secondes de régénération boostée au début de la vague suivante
 var star_buff := 0.0        # Grattage (étoile) : +X % dégâts à la vague suivante (en attente)
 var wave_dmg := 0.0         # ... actif pendant la vague en cours
@@ -147,6 +153,12 @@ func start(d: int, map_id := 1) -> void:
 	star_buff = 0.0
 	wave_dmg = 0.0
 	patron = ""
+	order = {}
+	legend_buys = 0
+	boss_clean = false
+	boss_crit = false
+	wave_kills_best = 0
+	play_time = 0.0
 
 
 func diff() -> Dictionary:
@@ -421,11 +433,16 @@ func synergy_counts() -> Dictionary:
 	return c
 
 
+## Armes d'un même élément pour activer sa synergie (Accord parfait : 2).
+func synergy_need() -> int:
+	return 2 if amulet_count("accord_parfait") > 0 else SYNERGY_NEED
+
+
 func active_synergies() -> Dictionary:
 	var out := {}
 	var c := synergy_counts()
 	for e in c:
-		if c[e] >= SYNERGY_NEED:
+		if c[e] >= synergy_need():
 			out[e] = c[e]
 	return out
 
@@ -460,7 +477,13 @@ func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
 	var legend := false
 	for w in weapons:
 		legend = legend or w.rar == 3
-	return {"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
+	var els := {}
+	for w in weapons:
+		els[weapon_element(w)] = true
+	var mono6 := weapons.size() >= 6 and els.size() == 1 and not els.has(0)
+	return {"mono6": mono6 and cleared >= 0, "boss_clean": boss_clean, "boss_crit": boss_crit,
+		"wave_kills": wave_kills_best, "legend_buys": legend_buys, "play_time": play_time,
+		"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
 		"legend": legend, "clean": clean, "win": win, "diff": difficulty, "map": map,
 		"stats": stats, "gold": gold, "colors": int(char_a.get("elements", 0)), "pixels": int(char_a.get("pixels", 0)),
 		"weapons": weapons.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
@@ -480,7 +503,9 @@ func to_save(stage: String) -> Dictionary:
 		"joconde": joconde, "revived": revived, "levelup_choices": levelup_choices.duplicate(true),
 		"elite_kills": elite_kills, "boss_ids": boss_ids.duplicate(), "regen_boost": regen_boost,
 		"star_buff": star_buff, "patron": patron, "event_used": event_used,
-		"journal": journal.duplicate(true), "char_ink_bonus": char_ink_bonus, "wave_stats": wave_stats.duplicate()}
+		"journal": journal.duplicate(true), "char_ink_bonus": char_ink_bonus, "wave_stats": wave_stats.duplicate(),
+		"order": order.duplicate(), "legend_buys": legend_buys, "boss_clean": boss_clean, "boss_crit": boss_crit,
+		"wave_kills_best": wave_kills_best, "play_time": play_time}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -564,6 +589,12 @@ func from_save(d: Dictionary) -> bool:
 	event_used = bool(d.get("event_used", false))
 	journal = d.get("journal", [])
 	char_ink_bonus = int(d.get("char_ink_bonus", 0))
+	order = d.get("order", {})
+	legend_buys = int(d.get("legend_buys", 0))
+	boss_clean = bool(d.get("boss_clean", false))
+	boss_crit = bool(d.get("boss_crit", false))
+	wave_kills_best = int(d.get("wave_kills_best", 0))
+	play_time = float(d.get("play_time", 0.0))
 	wave_stats = d.get("wave_stats", {})
 	boss_ids = d.get("boss_ids", {})
 	recompute()
@@ -803,6 +834,43 @@ func new_shop() -> void:
 	rerolls = 0
 	event_used = false
 	roll_shop()
+	new_order()
+
+
+## Carnet de commandes : une commande au hasard pour la vague suivante (récompense : de l'or).
+func new_order() -> void:
+	order = {}
+	if amulet_count("carnet_commandes") == 0 or wave >= WAVES:
+		return
+	var reward := 20 + 5 * wave
+	var w := wave + 1
+	var kinds := [
+		{"kind": "kills", "n": 20 + 3 * w, "text": "Efface %d ennemis"},
+		{"kind": "elem", "n": 6 + w, "text": "Efface %d ennemis touchés par un élément (brûlés, gelés...)"},
+		{"kind": "gold", "n": 10 + 3 * w, "text": "Ramasse %d or pendant la vague"},
+		{"kind": "nohit", "n": 20, "text": "Tiens %d s d'affilée sans perdre de PV"},
+		{"kind": "hp", "n": 60, "text": "Termine la vague avec au moins %d%% de tes PV"},
+	]
+	var k: Dictionary = kinds.pick_random()
+	order = {"kind": k.kind, "n": int(k.n), "progress": 0.0, "reward": reward, "done": false,
+		"text": String(k.text) % int(k.n)}
+
+
+## Or dépensé (compté pour le succès du Carnet de commandes).
+func spend(n: int) -> void:
+	gold -= n
+	Meta.count("gold_spent", n)
+
+
+## Achat annulé : l'or revient (et n'est plus compté comme dépensé).
+func refund(n: int) -> void:
+	gold += n
+	Meta.count("gold_spent", -n)
+
+
+func _process(delta: float) -> void:
+	if active:
+		play_time += delta / maxf(0.01, Engine.time_scale)   # temps réel
 
 
 func roll_shop() -> void:
@@ -812,9 +880,13 @@ func roll_shop() -> void:
 			event_used = true
 	shop_offers = []
 	var n := 4 + Meta.level("shop_slot")
+	if amulet_count("vernissage") > 0:
+		n = 2   # Vernissage : 2 œuvres seulement... mais plus rares
 	var offered := {}
 	for i in n:
 		var rar := roll_rarity()
+		if amulet_count("vernissage") > 0:
+			rar = mini(3, rar + 1)
 		# Familiers : de temps en temps (uniques : jamais un déjà possédé ni deux fois le même)
 		if randf() < 0.05:
 			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id))
@@ -859,6 +931,11 @@ func roll_shop() -> void:
 	for key in fresh:
 		Meta.mark_seen(key)
 	apply_capital()
+	# Dé pipé : chaque prix est tiré au hasard, de gratuit à ×2
+	if amulet_count("de_pipe") > 0:
+		for o in shop_offers:
+			if o.type in ["weapon", "amulet", "familiar"]:
+				o.price = roundi(float(o.price) * randf_range(0.0, 2.0))
 	# Case « potion » : une fois sur deux
 	if randf() < POTION_CHANCE:
 		var roll := randf()

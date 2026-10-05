@@ -141,6 +141,22 @@ const LIST := [
 	{"id": "alchimie", "ink": 80, "name": "Alchimie", "rar": 3, "flag": true, "desc": "Tes effets élémentaires ont 50% de chances de se propager à l'ennemi le plus proche · {m} PV max", "malus": ["max_hp", -5.0]},
 	{"id": "horloge", "ink": 76, "name": "Horloge", "rar": 3, "flag": true, "desc": "Toutes les 12 s, le TEMPS S'ARRÊTE 2 s : ennemis et tirs figés, tes armes font ×2 · {m} PV max", "malus": ["max_hp", -6.0]},
 	{"id": "sablier_brise", "ink": 70, "name": "Sablier brisé", "rar": 3, "stat": "atk_speed", "v": 45.0, "flag": true, "desc": "+{v}% vit. d'attaque, mais les vagues durent 25% plus longtemps"},
+	# --- v0.8 : amulettes classiques
+	{"id": "accord_parfait", "ink": 44, "name": "Accord parfait", "rar": 2, "flag": true, "limit": 1, "minus": [["max_hp", -3.0]], "desc": "Les synergies d'éléments s'activent avec 2 armes au lieu de 3 · {m}% dégâts, -3 PV max", "malus": ["dmg", -5.0]},
+	{"id": "bache", "ink": 36, "name": "Bâche", "rar": 1, "flag": true, "desc": "Les projectiles des boss te font -25% de dégâts"},
+	{"id": "colle_forte", "ink": 30, "name": "Colle forte", "rar": 1, "flag": true, "desc": "Les boss sont 20% plus lents · {m}% vit. d'attaque", "malus": ["atk_speed", -4.0]},
+	{"id": "grattoir", "ink": 28, "name": "Grattoir", "rar": 1, "flag": true, "minus": [["speed", -2.0]], "desc": "Tes coups ignorent 50% de l'armure des ennemis · {m}% critique, -2% vitesse", "malus": ["crit", -2.0]},
+	{"id": "monocle", "ink": 24, "name": "Monocle", "rar": 1, "stat": "crit", "v": 3.0, "flag": true, "limit": 1, "desc": "Les ennemis ne peuvent plus esquiver tes coups, +{v}% critique"},
+	{"id": "pigment_pur", "ink": 30, "name": "Pigment pur", "rar": 1, "flag": true, "desc": "+30% d'effets élémentaires pour l'élément de ton perso · {m}% vitesse", "malus": ["speed", -4.0]},
+	{"id": "toile_tendue", "ink": 50, "name": "Toile tendue", "rar": 2, "flag": true, "minus": [["atk_speed", -2.0]], "desc": "+10 PV max par boss vaincu dans la partie · {m}% dégâts, -2% vit. d'attaque", "malus": ["dmg", -3.0]},
+	# --- v0.8 : amulettes qui changent le jeu (achat unique)
+	{"id": "carnet_commandes", "ink": 40, "name": "Carnet de commandes", "rar": 2, "flag": true, "limit": 1, "desc": "À chaque boutique, une COMMANDE pour la vague suivante : réussie, elle rapporte de l'or (20 + 5 par vague)"},
+	{"id": "de_pipe", "ink": 30, "name": "Dé pipé", "rar": 2, "flag": true, "limit": 1, "desc": "Les prix de la boutique sont tirés au HASARD à chaque relance : de gratuit à ×2"},
+	{"id": "performance", "ink": 44, "name": "Performance live", "rar": 2, "flag": true, "limit": 1, "desc": "Vagues 2× plus courtes mais 2× plus d'ennemis à la fois, butin +30%"},
+	{"id": "reflet", "ink": 80, "name": "Reflet", "rar": 3, "flag": true, "desc": "Un DOUBLE de ton perso, en miroir de l'autre côté de la page, attaque avec tes armes (40% des dégâts)"},
+	{"id": "salle_thematique", "ink": 40, "name": "Salle thématique", "rar": 2, "flag": true, "limit": 1, "desc": "Chaque vague a une règle au HASARD (ennemis géants ou minuscules, tout va plus vite, sol glissant, nuit d'encre), butin +25%"},
+	{"id": "speed_painting", "ink": 36, "name": "Speed painting", "rar": 2, "flag": true, "limit": 1, "desc": "Tout le jeu va 25% plus vite (toi et les ennemis), butin +30%"},
+	{"id": "vernissage", "ink": 70, "name": "Vernissage", "rar": 3, "flag": true, "desc": "La boutique n'a plus que 2 œuvres, mais toutes d'une rareté au-dessus"},
 	# --- Familiers ("pet" : proposées seulement si tu as au moins un familier)
 	{"id": "laisse", "ink": 18, "name": "Laisse", "rar": 0, "flag": true, "pet": true, "desc": "Tes familiers vont 25% plus vite"},
 	{"id": "croquettes", "ink": 20, "name": "Croquettes", "rar": 0, "flag": true, "pet": true, "desc": "Tes familiers agissent 15% plus souvent · {m} chance", "malus": ["luck", -3.0]},

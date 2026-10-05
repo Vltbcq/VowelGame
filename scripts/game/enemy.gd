@@ -149,6 +149,7 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		max_hp *= ease
 		hp = max_hp
 		dmg *= ease
+		speed *= pow(0.8, Run.amulet_count("colle_forte"))   # Colle forte : boss 20 % plus lents
 	radius = mods.radius * (0.6 if small else 1.0)
 	element = mods.element
 	color = Pal.color_of(art.a.frac) if art.has("a") else element
@@ -160,6 +161,20 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 	sprite = Gfx.sprite(arena.enemy_tex(id, elite), mat)
 	body.add_child(sprite)
 	base_scale = 0.6 if small else 1.0
+	# Salle thématique : ennemis géants (lents, costauds) ou minuscules (fragiles)
+	if not is_boss and arena.theme == "geants":
+		base_scale *= 1.5
+		radius *= 1.5
+		max_hp *= 1.4
+		speed *= 0.7
+	elif not is_boss and arena.theme == "minus":
+		base_scale *= 0.6
+		radius *= 0.6
+		max_hp *= 0.6
+		speed *= 1.1
+	if arena.theme == "rapide":
+		speed *= 1.3
+	hp = max_hp
 	body.scale = Vector2(base_scale, base_scale)
 	phase = randf() * TAU
 	cd = randf_range(0.6, 2.0)
@@ -521,6 +536,7 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 		staple.staple_guard = true
 		staple.hurt(amount * 0.5, false, Vector2.ZERO, el)
 		staple.staple_guard = false
+	Meta.count("damage", minf(amount, maxf(0.0, hp)))
 	hp -= amount
 	flash = 1.0
 	squash = 1.0 if not is_boss else 0.4
@@ -530,6 +546,8 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 	hit_at = Vector2.INF
 	arena.hit_fx(self, crit, kb)
 	if hp <= 0.0:
+		if is_boss and crit:
+			Run.boss_crit = true   # succès : boss achevé d'un critique
 		arena.kill_enemy(self)
 
 
