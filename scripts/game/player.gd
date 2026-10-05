@@ -217,7 +217,8 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 	if src is Enemy and Run.amulet_count("ronces") > 0:
 		var en := src as Enemy
 		en.knock += (en.position - position).normalized() * 260.0
-		en.add_poison()
+		for k in Run.amulet_count("ronces"):
+			en.add_poison()
 	# Oursin : 6 épines d'encre tout autour
 	if Run.amulet_count("oursin") > 0:
 		arena.urchin(position, maxf(4.0, st.thorns * 2.0) * Run.amulet_count("oursin"))

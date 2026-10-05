@@ -669,7 +669,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 		dmg *= maxf(s.crit_mult, 2.0 + crit_chance / 35.0) if scale == "crit" else s.crit_mult
 	dmg = maxf(1.0, dmg)
 	if Run.amulet_count("estompe") > 0:
-		e.slow_t = maxf(e.slow_t, 0.8)
+		e.slow_t = maxf(e.slow_t, 0.8 * Run.amulet_count("estompe"))
 	e.hurt(dmg, crit, dir * knock)
 	# Ciseaux : exécution sous 25 % des PV (pas les boss)
 	if wst.get("style", "") == "scissors" and not e.dead and not e.is_boss and e.hp < e.max_hp * 0.25:
@@ -706,7 +706,7 @@ func _procs(e: Enemy, dmg: float, wst: Dictionary, hs := 1.0) -> void:
 		_apply_el(e, dom, dmg)
 	if Run.amulet_count("kaleidoscope") > 0:
 		kal_i += 1
-		if randf() < 0.2:
+		if randf() < 0.2 * Run.amulet_count("kaleidoscope"):
 			_apply_el(e, 1 + kal_i % (Pal.COUNT - 1), dmg)
 	var frac: Array = wst.get("frac", [])
 	if frac.is_empty():
@@ -1381,7 +1381,7 @@ func _tick_amulets(delta: float) -> void:
 	if Run.amulet_count("lanterne") > 0:
 		lure_cd -= delta
 		if lure_cd <= 0.0:
-			lure_cd = 15.0
+			lure_cd = 15.0 / (1.0 + 0.5 * (Run.amulet_count("lanterne") - 1))   # 15 s, 10 s, 7,5 s...
 			lure_t = 3.0
 			lure_pos = player.position
 			var s := Sprite2D.new()
@@ -1526,7 +1526,7 @@ func split_bullet(p: Projectile) -> void:
 func squid_cloud(pos: Vector2) -> void:
 	if squid_cd > 0.0 or Run.amulet_count("encre_seiche") == 0:
 		return
-	squid_cd = 15.0
+	squid_cd = 15.0 / (1.0 + 0.5 * (Run.amulet_count("encre_seiche") - 1))   # 15 s, 10 s, 7,5 s...
 	explosion(pos, 90.0, Color(Pal.INK, 0.8))
 	burst(pos, Pal.INK, 30, 120.0)
 	for o in near(pos, 90.0):

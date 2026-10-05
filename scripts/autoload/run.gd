@@ -836,14 +836,16 @@ func roll_shop() -> void:
 		else:
 			# Légendaires = uniques : jamais une déjà possédée, ni deux fois la même en vitrine.
 			# Limite d'achat : légendaires uniques, Étiquette de prix 5 max...
-			var pool := AmuletDB.of_rarity(rar).filter(func(d):
+			var ok := func(d: Dictionary) -> bool:
 				if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
 					return false   # verrouillée (succès du Codex)
-				var lim := int(d.get("limit", 1 if rar == 3 else 0))
-				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id))))
+				var lim := int(d.get("limit", 1 if int(d.rar) == 3 else 0))
+				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id)))
+			var pool := AmuletDB.of_rarity(rar).filter(ok)
 			if pool.is_empty():
+				# Plus de légendaire disponible : une épique (mêmes règles : pas une unique déjà achetée)
 				rar = 2
-				pool = AmuletDB.of_rarity(2).filter(func(d): return Meta.item_open(ItemUnlockDB.key_amulet(d.id)))
+				pool = AmuletDB.of_rarity(2).filter(ok)
 			var def: Dictionary = pool.pick_random()
 			offered[def.id] = true
 			shop_offers.append({"type": "amulet", "id": def.id, "rar": rar,

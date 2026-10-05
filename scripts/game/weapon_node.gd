@@ -192,9 +192,10 @@ func tick(delta: float) -> void:
 
 	if cd <= 0.0 and target:
 		cd = st.cooldown
-		# Métronome : une attaque sur 5 fait ×2,5
+		# Métronome : une attaque sur 5 fait ×2,5 (1 sur 4 avec deux, 1 sur 3 avec trois...)
 		atk_n += 1
-		metro = 2.5 if Run.amulet_count("metronome") > 0 and atk_n % 5 == 0 else 1.0
+		var metro_n := Run.amulet_count("metronome")
+		metro = 2.5 if metro_n > 0 and atk_n % maxi(2, 6 - metro_n) == 0 else 1.0
 		if metro > 1.0:
 			arena.float_text(player.position + position + Vector2(0, -14), "×2,5", Pal.ACCENT)
 		# Double exposition : l'attaque se relance aussitôt
