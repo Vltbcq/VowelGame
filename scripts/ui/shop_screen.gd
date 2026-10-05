@@ -90,6 +90,9 @@ func _build() -> void:
 		UI.put(f, UI.thumb(Run.weapon_image(w), Vector2(36, 30)), Vector2(5, 5), Vector2(36, 30))
 		f.tooltip_text = _weapon_tip(w)
 		var wart := Run.art_of(w)
+		var wc := Pal.color_of(w.st.get("frac", []), 0.3)
+		if wc != 0:
+			UI.element_badge(self, wc, Vector2(x + 32, 231))
 		if wart.get("bullet") != null and not WeaponDB.get_def(w.type).get("nobullet", false):
 			_bullet_badge(Vector2(x + 32, 256), 16, Analyzer.trim(wart.bullet))
 		if Run.weapons.size() > 1:
@@ -195,6 +198,7 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	var full := false
 	var icon: Image = Gfx.icon(Gfx.ICON_UNKNOWN)   # pas encore dessiné : un point d'interrogation
 	var bullet_icon: Image = null   # arme à distance déjà dessinée : ses balles, en médaillon
+	var wcolor := 0                 # arme déjà dessinée : sa couleur (cercle des faiblesses)
 	var frame_cols: Array = FRAME[o.rar]
 	match o.type:
 		"weapon":
@@ -215,6 +219,10 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 			oname = def.name
 			kind = "%s · %s" % ["Mêlée" if def.kind == "melee" else "Distance", Pal.RARITY_NAMES_F[o.rar].to_lower()]
 			desc = def.desc
+			wcolor = _offer_color(o.wtype, o.rar, near)
+			if wcolor != 0:
+				desc += "
+Couleur : " + Pal.color_name(wcolor)
 			if Run.has_art(o.wtype, o.rar):
 				desc += "\n✓ Dessinée"
 			elif dflt:
@@ -317,6 +325,8 @@ func _artwork(i: int, pos: Vector2, fw: float) -> void:
 	UI.put(frame, pic, Vector2(8, 8), Vector2(fw - 16, 48))
 	if bullet_icon:
 		_bullet_badge(pos + Vector2(fw - 20, 44), 18, bullet_icon)
+	if wcolor != 0:
+		UI.element_badge(self, wcolor, pos + Vector2(fw - 16, 3))
 	frame.tooltip_text = kind if o.type in EVENT_TYPES or o.type in ["heal", "case"] else Pal.RARITY_NAMES_F[o.rar]
 	# Petite icône : arme ou amulette (aussi pour les caisses et les enchères)
 	var ik := ""
@@ -418,6 +428,31 @@ func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
 # ------------------------------------------------------------------ Styles « musée »
 
 ## Dessin par défaut du Codex (montré en vitrine tant que l'objet n'est pas acheté).
+## Couleur d'une arme en vente, si on connaît déjà son dessin (dans la partie ou dans le Codex).
+func _offer_color(wtype: String, rar: int, near: Dictionary) -> int:
+	var def := WeaponDB.get_def(wtype)
+	var img: Image = null
+	var effect := ""
+	var bullet: Image = null
+	if Run.has_art(wtype, rar) or (not near.is_empty() and _default_img(Run.weapon_key(wtype, rar)) == null):
+		img = near.image
+		effect = near.effect
+		bullet = near.get("bullet")
+	else:
+		var d = Meta.bestiary_get(Run.weapon_key(wtype, rar))
+		if d == null:
+			return 0
+		img = d.image
+		effect = d.get("effect", "")
+		var db = Meta.bestiary_get("balle_" + wtype)
+		bullet = db.image if db != null else null
+	if def.kind == "ranged" and bullet == null and not def.get("nobullet", false):
+		bullet = WeaponDB.orb()
+	var w := {"type": wtype, "rar": rar, "a": Analyzer.analyze(img), "effect": effect,
+		"bullet": bullet, "ba": Analyzer.analyze(bullet) if bullet else {}, "beffect": ""}
+	return Pal.color_of(Stats.weapon(w).get("frac", []), 0.3)
+
+
 ## Médaillon des balles d'une arme à distance, posé dans le coin du cadre.
 func _bullet_badge(at: Vector2, n: int, img: Image) -> void:
 	var badge := UI.panel(CARTEL, GOLD_DARK, 1)

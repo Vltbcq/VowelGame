@@ -3,7 +3,7 @@ extends Node2D
 ## Ennemi dessiné par le joueur. Le comportement est fixe (défini par son type) et pensé
 ## autour du dessin : flaques, traits d'encre, règle, compas, gomme, taches piégées...
 
-const BOSS_DMG := 1.3
+const BOSS_DMG := 0.975     # (1,3 puis -25 % : un coup de boss fait ~3 de moins en moyenne)
 const BOSS_SPEED := 1.12
 const BOSS_EASE := 0.85        # PV et dégâts des boss (réglage global)
 const BOSS_EASE_FIRST := 0.75  # le premier boss de la carte (vague 5)
@@ -129,7 +129,7 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 			"summoner":
 				summon_cd = 3.0
 	if is_boss:
-		# Les boss frappent plus fort et bougent plus vite que leurs stats de base
+		# Les boss bougent plus vite que leurs stats de base (et frappent un peu moins fort)
 		dmg *= BOSS_DMG
 		speed *= BOSS_SPEED
 		# ... mais restent abordables : -15 % de PV et de dégâts, -25 % pour le 1er boss (vague 5)

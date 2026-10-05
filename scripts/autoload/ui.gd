@@ -384,6 +384,59 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 	return tr
 
 
+## Pastille d'une couleur du cercle (comme sur l'image du cercle) : disque ombré + symbole, 13×13.
+const _EL_ICON := {
+	Pal.FEU: ["...#...", "..##...", "..###..", ".#####.", ".##o##.", "##ooo##", ".#####."],
+	Pal.FOUDRE: ["...###.", "..###..", ".###...", "#######", "...###.", "..###..", ".##...."],
+	Pal.POISON: ["...#...", "..###..", ".#####.", ".#####.", "#######", "#######", ".#####."],
+	Pal.GLACE: ["#..#..#", ".#.#.#.", "..###..", "#######", "..###..", ".#.#.#.", "#..#..#"],
+	Pal.ARCANE: ["...#...", "...#...", ".#####.", "#######", ".#####.", "...#...", "...#..."],
+	Pal.LUMIERE: ["#..#..#", ".#...#.", "...#...", "#.###.#", "...#...", ".#...#.", "#..#..#"],
+	Pal.NOIR: [".#####.", "##...##", "#.....#", "#..#..#", "#.....#", "##...##", ".#####."],
+}
+var _el_icons := {}
+
+
+func element_icon(c: int) -> Texture2D:
+	if _el_icons.has(c):
+		return _el_icons[c]
+	var sh: Array = Pal.SHADES[0 if c == Pal.NOIR else c]
+	var img := Image.create_empty(13, 13, false, Image.FORMAT_RGBA8)
+	for y in 13:
+		for x in 13:
+			var dx := x - 6
+			var dy := y - 6
+			var d := sqrt(dx * dx + dy * dy)
+			if d <= 6.5:
+				var col: Color = sh[1]
+				if dx + dy < -3:
+					col = sh[2]
+				elif dx + dy > 4:
+					col = sh[0]
+				img.set_pixel(x, y, Pal.INK if d > 5.3 else col)
+	var light := c in [Pal.LUMIERE, Pal.FOUDRE]
+	var rows: Array = _EL_ICON[c]
+	for j in 7:
+		for i in 7:
+			var ch: String = rows[j][i]
+			if ch == "#":
+				img.set_pixel(3 + i, 3 + j, Pal.INK if light else Color.WHITE)
+			elif ch == "o":
+				img.set_pixel(3 + i, 3 + j, sh[2])
+	_el_icons[c] = ImageTexture.create_from_image(img)
+	return _el_icons[c]
+
+
+## Pastille de couleur posée sur un écran (infobulle : le nom de la couleur).
+func element_badge(parent: Node, c: int, pos: Vector2) -> TextureRect:
+	var tr := TextureRect.new()
+	tr.texture = element_icon(c)
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.tooltip_text = "Couleur : " + Pal.color_name(c)
+	put(parent, tr, pos, Vector2(13, 13))
+	return tr
+
+
 ## Fenêtre « Cercle des faiblesses » par-dessus un écran (Échap ou Fermer pour la fermer).
 ## extra : une ligne en plus (ex. la couleur de ton perso).
 ## with_text = false : juste l'image du cercle, sans l'explication (Codex).
