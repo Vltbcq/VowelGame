@@ -65,7 +65,7 @@ var chalks: Array = []    # pluie de craies {pos, r, t, dmg}
 var stars: Array = []     # bons points {pos, t}
 var squares: Array = []   # Tampon encreur {pos, half, t, dur, dmg, col}
 var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, dmg}
-var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit}
+var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit, gaps}
 var dark_t := 0.0         # Nuit d'encre
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
 # Armes épiques / légendaires et Horloge
@@ -1295,7 +1295,7 @@ func _tick_board(delta: float) -> void:
 		sc.t += delta
 		if sc.t > sc.tele:
 			sc.y = lerpf(0.0, float(H), (sc.t - sc.tele) / sc.dur)
-			if absf(p.position.y - sc.y) < p.radius + 3.0 and not sc.hit:
+			if absf(p.position.y - sc.y) < p.radius + 3.0 and not sc.hit and not _in_scan_gap(sc, p.position.x):
 				sc.hit = true
 				p.take_hit(sc.dmg, 0, null)
 		if sc.t < sc.tele + sc.dur:
@@ -1652,8 +1652,31 @@ func quiz(n: int, dmg: float) -> void:
 
 
 ## Scanner : une ligne annoncée en haut, puis qui descend tout l'écran.
-func scan(dmg: float) -> void:
-	scans.append({"y": 0.0, "t": 0.0, "tele": 1.0, "dur": 2.4, "dmg": dmg, "hit": false})
+## Elle a des BANDES NON SCANNÉES (marquées dès l'annonce) : on s'y met pour la laisser passer.
+const SCAN_GAP := 64.0
+
+
+func scan(dmg: float, n_gaps := 2) -> void:
+	var gaps := []
+	var tries := 0
+	while gaps.size() < n_gaps and tries < 50:
+		tries += 1
+		var x0 := randf_range(16.0, W - 16.0 - SCAN_GAP)
+		var ok := true
+		for g in gaps:
+			if absf(x0 - g) < SCAN_GAP * 2.0:
+				ok = false
+		if ok:
+			gaps.append(x0)
+	scans.append({"y": 0.0, "t": 0.0, "tele": 1.0, "dur": 2.4, "dmg": dmg, "hit": false, "gaps": gaps})
+
+
+## Le joueur est-il dans une bande non scannée ? (il doit y être en entier, ou presque)
+func _in_scan_gap(sc: Dictionary, x: float) -> bool:
+	for g in sc.gaps:
+		if x > g + 4.0 and x < g + SCAN_GAP - 4.0:
+			return true
+	return false
 
 
 ## Copie d'une salve, tirée un peu plus tard depuis `pos` (côté opposé de la page).
@@ -1998,11 +2021,27 @@ class _Marks extends Node2D:
 				for k in 4:
 					draw_string(UI.font, Vector2(cw * i, H * (k + 0.5) / 4.0 + 14.0), str(qz.answers[i]), HORIZONTAL_ALIGNMENT_CENTER, cw, UI.fs(40), Color(1, 1, 1, 0.55))
 		for sc in arena.scans:
-			if sc.t < sc.tele:
-				draw_line(Vector2(0, 4), Vector2(W, 4), Color(0.6, 1.0, 0.7, 0.4 + 0.4 * sin(arena.elapsed * 25.0)), 3.0)
-			else:
-				draw_rect(Rect2(0, sc.y - 6, W, 12), Color(0.6, 1.0, 0.7, 0.18))
-				draw_line(Vector2(0, sc.y), Vector2(W, sc.y), Color(0.75, 1.0, 0.8, 0.95), 2.0)
+			# Bandes non scannées : colonnes claires sur toute la hauteur, bordées de pointillés
+			for g in sc.gaps:
+				draw_rect(Rect2(g, 0, Arena.SCAN_GAP, H), Color(1, 1, 1, 0.1))
+				for yy in range(0, H, 16):
+					draw_line(Vector2(g, yy), Vector2(g, yy + 8), Color(1, 1, 1, 0.6), 2.0)
+					draw_line(Vector2(g + Arena.SCAN_GAP, yy), Vector2(g + Arena.SCAN_GAP, yy + 8), Color(1, 1, 1, 0.6), 2.0)
+			# La ligne, coupée aux bandes
+			var segs := []
+			var x := 0.0
+			var sorted_gaps: Array = sc.gaps.duplicate()
+			sorted_gaps.sort()
+			for g in sorted_gaps:
+				segs.append([x, g])
+				x = g + Arena.SCAN_GAP
+			segs.append([x, float(W)])
+			for s in segs:
+				if sc.t < sc.tele:
+					draw_line(Vector2(s[0], 4), Vector2(s[1], 4), Color(0.6, 1.0, 0.7, 0.4 + 0.4 * sin(arena.elapsed * 25.0)), 3.0)
+				else:
+					draw_rect(Rect2(s[0], sc.y - 6, s[1] - s[0], 12), Color(0.6, 1.0, 0.7, 0.18))
+					draw_line(Vector2(s[0], sc.y), Vector2(s[1], sc.y), Color(0.75, 1.0, 0.8, 0.95), 2.0)
 		for g in arena.telegraphs_fx:
 			if g.get("boss", false):
 				# arrivée d'un boss : cercle rouge qui se resserre + croix qui clignote

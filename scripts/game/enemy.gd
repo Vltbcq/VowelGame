@@ -952,7 +952,7 @@ func _boss_copy(delta: float, dirp: Vector2, dist: float) -> Vector2:
 		Sfx.play("enemy_shot")
 	if cd2 <= 0.0:
 		cd2 = 8.0 if _enraged() else 11.0
-		arena.scan(dmg)
+		arena.scan(dmg, 1 if _enraged() else 2)
 	if cd3 <= 0.0 and _enraged():
 		cd3 = 12.0
 		state = "jam"
