@@ -61,7 +61,7 @@ func _build() -> void:
 
 	# --- Les tableaux accrochés
 	var n := Run.shop_offers.size()
-	var fw := minf(92.0, (616.0 - (n - 1) * 10.0) / n)
+	var fw := minf(112.0, (616.0 - (n - 1) * 10.0) / n)
 	var total := n * fw + (n - 1) * 10.0
 	var x0 := (640.0 - total) / 2.0
 	for i in n:
@@ -358,25 +358,28 @@ Couleur : " + Pal.color_name(wcolor)
 
 	# Le cartel
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
-	UI.put(self, ct, pos + Vector2(-2, 70), Vector2(fw + 4, 94))
+	UI.put(self, ct, pos + Vector2(-2, 70), Vector2(fw + 4, 100))
 	ct.tooltip_text = "%s — %s
 %s" % [oname, kind, desc]   # texte complet au survol
-	var nl := UI.label(oname, 10, Pal.INK)
-	nl.clip_text = true
-	UI.put(ct, nl, Vector2(4, 2), Vector2(fw - 4, 12))
-	var kl := UI.label(kind, 10, CARTEL_DIM)
-	kl.clip_text = true
-	UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
-	var dl := UI.label(desc, 10, Pal.INK)
-	dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	dl.clip_text = true
-	UI.put(ct, dl, Vector2(4, 27), Vector2(fw - 4, 50))
+	if o.type == "weapon":
+		_weapon_card(ct, o, fw)   # fiche détaillée : stats et ratio
+	else:
+		var nl := UI.label(oname, 10, Pal.INK)
+		nl.clip_text = true
+		UI.put(ct, nl, Vector2(4, 2), Vector2(fw - 4, 12))
+		var kl := UI.label(kind, 10, CARTEL_DIM)
+		kl.clip_text = true
+		UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
+		var dl := UI.label(desc, 10, Pal.INK)
+		dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		dl.clip_text = true
+		UI.put(ct, dl, Vector2(4, 27), Vector2(fw - 4, 50))
 	if o.sold:
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
-		UI.put(ct, dot, Vector2(fw - 14, 77), Vector2(14, 14))
+		UI.put(ct, dot, Vector2(fw - 14, 83), Vector2(14, 14))
 		var sold_txt: String = {"case": "OUVERTE", "roulette": "JOUÉ", "scratch": "JOUÉ", "auction": "ADJUGÉ", "restorer": "PARTI", "patron": "PARTI"}.get(o.type, "VENDU")
-		UI.put(ct, UI.label(sold_txt, 10, STICKER), Vector2(4, 79), Vector2(fw - 20, 12))
+		UI.put(ct, UI.label(sold_txt, 10, STICKER), Vector2(4, 85), Vector2(fw - 20, 12))
 		frame.modulate = Color(1, 1, 1, 0.55)
 		return
 	var btxt: String = {"roulette": "Miser", "auction": "Enchérir", "restorer": "Choisir", "patron": "Écouter"}.get(o.type, "● %d" % o.price)
@@ -397,7 +400,7 @@ Couleur : " + Pal.color_name(wcolor)
 		b.tooltip_text = "Tu as déjà %d armes : revends-en une." % Run.max_weapons()
 	elif full:
 		b.tooltip_text = "Tes PV sont déjà au max."
-	UI.put(ct, b, Vector2(fw - 50, 77), Vector2(52, 15))
+	UI.put(ct, b, Vector2(fw - 50, 83), Vector2(52, 15))
 
 
 ## Objet débloqué par un succès, vu pour la première fois : gros « ! » qui pulse,
@@ -428,8 +431,9 @@ func _unlock_badge(frame: Control, pos: Vector2, fw: float) -> void:
 # ------------------------------------------------------------------ Styles « musée »
 
 ## Dessin par défaut du Codex (montré en vitrine tant que l'objet n'est pas acheté).
-## Couleur d'une arme en vente, si on connaît déjà son dessin (dans la partie ou dans le Codex).
-func _offer_color(wtype: String, rar: int, near: Dictionary) -> int:
+## Arme en vente telle qu'on la connaît : son dessin dans la partie, sinon celui du Codex,
+## sinon (average = true) un dessin « moyen » qui utilise la moitié de son encre. {} si inconnue.
+func _offer_weapon(wtype: String, rar: int, near: Dictionary, average := false) -> Dictionary:
 	var def := WeaponDB.get_def(wtype)
 	var img: Image = null
 	var effect := ""
@@ -440,17 +444,145 @@ func _offer_color(wtype: String, rar: int, near: Dictionary) -> int:
 		bullet = near.get("bullet")
 	else:
 		var d = Meta.bestiary_get(Run.weapon_key(wtype, rar))
-		if d == null:
-			return 0
-		img = d.image
-		effect = d.get("effect", "")
-		var db = Meta.bestiary_get("balle_" + wtype)
-		bullet = db.image if db != null else null
+		if d != null:
+			img = d.image
+			effect = d.get("effect", "")
+			var db = Meta.bestiary_get("balle_" + wtype)
+			bullet = db.image if db != null else null
+		elif average:
+			img = _avg_drawing(roundi(def.ink * WeaponDB.RAR_INK[rar]), int(def.canvas))
+			if def.kind == "ranged" and not def.get("nobullet", false):
+				bullet = _avg_drawing(roundi(def.bink * WeaponDB.RAR_INK[rar]), int(def.bcanvas))
+		else:
+			return {}
 	if def.kind == "ranged" and bullet == null and not def.get("nobullet", false):
 		bullet = WeaponDB.orb()
-	var w := {"type": wtype, "rar": rar, "a": Analyzer.analyze(img), "effect": effect,
+	return {"type": wtype, "rar": rar, "a": Analyzer.analyze(img), "effect": effect,
 		"bullet": bullet, "ba": Analyzer.analyze(bullet) if bullet else {}, "beffect": ""}
+
+
+## Dessin « moyen » : un carré plein dont le contour coûte la moitié de l'encre.
+func _avg_drawing(ink: int, canvas: int) -> Image:
+	var n := clampi(int(ink / 8.0) + 1, 2, canvas)
+	var img := Image.create_empty(canvas, canvas, false, Image.FORMAT_RGBA8)
+	@warning_ignore("integer_division")
+	var o := (canvas - n) / 2
+	img.fill_rect(Rect2i(o, o, n, n), Pal.SHADES[0][1])
+	return img
+
+
+## Couleur d'une arme en vente, si on connaît déjà son dessin (dans la partie ou dans le Codex).
+func _offer_color(wtype: String, rar: int, near: Dictionary) -> int:
+	var w := _offer_weapon(wtype, rar, near)
+	if w.is_empty():
+		return 0
 	return Pal.color_of(Stats.weapon(w).get("frac", []), 0.3)
+
+
+## Ratio d'une arme, en court (entre parenthèses sur la ligne de ses dégâts).
+const SCALE_SHORT := {
+	"free_slots": "+60 % / place libre", "max_hp": "+15 % PV max", "armor": "+1,5 × armure",
+	"speed": "+1 % / % vitesse", "luck": "+0,25 × chance", "gold": "+1 / 12 or",
+	"range": "+1,5 % / % portée", "colors": "+35 % / couleur", "pixels": "selon ta taille",
+	"lifesteal": "vol de vie ×3",
+}
+const CARD_LABEL := Color("8c5a14")   # libellés des stats (laiton foncé)
+const CARD_RATIO := Color("2c6b3a")   # ratio entre parenthèses (vert)
+
+
+## Fiche d'une arme en vente (à la place du cartel) : nom, type, puis ses stats
+## (Dégâts, Critique, Recharge, Portée / Allonge), avec le ratio entre parenthèses.
+## Pas encore dessinée : stats d'un dessin moyen, précédées de « ≈ ».
+func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
+	var def := WeaponDB.get_def(o.wtype)
+	var near := Run.closest_art(o.wtype, o.rar)
+	var known := not _offer_weapon(o.wtype, o.rar, near).is_empty()
+	var st := Stats.weapon(_offer_weapon(o.wtype, o.rar, near, true))
+	var approx := "" if known else "≈"
+	var scale: String = def.get("scale", "")
+	var nl := UI.label(def.name, 10, Pal.INK)
+	nl.clip_text = true
+	UI.put(ct, nl, Vector2(4, 2), Vector2(fw - 4, 12))
+	var tag := "%s · %s" % ["Mêlée" if def.kind == "melee" else "Distance", Pal.RARITY_NAMES_F[o.rar].to_lower()]
+	var kl := UI.label(tag, 10, CARTEL_DIM)
+	kl.clip_text = true
+	UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
+	# Dégâts d'un coup (ratio compris, comme en jeu) ; à distance : tous les projectiles d'un tir
+	var dmg := 0.0
+	var shots := ""
+	if st.kind == "melee":
+		dmg = float(st.damage)
+	else:
+		for b in st.bullets:
+			dmg += float(b.damage)
+		if int(st.pellets) > 1:
+			shots = " ×%d" % int(st.pellets)
+	if scale != "" and scale != "crit" and scale != "lifesteal":
+		dmg = Stats.scaled_damage(dmg, scale)
+	var ratio := ""
+	if SCALE_SHORT.has(scale):
+		ratio = "(%s)" % SCALE_SHORT[scale]
+	var lines := [["Dégâts", "%s%s%s" % [approx, _num(dmg), shots], ratio]]
+	var crit_ratio := "(×2 + crit ÷ 35)" if scale == "crit" else ""
+	lines.append(["Critique", "%s%d %%" % [approx, roundi(st.crit)], crit_ratio])
+	lines.append(["Recharge", "%s%ss" % [approx, _num(st.cooldown, 2)], ""])
+	if st.kind == "melee":
+		lines.append(["Allonge", "%s%d" % [approx, roundi(st.reach)], ""])
+	else:
+		lines.append(["Portée", "%s%d" % [approx, roundi(st.range)], ""])
+	var y := 26.0
+	for ln in lines:
+		y = _card_line(ct, Vector2(4, y), fw - 4, ln[0], ln[1], ln[2])
+	# En bas à gauche (à côté du prix) : où en est son dessin, ou la fusion
+	var foot := ""
+	var foot_col := CARTEL_DIM
+	if Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) >= 0:
+		foot = "→ fusionne !"
+		foot_col = CARD_RATIO
+	elif Run.has_art(o.wtype, o.rar):
+		foot = "✓ dessinée"
+	elif not known:
+		foot = "à dessiner"
+	if foot != "" and not o.sold:
+		var fl := UI.label(foot, 10, foot_col)
+		fl.clip_text = true
+		UI.put(ct, fl, Vector2(4, 85), Vector2(fw - 56, 12))
+
+
+## Une ligne de la fiche : « Libellé : valeur (ratio) », le libellé en laiton, le ratio en vert.
+## Le ratio passe à la ligne s'il ne tient pas. Retourne le y de la ligne suivante.
+func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, ratio: String) -> float:
+	var x := pos.x
+	var y := pos.y
+	var sep := " : "
+	if _text_w(lab + sep + val) > w:
+		sep = ": "   # ligne trop longue : on serre un peu
+	for part in [[lab + sep, CARD_LABEL], [val, Pal.INK]]:
+		x = _card_text(ct, Vector2(x, y), part[0], part[1])
+	if ratio != "":
+		var rw := _text_w(" " + ratio)
+		if x + rw > pos.x + w:
+			y += 11.0
+			x = pos.x + 6.0
+		_card_text(ct, Vector2(x, y), " " + ratio, CARD_RATIO)
+	return y + 11.0
+
+
+func _text_w(t: String) -> float:
+	return UI.font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10)).x
+
+
+func _card_text(ct: Control, pos: Vector2, t: String, col: Color) -> float:
+	var w := _text_w(t)
+	UI.put(ct, UI.label(t, 10, col), pos, Vector2(w + 1.0, 12))
+	return pos.x + w
+
+
+## Nombre à la française (virgule), sans décimale inutile.
+func _num(v: float, dec := 1) -> String:
+	if dec == 1 and absf(v - roundf(v)) < 0.05:
+		return str(roundi(v))
+	return (("%." + str(dec) + "f") % v).replace(".", ",")
 
 
 ## Médaillon des balles d'une arme à distance, posé dans le coin du cadre.
