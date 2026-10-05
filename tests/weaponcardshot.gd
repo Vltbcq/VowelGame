@@ -27,14 +27,21 @@ func _ready() -> void:
 	]
 	var narrow := OS.get_cmdline_user_args().size() > 1
 	if narrow:
-		Run.shop_offers.append({"type": "weapon", "wtype": "arc", "rar": 0, "price": 14, "sold": false})
-		Run.shop_offers.append({"type": "weapon", "wtype": "cutter", "rar": 1, "price": 28, "sold": false})
+		Run.shop_offers = [
+			{"type": "weapon", "wtype": "pipette", "rar": 0, "price": 14, "sold": false},
+			{"type": "weapon", "wtype": "pinceau_dore", "rar": 0, "price": 14, "sold": false},
+			{"type": "familiar", "id": "pie", "rar": 1, "price": 30, "sold": false},
+			{"type": "amulet", "id": "lanterne", "rar": 2, "price": 40, "sold": false},
+			{"type": "weapon", "wtype": "agrafeuse", "rar": 2, "price": 50, "sold": false},
+			{"type": "heal", "id": "grande_potion", "rar": 0, "price": 15, "sold": false},
+			{"type": "weapon", "wtype": "cutter", "rar": 1, "price": 28, "sold": false},
+		]
 	var shop := ShopScreen.new()
 	shop.size = Vector2(640, 360)
 	add_child(shop)
 	for f in 10:
 		await get_tree().process_frame
-	if narrow:
+	if narrow and OS.get_cmdline_user_args().size() < 3:   # 3e argument : on reste en haut
 		for sc in shop.find_children("*", "ScrollContainer", true, false):
 			sc.scroll_vertical = 1000
 		for f in 3:

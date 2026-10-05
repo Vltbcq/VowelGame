@@ -70,18 +70,25 @@ func _build() -> void:
 
 	# --- Ta collection (sur le lambris)
 	UI.put(self, UI.label("COLLECTION %d/%d" % [Run.weapons.size(), Run.max_weapons()], 10, GOLD), Vector2(12, 216))
-	var syn_txt := ""
+	# Synergies : pastille de l'élément + nombre d'armes (survol : ce que fait CETTE synergie)
 	var counts := Run.synergy_counts()
+	var sx := 130.0
 	for e in counts:
-		syn_txt += "%s %d/%d%s  " % [Pal.NAMES[e], counts[e], Run.SYNERGY_NEED, " ✓" if counts[e] >= Run.SYNERGY_NEED else ""]
-	if syn_txt != "":
-		var sl := UI.label(syn_txt, 10, Pal.ACCENT)
-		sl.mouse_filter = Control.MOUSE_FILTER_STOP
-		var tip := "Synergies : 3 armes d'un même élément dominant\n"
-		for e in range(1, Pal.COUNT):
-			tip += "%s : %s\n" % [Pal.NAMES[e], Run.SYNERGY_DESC[e]]
-		sl.tooltip_text = tip
-		UI.put(self, sl, Vector2(130, 216), Vector2(240, 12))
+		var on: bool = counts[e] >= Run.SYNERGY_NEED
+		var txt := "%d/%d%s" % [counts[e], Run.SYNERGY_NEED, " ✓" if on else ""]
+		var tw := _text_w(txt)
+		var it := Control.new()
+		it.mouse_filter = Control.MOUSE_FILTER_STOP
+		it.tooltip_text = "Synergie %s (%d armes %s)%s\n%s" % [Pal.NAMES[e], Run.SYNERGY_NEED, Pal.NAMES[e],
+			" : ACTIVE" if on else "", Run.SYNERGY_DESC[e]]
+		UI.put(self, it, Vector2(sx, 215), Vector2(16 + tw, 14))
+		var ic := TextureRect.new()
+		ic.texture = UI.element_icon(e)
+		ic.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.put(it, ic, Vector2(0, 0), Vector2(13, 13))
+		UI.put(it, UI.label(txt, 10, Pal.ACCENT if on else Pal.DIM), Vector2(16, 0), Vector2(tw + 1, 12))
+		sx += 16 + tw + 10
 	for i in Run.weapons.size():
 		var w: Dictionary = Run.weapons[i]
 		# 7 armes (Musée ambulant) : on resserre pour ne pas mordre sur l'autoportrait
@@ -371,10 +378,7 @@ Couleur : " + Pal.color_name(wcolor)
 		var kl := UI.label(kind, 10, CARTEL_DIM)
 		kl.clip_text = true
 		UI.put(ct, kl, Vector2(4, 14), Vector2(fw - 4, 12))
-		var dl := UI.label(desc, 10, Pal.INK)
-		dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		dl.clip_text = true
-		UI.put(ct, dl, Vector2(4, 27), Vector2(fw - 4, 50))
+		_scroll_box(ct, fw, [], desc, "", CARTEL_DIM, false)
 	if o.sold:
 		# Pastille rouge des galeries : œuvre vendue
 		var dot := _Dot.new()
@@ -535,18 +539,6 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 	var desc := String(def.desc)
 	for pre in ["Épique+. ", "Légendaire. "]:
 		desc = desc.trim_prefix(pre)
-	var box_h := 55.0
-	var sc := ScrollContainer.new()
-	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	sc.mouse_filter = Control.MOUSE_FILTER_PASS
-	UI.put(ct, sc, Vector2(2, 26), Vector2(fw + 1, box_h))
-	_style_card_scroll(sc)
-	var content := _card_content(lines, desc, fw - 2)
-	if content.custom_minimum_size.y > box_h:
-		content.free()
-		content = _card_content(lines, desc, fw - 10)   # place pour la barre
-	sc.add_child(content)
-	# En bas à gauche (à côté du prix) : où en est son dessin, ou la fusion
 	var foot := ""
 	var foot_col := CARTEL_DIM
 	if Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) >= 0:
@@ -556,22 +548,39 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		foot = "✓ dessinée"
 	elif not known:
 		foot = "à dessiner"
-	if foot != "" and not o.sold:
-		var fl := UI.label(foot, 10, foot_col)
-		fl.clip_text = true
-		UI.put(ct, fl, Vector2(4, 85), Vector2(fw - 56, 12))
+	_scroll_box(ct, fw, lines, desc, foot, foot_col)
+
+
+## Zone du cartel sous le nom : lignes de stats, mention, puis description. Elle défile
+## (fine barre) quand tout ne tient pas, et rien ne peut sortir du cadre.
+func _scroll_box(ct: Control, fw: float, lines: Array, desc: String, foot: String, foot_col: Color, bullet := true) -> void:
+	var box_h := 55.0
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.mouse_filter = Control.MOUSE_FILTER_PASS
+	UI.put(ct, sc, Vector2(2, 26), Vector2(fw + 1, box_h))
+	_style_card_scroll(sc)
+	var content := _card_content(lines, desc, fw - 2, foot, foot_col, bullet)
+	if content.custom_minimum_size.y > box_h:
+		content.free()
+		content = _card_content(lines, desc, fw - 10, foot, foot_col, bullet)   # place pour la barre
+	sc.add_child(content)
 
 
 ## Contenu de la fiche (largeur w) : les lignes de stats, puis la description (« • … »).
-func _card_content(lines: Array, desc: String, w: float) -> Control:
+func _card_content(lines: Array, desc: String, w: float, foot := "", foot_col := CARTEL_DIM, bullet := true) -> Control:
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_PASS
 	var y := 0.0
 	for ln in lines:
 		y = _card_line(content, Vector2(2, y), w - 2, ln[0], ln[1], ln[2])
+	for ln in _wrap(foot, w - 4):
+		_card_text(content, Vector2(2, y), ln, foot_col)
+		y += 11.0
 	if desc != "":
-		y += 2.0
-		for ln in _wrap("• " + desc, w - 4):
+		if not lines.is_empty():
+			y += 2.0
+		for ln in _wrap(("• " if bullet else "") + desc, w - 4):
 			_card_text(content, Vector2(2, y), ln, Pal.INK)
 			y += 11.0
 	content.custom_minimum_size = Vector2(w, y + 3.0)
@@ -581,6 +590,10 @@ func _card_content(lines: Array, desc: String, w: float) -> Control:
 ## Coupe un texte en lignes de largeur w (mot par mot ; un mot trop long est coupé).
 func _wrap(text: String, w: float) -> Array:
 	var out := []
+	if "\n" in text:
+		for part in text.split("\n"):
+			out.append_array(_wrap(part, w))
+		return out
 	var cur := ""
 	for word in text.split(" ", false):
 		var tryl := word if cur == "" else cur + " " + word
@@ -632,11 +645,13 @@ func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, r
 		x = pos.x + 6.0
 	x = _card_text(ct, Vector2(x, y), val, Pal.INK)
 	if ratio != "":
-		var rw := _text_w(" " + ratio)
-		if x + rw > pos.x + w:
-			y += 11.0
-			x = pos.x + 6.0
-		_card_text(ct, Vector2(x, y), " " + ratio, CARD_RATIO)
+		if x + _text_w(" " + ratio) <= pos.x + w:
+			_card_text(ct, Vector2(x, y), " " + ratio, CARD_RATIO)
+		else:
+			# à la ligne (et sur plusieurs lignes s'il le faut)
+			for ln in _wrap(ratio, w - 6):
+				y += 11.0
+				_card_text(ct, Vector2(pos.x + 6.0, y), ln, CARD_RATIO)
 	return y + 11.0
 
 
