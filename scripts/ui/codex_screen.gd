@@ -261,8 +261,8 @@ Débloqué : armes, amulettes et ennemis disponibles"
 			_slot_small(p, slots[i], Vector2(10 + i * 68, 32))
 		else:
 			_slot_ui(p, slots[i], Vector2(10 + i * 172, 34))
-	var info := UI.label(_stats_text(sel), 10, Pal.TEXT)
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var info := UI.rich(_stats_text(sel), 10, Pal.TEXT, 11)   # quantités de stats en icônes
+	info.custom_minimum_size.x = 338
 	UI.put(p, info, Vector2(10, 146 if compact else 128), Vector2(338, 120))
 	UI.put(self, UI.hotkey(UI.button("Retour", func(): done.emit(null)), [KEY_ESCAPE]), Vector2(12, 334), Vector2(80, 18))
 

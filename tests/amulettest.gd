@@ -120,6 +120,7 @@ func _ready() -> void:
 	var s0: Dictionary = Run.stats
 	Run.stats = s0.duplicate()
 	Run.stats.crit = -1000.0
+	tp.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(tp, 1.0, {"frac": [], "rar": 3}, Vector2.ZERO, 0.0)
 	Run.stats = s0
 	_ok("Pierre à aiguiser : coup de 1 sur une légendaire → %.1f dégâts" % (hb - tp.hp), hb - tp.hp >= 4.0 * (1.0 + s0.dmg / 100.0) - 0.01)
@@ -169,6 +170,7 @@ func _batch2() -> void:
 	var tg := _enemy(Vector2(200, 200))
 	tg.max_hp = 1e6
 	tg.hp = 1e6
+	tg.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(tg, 500.0, {"frac": []}, Vector2.ZERO, 0.0)
 	Run.stats = s0
 	_ok("Calice : coup de ~500 → +%.0f PV (≈ 2 %%)" % (arena.player.hp - 1.0), arena.player.hp - 1.0 >= 9.0)

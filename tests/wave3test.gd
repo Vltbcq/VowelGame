@@ -14,15 +14,19 @@ func _ready() -> void:
 	# --- Ciseaux : exécution sous 25 %
 	var e := _enemy(Vector2(400, 200))
 	e.hp = e.max_hp * 0.2 + 0.5
+	e.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(e, 0.01, {"style": "scissors", "frac": []}, Vector2.ZERO, 0.0)
 	_ok("Ciseaux : exécute sous 25 %", e.dead)
 	var e2 := _enemy(Vector2(400, 200))
+	e2.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(e2, 0.01, {"style": "scissors", "frac": []}, Vector2.ZERO, 0.0)
 	_ok("Ciseaux : n'exécute pas au-dessus", not e2.dead)
 	# --- Agrafeuse : épinglé + relié (50 % des dégâts)
 	var a := _enemy(Vector2(300, 200))
 	var b := _enemy(Vector2(360, 200))
+	a.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(a, 0.01, {"style": "staple", "frac": []}, Vector2.ZERO, 0.0)
+	b.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(b, 0.01, {"style": "staple", "frac": []}, Vector2.ZERO, 0.0)
 	var hp_b := b.hp
 	a.hurt(10.0)
@@ -30,6 +34,7 @@ func _ready() -> void:
 	_ok("Agrafeuse : l'autre prend 50 %% (%.1f)" % (hp_b - b.hp), absf((hp_b - b.hp) - 5.0) < 0.01)
 	# --- Brumisateur : mouillé → +25 % de dégâts de Foudre
 	var w := _enemy(Vector2(300, 250))
+	w.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(w, 0.01, {"style": "mist", "frac": []}, Vector2.ZERO, 0.0)
 	var hp_w := w.hp
 	w.hurt(10.0, false, Vector2.ZERO, Pal.FOUDRE)
@@ -38,6 +43,7 @@ func _ready() -> void:
 	var g := _enemy(Vector2(Arena.W - 30, 200))
 	g.max_hp = 1000.0
 	g.hp = 1000.0
+	g.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(g, 10.0, {"style": "gust", "frac": []}, Vector2.RIGHT, 900.0)
 	for i in 30:
 		g.tick(1.0 / 60.0)

@@ -122,6 +122,7 @@ func _ready() -> void:
 	var t: Enemy = arena.spawn_enemy_now("colosse", arena.player.position + Vector2(120, 40), false)
 	t.max_hp = 1000000.0   # qu'il survive aux 12 familiers pendant le test
 	t.hp = t.max_hp
+	t.dodge = 0.0   # (l'esquive tirée de son dessin ne doit pas faire rater le coup de sifflet)
 	var gr0: Familiar = null
 	for fm in arena.familiars:
 		if fm.id == "grenouille":

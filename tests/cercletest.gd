@@ -48,7 +48,9 @@ func _ready() -> void:
 	b.color = Pal.POISON
 	var ha := a.hp
 	var hb := b.hp
+	a.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(a, 10.0, wst, Vector2.RIGHT, 0.0)
+	b.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 	arena.hit_enemy(b, 10.0, wst, Vector2.RIGHT, 0.0)
 	var ra := (ha - a.hp) / maxf(0.01, hb - b.hp)
 	_check(absf(ra - 1.5) < 0.05, "arme rouge : ×1,5 sur un ennemi jaune (%.2f)" % ra)

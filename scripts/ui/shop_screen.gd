@@ -591,7 +591,7 @@ func _scroll_box(ct: Control, fw: float, lines: Array, desc: String, foot: Strin
 	UI.put(ct, sc, Vector2(2, 26), Vector2(fw + 1, box_h))
 	_style_card_scroll(sc)
 	var content := _card_content(lines, desc, fw - 2, foot, foot_col, bullet)
-	if content.custom_minimum_size.y > box_h:
+	if content.get_meta("h", 0.0) > box_h:
 		content.free()
 		content = _card_content(lines, desc, fw - 10, foot, foot_col, bullet)   # place pour la barre
 	sc.add_child(content)
@@ -599,22 +599,36 @@ func _scroll_box(ct: Control, fw: float, lines: Array, desc: String, foot: Strin
 
 ## Contenu de la fiche (largeur w) : les lignes de stats, puis la description (« • … »).
 func _card_content(lines: Array, desc: String, w: float, foot := "", foot_col := CARTEL_DIM, bullet := true) -> Control:
+	var box := VBoxContainer.new()   # les lignes (stats, mention), puis la description en texte riche
+	box.add_theme_constant_override("separation", 0)
+	box.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.custom_minimum_size.x = w
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(content)
 	var y := 0.0
 	for ln in lines:
 		y = _card_line(content, Vector2(2, y), w - 2, ln[0], ln[1], ln[2])
 	for ln in _wrap(foot, w - 4):
 		_card_text(content, Vector2(2, y), ln, foot_col)
 		y += 11.0
+	if desc != "" and not lines.is_empty():
+		y += 2.0
+	content.custom_minimum_size = Vector2(w, y)
+	var h := y
 	if desc != "":
-		if not lines.is_empty():
-			y += 2.0
-		for ln in _wrap(("• " if bullet else "") + desc, w - 4):
-			_card_text(content, Vector2(2, y), ln, Pal.INK)
-			y += 11.0
-	content.custom_minimum_size = Vector2(w, y + 3.0)
-	return content
+		# Description : les quantités de stats en icônes (« +4 » + cœur)
+		var txt := ("• " if bullet else "") + desc
+		var rl := UI.rich(txt, 10, Pal.INK, 11)
+		rl.custom_minimum_size.x = w - 4
+		var mc := MarginContainer.new()
+		mc.add_theme_constant_override("margin_left", 2)
+		mc.mouse_filter = Control.MOUSE_FILTER_PASS
+		mc.add_child(rl)
+		box.add_child(mc)
+		h += UI.font.get_multiline_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, w - 4, UI.fs(10)).y   # (estimation)
+	box.set_meta("h", h + 3.0)
+	return box
 
 
 ## Coupe un texte en lignes de largeur w (mot par mot ; un mot trop long est coupé).

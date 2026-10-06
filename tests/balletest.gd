@@ -60,6 +60,7 @@ func _ready() -> void:
 			e.max_hp = 1e6
 			e.hp = 1e6
 			e.element = 0
+			e.dodge = 0.0   # (pas d'esquive tirée du dessin : test déterministe)
 			arena.hit_enemy(e, base, wst, Vector2.RIGHT, 0.0)
 			if e.poison > 0:
 				n += 1

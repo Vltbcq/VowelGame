@@ -384,6 +384,54 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 	return tr
 
 
+## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode).
+## Seulement après un nombre, pour ne pas toucher aux phrases (« les dégâts des familiers »...).
+const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
+	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
+	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
+	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["puissance élémentaire", "el_power"],
+	["effets élémentaires", "el_power"]]
+var _stat_re: RegEx
+
+
+func stat_bbcode(text: String, px := 12) -> String:
+	if _stat_re == null:
+		var alt := []
+		for w in STAT_WORDS:
+			alt.append(String(w[0]).replace(".", "\\."))
+		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])")
+	var out := ""
+	var pos := 0
+	for m in _stat_re.search_all(text):
+		out += text.substr(pos, m.get_start() - pos)
+		var word := m.get_string(2).to_lower()
+		var key := ""
+		for w in STAT_WORDS:
+			if String(w[0]).to_lower() == word:
+				key = w[1]
+				break
+		out += "%s [img=%dx%d]res://assets/ui/stats/%s.png[/img]" % [m.get_string(1), px, px, key]
+		pos = m.get_end()
+	return out + text.substr(pos)
+
+
+## Étiquette de texte riche : les quantités de stats deviennent leurs icônes.
+func rich(text: String, size := 10, color := Pal.TEXT, px := 12, center := false) -> RichTextLabel:
+	var r := RichTextLabel.new()
+	r.bbcode_enabled = true
+	r.fit_content = true
+	r.scroll_active = false
+	r.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	r.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	r.add_theme_font_override("normal_font", font)
+	r.add_theme_font_size_override("normal_font_size", fs(size))
+	r.add_theme_color_override("default_color", color)
+	var t := stat_bbcode(text, px)
+	r.text = ("[center]%s[/center]" % t) if center else t
+	return r
+
+
 ## Pastille d'une couleur du cercle (comme sur l'image du cercle) : disque ombré + symbole, 13×13.
 const _EL_ICON := {
 	Pal.FEU: ["...#...", "..##...", "..###..", ".#####.", ".##o##.", "##ooo##", ".#####."],
