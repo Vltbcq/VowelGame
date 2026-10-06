@@ -115,15 +115,11 @@ func _build_ui() -> void:
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 2)
 	UI.put(self, left, Vector2(8, 62), Vector2(116, 290))
-	left.add_child(UI.label("OUTILS", 10, Pal.DIM))
-	# Outils en icônes (assets/ui/tools, dessinées par docs/tool_icons.py) : le nom au survol
-	var tgrid := GridContainer.new()
-	tgrid.columns = 4
-	tgrid.add_theme_constant_override("h_separation", 2)
-	tgrid.add_theme_constant_override("v_separation", 2)
-	left.add_child(tgrid)
+	# Outils en icônes (assets/ui/tools, dessinées par docs/tool_icons.py), rangés par famille ;
+	# le nom et le raccourci s'affichent au survol.
 	var icon_of := {"brush": "pinceau", "eraser": "gomme", "line": "ligne", "rect": "rect", "ellipse": "ellipse",
 		"fill": "remplir", "select": "selection"}
+	var tools := {}
 	for t in TOOLS:
 		if not Meta.has(t[2]):
 			continue
@@ -132,23 +128,39 @@ func _build_ui() -> void:
 		if id == "select":
 			tip = "Sélection (S) : trace un rectangle, glisse-le pour le déplacer,\nSuppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
 		var b := _icon_button(icon_of[id], tip, func(): _set_tool(id))
-		tgrid.add_child(b)
 		tool_btns[id] = b
-	if Meta.has("tool_mirror"):
-		toggle_btns.mirror = _icon_button("symetrie", "Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre", func(): _toggle("mirror"))
-		tgrid.add_child(toggle_btns.mirror)
-	if Meta.has("gradient"):
-		toggle_btns.gradient = _icon_button("degrade", "Dégradé : clic gauche = couleur A, clic droit = couleur B", func(): _toggle("gradient"))
-		tgrid.add_child(toggle_btns.gradient)
+		tools[id] = b
+	_tool_row(left, "DESSINER", ["brush", "eraser", "fill", "select"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
+	_tool_row(left, "FORMES", ["line", "rect", "ellipse"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
+	var sizes := []
 	if Meta.has("tool_big"):
 		for n in [1, 2, 3]:
 			var sz: int = n
 			var b := _icon_button("taille%d" % n, "Taille du pinceau : %d pixel%s" % [n, "s" if n > 1 else ""], func(): _set_brush(sz))
-			tgrid.add_child(b)
 			size_btns[n] = b
-	tgrid.add_child(_icon_button("defaire", "Défaire (Ctrl+Z)", _undo))
-	tgrid.add_child(_icon_button("refaire", "Refaire (Ctrl+Y)", _redo))
-	tgrid.add_child(_icon_button("effacer", "Tout effacer (se défait avec Ctrl+Z)", _clear))
+			sizes.append(b)
+	_tool_row(left, "TAILLE", sizes)
+	var opts := []
+	if Meta.has("tool_mirror"):
+		toggle_btns.mirror = _icon_button("symetrie", "Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre", func(): _toggle("mirror"))
+		opts.append(toggle_btns.mirror)
+	if Meta.has("gradient"):
+		toggle_btns.gradient = _icon_button("degrade", "Dégradé : clic gauche = couleur A, clic droit = couleur B", func(): _toggle("gradient"))
+		opts.append(toggle_btns.gradient)
+	_tool_row(left, "OPTIONS", opts)
+	# Défaire / refaire à gauche, tout effacer à part, à droite
+	var hist := HBoxContainer.new()
+	hist.add_theme_constant_override("separation", 2)
+	hist.add_child(_icon_button("defaire", "Défaire (Ctrl+Z)", _undo))
+	hist.add_child(_icon_button("refaire", "Refaire (Ctrl+Y)", _redo))
+	var gap := Control.new()
+	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hist.add_child(gap)
+	hist.add_child(_icon_button("effacer", "Tout effacer (se défait avec Ctrl+Z)", _clear))
+	var sep := Control.new()
+	sep.custom_minimum_size.y = 3
+	left.add_child(sep)
+	left.add_child(hist)
 	var fxs := Meta.effects()
 	if fxs.size() > 1:
 		left.add_child(UI.label("EFFET (-15% encre)", 10, Pal.DIM))
@@ -304,6 +316,19 @@ func _refresh_buttons() -> void:
 	color_label.text = txt
 	if view:
 		view.queue_redraw()
+
+
+## Une famille d'outils : petit titre puis une rangée d'icônes (rien si elle est vide).
+func _tool_row(parent: Control, title: String, btns: Array) -> void:
+	if btns.is_empty():
+		return
+	if title != "":
+		parent.add_child(UI.label(title, 10, Pal.DIM))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 2)
+	for b in btns:
+		row.add_child(b)
+	parent.add_child(row)
 
 
 ## Bouton d'outil en icône seule (le nom et le raccourci s'affichent au survol).
