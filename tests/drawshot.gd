@@ -5,6 +5,11 @@ extends Node
 func _ready() -> void:
 	Meta.no_save = true
 	var args := OS.get_cmdline_user_args()
+	if "tout" in args:
+		# tous les outils débloqués
+		Meta.data = Meta.data.duplicate(true)
+		for k in ["tool_line", "tool_rect", "tool_ellipse", "tool_mirror", "gradient", "tool_big"]:
+			Meta.data.unlocks[k] = 1
 	Run.start(0, 1)
 	var img := Image.create_empty(24, 24, false, Image.FORMAT_RGBA8)
 	img.fill_rect(Rect2i(6, 6, 12, 12), Pal.SHADES[1][1])

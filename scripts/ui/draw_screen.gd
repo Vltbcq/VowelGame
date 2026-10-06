@@ -116,64 +116,39 @@ func _build_ui() -> void:
 	left.add_theme_constant_override("separation", 2)
 	UI.put(self, left, Vector2(8, 62), Vector2(116, 290))
 	left.add_child(UI.label("OUTILS", 10, Pal.DIM))
-	# outils sur 2 colonnes (tout tient même quand tout est débloqué)
+	# Outils en icônes (assets/ui/tools, dessinées par docs/tool_icons.py) : le nom au survol
 	var tgrid := GridContainer.new()
-	tgrid.columns = 2
+	tgrid.columns = 4
 	tgrid.add_theme_constant_override("h_separation", 2)
 	tgrid.add_theme_constant_override("v_separation", 2)
 	left.add_child(tgrid)
+	var icon_of := {"brush": "pinceau", "eraser": "gomme", "line": "ligne", "rect": "rect", "ellipse": "ellipse",
+		"fill": "remplir", "select": "selection"}
 	for t in TOOLS:
 		if not Meta.has(t[2]):
 			continue
 		var id: String = t[0]
-		var short: String = {"rect": "Rect.", "select": "Sélect."}.get(id, t[1])
-		var b := UI.button(short, func(): _set_tool(id))
-		b.clip_text = true
-		b.custom_minimum_size.x = 56
-		b.tooltip_text = "%s · raccourci : %s" % [t[1], OS.get_keycode_string(t[3])]
+		var tip := "%s (%s)" % [t[1], OS.get_keycode_string(t[3])]
 		if id == "select":
-			b.tooltip_text = "Sélection (S) : trace un rectangle, glisse-le pour le déplacer,
-Suppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tip = "Sélection (S) : trace un rectangle, glisse-le pour le déplacer,\nSuppr pour l'effacer, clic à côté (ou clic droit) pour le poser"
+		var b := _icon_button(icon_of[id], tip, func(): _set_tool(id))
 		tgrid.add_child(b)
 		tool_btns[id] = b
 	if Meta.has("tool_mirror"):
-		toggle_btns.mirror = UI.button("Symétrie", func(): _toggle("mirror"))
-		toggle_btns.mirror.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		toggle_btns.mirror.clip_text = true
-		toggle_btns.mirror.custom_minimum_size.x = 56
+		toggle_btns.mirror = _icon_button("symetrie", "Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre", func(): _toggle("mirror"))
 		tgrid.add_child(toggle_btns.mirror)
 	if Meta.has("gradient"):
-		toggle_btns.gradient = UI.button("Dégradé", func(): _toggle("gradient"))
-		toggle_btns.gradient.tooltip_text = "Clic gauche : couleur A, clic droit : couleur B"
-		toggle_btns.gradient.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		toggle_btns.gradient.clip_text = true
-		toggle_btns.gradient.custom_minimum_size.x = 56
+		toggle_btns.gradient = _icon_button("degrade", "Dégradé : clic gauche = couleur A, clic droit = couleur B", func(): _toggle("gradient"))
 		tgrid.add_child(toggle_btns.gradient)
 	if Meta.has("tool_big"):
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 2)
 		for n in [1, 2, 3]:
 			var sz: int = n
-			var b := UI.button("%dpx" % n, func(): _set_brush(sz))
-			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(b)
+			var b := _icon_button("taille%d" % n, "Taille du pinceau : %d pixel%s" % [n, "s" if n > 1 else ""], func(): _set_brush(sz))
+			tgrid.add_child(b)
 			size_btns[n] = b
-		left.add_child(row)
-	var row2 := HBoxContainer.new()
-	row2.add_theme_constant_override("separation", 2)
-	var bu := UI.button("< Défaire", _undo)
-	bu.tooltip_text = "Revenir en arrière (Ctrl+Z)"
-	bu.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row2.add_child(bu)
-	var br := UI.button("Refaire >", _redo)
-	br.tooltip_text = "Ctrl+Y"
-	br.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row2.add_child(br)
-	left.add_child(row2)
-	var bc := UI.button("Tout effacer", _clear)
-	bc.tooltip_text = "Se défait avec Ctrl+Z"
-	left.add_child(bc)
+	tgrid.add_child(_icon_button("defaire", "Défaire (Ctrl+Z)", _undo))
+	tgrid.add_child(_icon_button("refaire", "Refaire (Ctrl+Y)", _redo))
+	tgrid.add_child(_icon_button("effacer", "Tout effacer (se défait avec Ctrl+Z)", _clear))
 	var fxs := Meta.effects()
 	if fxs.size() > 1:
 		left.add_child(UI.label("EFFET (-15% encre)", 10, Pal.DIM))
@@ -329,6 +304,17 @@ func _refresh_buttons() -> void:
 	color_label.text = txt
 	if view:
 		view.queue_redraw()
+
+
+## Bouton d'outil en icône seule (le nom et le raccourci s'affichent au survol).
+func _icon_button(icon: String, tip: String, cb: Callable) -> Button:
+	var b := UI.button("", cb)
+	b.icon = load("res://assets/ui/tools/%s.png" % icon)
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.expand_icon = false
+	b.custom_minimum_size = Vector2(27, 22)
+	b.tooltip_text = tip
+	return b
 
 
 func _mark(b: Button, on: bool) -> void:
