@@ -49,7 +49,7 @@ var redo_stack: Array[Image] = []
 
 var view: CanvasView
 var ink_bar: Control
-var stats_label: Label
+var stats_label: StatText
 var color_box: Control     # petit cercle des faiblesses + couleur principale du dessin, en direct
 var color_ring: Control
 var main_color_label: Label
@@ -211,11 +211,8 @@ func _build_ui() -> void:
 	outline_btn.tooltip_text = "Contour noir autour du dessin en jeu (touche C)"
 	UI.put(self, outline_btn, Vector2(558, 126), Vector2(74, 14))
 	UI.put(self, UI.label("APERÇU", 10, Pal.DIM), Vector2(426, 144))
-	stats_label = UI.label("", 10, Pal.TEXT)
-	stats_label.clip_text = false
+	stats_label = StatText.new(2)   # icônes des stats (le nom au survol)
 	var with_color: bool = cfg.kind in ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
-	if with_color:
-		stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.put(self, stats_label, Vector2(426, 158), Vector2(124 if with_color else 206, 150))
 	if with_color:
 		# Cercle des faiblesses à côté des stats, et la couleur principale du dessin en direct
@@ -774,7 +771,7 @@ func _changed() -> void:
 		preview_mat.set_shader_parameter("effect", Gfx.FX_ID.get(effect, 0))
 	view.refresh_edges()
 	ink_bar.queue_redraw()
-	stats_label.text = Stats.preview(cfg, img, effect)
+	stats_label.set_text(Stats.preview(cfg, img, effect))
 	if color_box:
 		# arme (et ses balles) : 30 % du dessin ; le reste : 25 %
 		var need := 0.3 if cfg.kind in ["melee", "ranged", "bullet"] else 0.25

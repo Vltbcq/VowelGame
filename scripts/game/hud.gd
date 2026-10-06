@@ -308,8 +308,9 @@ func toggle_pause() -> void:
 	add_child(pause_menu)
 	UI.fill_bg(pause_menu, Color(Pal.BG, 0.88))
 	UI.put(pause_menu, UI.label("PAUSE", 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 16), Vector2(640, 36))
-	var stats := UI.label(Stats.describe_player(Run.stats), 10, Pal.TEXT)
+	var stats := StatText.new(2)
 	UI.put(pause_menu, stats, Vector2(40, 64), Vector2(200, 280))
+	stats.set_text(Stats.describe_player(Run.stats))
 	var ws := ""
 	for i in Run.weapons.size():
 		var w: Dictionary = Run.weapons[i]

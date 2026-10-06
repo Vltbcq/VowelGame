@@ -64,8 +64,9 @@ func _ready() -> void:
 	var sp := UI.panel()
 	UI.put(self, sp, Vector2(142, 110), Vector2(200, 214))
 	var st_txt := String(Run.wave_stats.get("text", Stats.describe_player(Run.stats)))
-	var sl := UI.label(st_txt, 10, Pal.TEXT)
+	var sl := StatText.new(2)
 	UI.put(sp, sl, Vector2(6, 4), Vector2(190, 206))
+	sl.set_text(st_txt)
 
 	# --- Droite : le journal (le plus récent en haut)
 	UI.put(self, UI.label("JOURNAL", 10, Pal.ACCENT), Vector2(352, 36))

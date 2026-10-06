@@ -200,10 +200,9 @@ func _build() -> void:
 	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
-	var lines := Stats.describe_player(Run.stats).split("\n")
-	var half := ceili(lines.size() / 2.0)
-	UI.put(ct, UI.label("\n".join(lines.slice(0, half)), 10, Pal.INK), Vector2(5, 2), Vector2(116, 108))
-	UI.put(ct, UI.label("\n".join(lines.slice(half)), 10, Pal.INK), Vector2(121, 2), Vector2(116, 108))
+	var stx := StatText.new(3, Pal.INK)   # icônes des stats (le nom au survol)
+	UI.put(ct, stx, Vector2(5, 4), Vector2(228, 104))
+	stx.set_text(Stats.describe_player(Run.stats))
 
 	# --- Actions (plaques de musée)
 	var rp := Run.reroll_price()
