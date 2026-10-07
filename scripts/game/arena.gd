@@ -886,6 +886,10 @@ func kill_enemy(e: Enemy) -> void:
 	# L'XP suit le butin de l'ennemi ; l'or en est une fraction (Run.GOLD_MULT).
 	# Moins d'ennemis par vague (SPAWN_MULT) : chacun lâche plus, pour garder le même or / XP par vague
 	var loot: float = e.loot * (1.0 if e.is_boss else 1.0 / SPAWN_MULT)
+	# Difficulté : plus d'ennemis, mais pas plus d'or ni d'XP par vague (chacun lâche moins).
+	# Les élites, elles, restent un bonus.
+	if not e.is_boss and not e.elite:
+		loot /= float(Run.diff().spawn)
 	# Performance live, Speed painting : +30 % ; Salle thématique : +25 %
 	loot *= pow(1.3, Run.amulet_count("performance") + Run.amulet_count("speed_painting")) * (1.25 if theme != "" else 1.0)
 	var total := roundi(loot * randf_range(0.8, 1.25))
@@ -977,9 +981,6 @@ func kill_enemy(e: Enemy) -> void:
 		if star_kills % 10 == 0:
 			var spos: Vector2 = e.position
 			_after(0.35, func(): _star(spos))
-	# Sanguine : soin sur élimination
-	if randf() < 0.12 * Run.amulet_count("sanguine"):
-		player.heal(1.0)
 	# Scinde : se divise
 	if e.def.beh == "mirror" and not e.small:
 		for k in 2:

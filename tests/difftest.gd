@@ -64,6 +64,7 @@ func _ready() -> void:
 	va.position = ar.player.position
 	ar.player.inv = 0.0
 	ar.player.god = false
+	ar.player.st.dodge = 0.0   # (sinon une esquive du perso fait rater le test)
 	ar._rebuild_grid()
 	ar.player.tick(1.0 / 60.0)
 	_check(va.hp > vh, "Vampire : se soigne en te touchant (%.0f → %.0f)" % [vh, va.hp])

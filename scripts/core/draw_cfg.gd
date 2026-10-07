@@ -53,14 +53,18 @@ static func enemy(id: String) -> Dictionary:
 
 
 ## Version élite : on repart du dessin de l'ennemi, sur une toile un peu plus grande, et on AJOUTE.
-static func elite(id: String) -> Dictionary:
+## base : le dessin de départ (par défaut celui de l'ennemi dans la partie ; le Codex donne le sien).
+static func elite(id: String, base: Image = null, base_effect := "", base_outline := false) -> Dictionary:
 	var def := EnemyDB.get_def(id)
-	var base: Image = Run.enemy_art[id].image
+	var in_run := base == null
+	if in_run:
+		base = Run.enemy_art[id].image
 	var base_cost := Analyzer.ink_cost(base)
 	var ink := maxi(roundi(def.ink * 1.4), base_cost + 30)
 	var s: int = def.canvas + 8
 	return {"kind": "enemy", "gallery": "enemy", "size": Vector2i(s, s), "ink": ink, "base": base,
-		"effect": Run.enemy_art[id].effect, "outline": Run.enemy_art[id].get("outline", false),
+		"effect": Run.enemy_art[id].effect if in_run else base_effect,
+		"outline": Run.enemy_art[id].get("outline", false) if in_run else base_outline,
 		"title": "ÉLITE : %s" % def.name,
 		"sub": "Complète ton dessin : c'est sa version élite (aura, PV ×3, butin ×3). Ajoute au moins 15 d'encre.",
 		"cancel": false, "min": 6, "min_ink": base_cost + 15, "random": false}

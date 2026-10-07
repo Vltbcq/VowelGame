@@ -103,11 +103,21 @@ func _slots(id: String) -> Array:
 		"familiers":
 			var fd := FamiliarDB.get_def(id)
 			return [["familier_" + id, "Familier " + Pal.RARITY_NAMES_F[int(fd.rar)].to_lower(), DrawCfg.familiar(fd), Pal.RARITY[int(fd.rar)]]]
-	return [[id, "Ennemi", DrawCfg.enemy(id)]]
+	var ed := EnemyDB.get_def(id)
+	if ed.has("boss"):
+		return [[id, "Boss", DrawCfg.enemy(id)]]
+	var out := [[id, "Ennemi", DrawCfg.enemy(id)]]
+	# Élite : on part de son dessin de base du Codex (comme les raretés d'une arme)
+	var base = Meta.bestiary_get(id)
+	if base != null:
+		out.append([id + "_elite", "Élite", DrawCfg.elite(id, base.image, base.effect, base.outline), Pal.ACCENT])
+	return out
 
 
 ## Clés du carnet d'un objet (comme _slots, sans préparer les dessins : rapide).
 func _slot_keys(id: String) -> Array:
+	if tab == "ennemis" and not EnemyDB.get_def(id).has("boss"):
+		return [id, id + "_elite"]
 	match tab:
 		"armes":
 			var def := WeaponDB.get_def(id)
@@ -242,7 +252,7 @@ Débloqué : armes, amulettes et ennemis disponibles"
 		UI.put(fr, UI.thumb(Gfx.icon(Gfx.ICON_UNKNOWN), Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))
 		var why := ""
 		if tab == "ennemis":
-			why = "Cette créature vit dans une salle que tu n'as pas encore ouverte.\n\n%s" % String(MapDB.get_def(int(EnemyDB.get_def(sel).get("map", 1))).get("unlock", ""))
+			why = "Tu n'as pas encore rencontré cette créature."
 		else:
 			var ik := _item_key(sel)
 			why = ("Cette arme" if tab == "armes" else "Cette amulette") + " n'apparaît pas encore en boutique.\n\nSuccès : " + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
@@ -297,8 +307,8 @@ func _slot_ui(parent: Control, slot: Array, pos: Vector2) -> void:
 	var d = Meta.bestiary_get(key)
 	var rcol: Color = slot[3] if slot.size() > 3 else Color(0, 0, 0, 0)
 	UI.put(parent, UI.label(String(slot[1]).to_upper(), 10, rcol if slot.size() > 3 else Pal.DIM), pos)
-	# armes / amulettes : cadre de la couleur de la rareté, dessiné ou non
-	var frame := UI.panel(Pal.PAPER, rcol if slot.size() > 3 else (Pal.ACCENT if d != null else Pal.BORDER), 2)
+	# armes / amulettes : cadre de la couleur de la rareté ; ennemis : couleur du titre « ENNEMI »
+	var frame := UI.panel(Pal.PAPER, rcol if slot.size() > 3 else Pal.DIM, 2)   # cadre de la couleur de son titre
 	UI.put(parent, frame, pos + Vector2(0, 12), Vector2(76, 76))
 	var img: Image = ((Gfx.baked_outline(Analyzer.trim(d.image)) if d.outline else Analyzer.trim(d.image)) if d != null else Gfx.icon(Gfx.ICON_UNKNOWN))
 	UI.put(frame, UI.thumb(img, Vector2(68, 68)), Vector2(4, 4), Vector2(68, 68))

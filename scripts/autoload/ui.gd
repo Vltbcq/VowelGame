@@ -384,13 +384,11 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 	return tr
 
 
-## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode).
-## Seulement après un nombre, et pas quand un mot précise de quoi on parle (« 6 épines d'encre »,
-## « +12% dégâts de mêlée », « +30% dégâts des familiers ») : là, ce n'est pas la stat du perso.
+## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode). Voir stat_bbcode.
 const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
 	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
 	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
-	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["puissance élémentaire", "el_power"],
+	["pourboire", "harvest"], ["épines", "thorns"], ["épine", "thorns"], ["Épines", "thorns"], ["Épine", "thorns"], ["puissance élémentaire", "el_power"],
 	["effets élémentaires", "el_power"]]
 var _stat_re: RegEx
 
@@ -400,18 +398,30 @@ func stat_bbcode(text: String, px := 12) -> String:
 		var alt := []
 		for w in STAT_WORDS:
 			alt.append(String(w[0]).replace(".", "\\."))
-		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])(?!\\s*(?:d['’]|de |des |du |à |À |au |aux |contre |pendant |par |sur |en |quand |si |selon ))")
+		# Le mot de la stat devient son icône quand il désigne TA stat :
+		# - après un nombre (« +4 PV max ») ;
+		# - après « tes / ton / ta / le / la / les », après « = », « × » ou « % », ou en début de phrase (« Tes épines... »).
+		# Sauf si un mot précise que c'est autre chose (« dégâts de mêlée », « des familiers », « contre les boss »).
+		var num := "([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+"
+		var art := "((?:^|\\b)(?:tes|ton|ta|le|la|les)\\s+|=\\s*|×\\s*|%\\s*|\\(|^)"   # (« × armure », « / % vitesse » : ratios)
+		var word := "(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])"
+		var other := "(?!\\s*(?:d['’]|de |des |du |à |À |au |aux |contre ))"
+		_stat_re = RegEx.create_from_string("(?i)(?:" + num + "|" + art + ")" + word + other)
 	var out := ""
 	var pos := 0
 	for m in _stat_re.search_all(text):
 		out += text.substr(pos, m.get_start() - pos)
-		var word := m.get_string(2).to_lower()
+		var w := m.get_string(3).to_lower()
 		var key := ""
-		for w in STAT_WORDS:
-			if String(w[0]).to_lower() == word:
-				key = w[1]
+		for sw in STAT_WORDS:
+			if String(sw[0]).to_lower() == w:
+				key = sw[1]
 				break
-		out += "%s [img=%dx%d]res://assets/ui/stats/%s.png[/img]" % [m.get_string(1), px, px, key]
+		var icon := "[img=%dx%d]res://assets/ui/stats/%s.png[/img]" % [px, px, key]
+		if m.get_string(1) != "":
+			out += "%s %s" % [m.get_string(1), icon]   # « +4 » + icône
+		else:
+			out += m.get_string(2) + icon              # « tes » + icône, « = » + icône...
 		pos = m.get_end()
 	return out + text.substr(pos)
 

@@ -1,5 +1,5 @@
 extends "res://scripts/main.gd"
-## Test : une élite se dessine DIRECTEMENT par-dessus le dessin de l'ennemi (pas d'écran de sélection).
+## Test : sans dessin d'élite dans le Codex, une élite se dessine DIRECTEMENT par-dessus le dessin de l'ennemi.
 
 var fails := 0
 
@@ -12,6 +12,12 @@ func _check(ok: bool, what: String) -> void:
 
 func _ready() -> void:   # (pas le menu du vrai jeu)
 	Meta.no_save = true
+	# Copie de la sauvegarde sans dessins d'élite (sinon on aurait d'abord l'écran de choix, voir elitepicktest)
+	Meta.data = Meta.data.duplicate(true)
+	var bst: Dictionary = Meta.data.get("bestiary", {})
+	for id in EnemyDB.TYPES:
+		bst.erase(id + "_elite")
+	Meta.data.bestiary = bst
 	Run.start(1, 1)
 	Run.wave = 4
 	var img := Image.create_empty(24, 24, false, Image.FORMAT_RGBA8)

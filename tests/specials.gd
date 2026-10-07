@@ -58,7 +58,7 @@ func _ready() -> void:
 		Run.set_weapon_art(t, r, _multi(def.canvas, int(def.ink * 0.9), cols), "", bl, "")
 		Run.add_weapon(t, r, 0, Vector2(-14 + i * 6, -6 + (i % 2) * 12))
 		i += 1
-	for id in ["calque", "estompe", "sanguine", "craquelure", "perspective", "tache", "collage", "croquis_rapide",
+	for id in ["calque", "estompe", "craquelure", "perspective", "tache", "collage", "croquis_rapide",
 			"joconde", "double_expo", "trompe_oeil", "restauration", "renaissance", "cadre_dore", "mine_plomb"]:
 		Run.set_amulet_art(id, _blob(AmuletDB.canvas(AmuletDB.get_def(id)), 20, Pal.SHADES[4][1]), "")
 		Run.add_amulet(id, Run.amulet_art[id].image, Vector2i(randi_range(18, 40), randi_range(18, 40)))

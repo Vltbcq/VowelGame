@@ -480,7 +480,7 @@ func _pavel(delta: float) -> void:
 			visible = true
 			hp = max_hp
 			position = arena.player.position + Vector2(16, 0)
-			arena.float_text(position + Vector2(0, -18), "PAVEL REVIENT !", Pal.GOOD)
+			arena.float_text(position + Vector2(0, -18), "WOINIC REVIENT !", Pal.GOOD)
 		return
 	# se place entre toi et l'ennemi le plus proche
 	var p := arena.player.position
@@ -495,7 +495,7 @@ func _pavel(delta: float) -> void:
 	if hp <= 0.0:
 		ko_t = 10.0
 		arena.burst(position, Pal.BAD, 14, 90.0)
-		arena.float_text(position + Vector2(0, -18), "PAVEL K.O.", Pal.BAD)
+		arena.float_text(position + Vector2(0, -18), "WOINIC K.O.", Pal.BAD)
 
 
 ## Woinic est-il là pour attirer les ennemis ?

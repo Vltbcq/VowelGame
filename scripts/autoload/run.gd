@@ -888,7 +888,7 @@ func roll_shop() -> void:
 		if amulet_count("vernissage") > 0:
 			rar = mini(3, rar + 1)
 		# Familiers : de temps en temps (uniques : jamais un déjà possédé ni deux fois le même)
-		if randf() < 0.05:
+		if randf() < 0.025:   # 2,5 % par emplacement
 			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id))
 			if not fpool.is_empty():
 				var fd: Dictionary = fpool.pick_random()

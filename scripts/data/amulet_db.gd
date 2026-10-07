@@ -53,7 +53,6 @@ const LIST := [
 	{"id": "calque", "ink": 30, "name": "Calque", "rar": 1, "flag": true, "desc": "Tes projectiles transpercent +1 ennemi · {m}% dégâts", "malus": ["dmg", -6.0]},
 	{"id": "estompe", "ink": 34, "name": "Estompe", "rar": 1, "flag": true, "desc": "Chaque coup ralentit l'ennemi 0,8 s (cumulable : +0,8 s par exemplaire) · {m}% vit. d'attaque", "malus": ["atk_speed", -6.0]},
 	{"id": "mine_plomb", "ink": 26, "name": "Mine de plomb", "rar": 1, "stat": "crit_mult", "v": 0.5, "plus": [["crit", 3.0]], "minus": [["atk_speed", -5.0]], "desc": "Critiques +{v} (×2 → ×2,5), +3% critique · {m} chance, -5% vit. d'attaque", "malus": ["luck", -6.0]},
-	{"id": "sanguine", "ink": 36, "name": "Sanguine", "rar": 1, "flag": true, "desc": "12% de chances qu'un ennemi tué te soigne 1 PV · {m} PV max", "malus": ["max_hp", -4.0]},
 	{"id": "craquelure", "ink": 40, "name": "Craquelure", "rar": 1, "flag": true, "desc": "Tes coups critiques explosent autour de l'ennemi · {m}% critique", "malus": ["crit", -4.0]},
 	{"id": "mecene", "ink": 32, "name": "Tirelire", "rar": 1, "stat": "harvest", "v": 9.0, "desc": "+{v} pourboire · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "aimant_pepites", "ink": 30, "name": "Aimant à pépites", "rar": 1, "flag": true, "desc": "+15% d'or ramassé · {m} PV max", "malus": ["max_hp", -4.0]},

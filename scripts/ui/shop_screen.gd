@@ -692,14 +692,27 @@ func _card_line(ct: Control, pos: Vector2, w: float, lab: String, val: String, r
 		x = pos.x + 6.0
 	x = _card_text(ct, Vector2(x, y), val, Pal.INK)
 	if ratio != "":
+		# Le ratio, avec l'icône de la stat dont dépend l'arme (« (+15 % ❤) »)
 		if x + _text_w(" " + ratio) <= pos.x + w:
-			_card_text(ct, Vector2(x, y), " " + ratio, CARD_RATIO)
+			_card_rich(ct, Vector2(x, y), " " + ratio, w - (x - pos.x))
 		else:
 			# à la ligne (et sur plusieurs lignes s'il le faut)
-			for ln in _wrap(ratio, w - 6):
-				y += 11.0
-				_card_text(ct, Vector2(pos.x + 6.0, y), ln, CARD_RATIO)
+			y += 11.0
+			y += _card_rich(ct, Vector2(pos.x + 6.0, y), ratio, w - 6.0) - 11.0
 	return y + 11.0
+
+
+## Texte du ratio en vert, les stats en icônes. Retourne sa hauteur.
+func _card_rich(ct: Control, pos: Vector2, t: String, w: float) -> float:
+	var rl := UI.rich(t, 10, CARD_RATIO, 11)
+	rl.custom_minimum_size.x = w
+	# hauteur : le texte avec chaque icône comptée comme une lettre large (pas le mot qu'elle remplace)
+	var est := UI.stat_bbcode(t)
+	var re := RegEx.create_from_string("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
+	est = re.sub(est, "M", true)
+	var h := UI.font.get_multiline_string_size(est, HORIZONTAL_ALIGNMENT_LEFT, w, UI.fs(10)).y
+	UI.put(ct, rl, pos + Vector2(0, -1), Vector2(w, h))
+	return h
 
 
 func _text_w(t: String) -> float:

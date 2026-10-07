@@ -22,7 +22,7 @@ func _ready() -> void:
 	var dot := Image.create_empty(6, 6, false, Image.FORMAT_RGBA8)
 	dot.fill(Pal.SHADES[Pal.FOUDRE][1])
 	var ids := ["piece", "piece", "piece", "oeil", "oeil", "trefle", "coeur", "tampon", "gouache", "fusain", "lame",
-		"gomme", "sanguine", "oursin", "rature", "echelle", "calice", "joconde", "horloge", "lanterne", "mecene", "metre_ruban"]
+		"gomme", "oursin", "rature", "echelle", "calice", "joconde", "horloge", "lanterne", "mecene", "metre_ruban"]
 	for id in ids:
 		Run.set_amulet_art(id, dot, "")
 		Run.add_amulet(id, dot, Vector2i(2, 2))
