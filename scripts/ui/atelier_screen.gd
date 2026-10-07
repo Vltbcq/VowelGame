@@ -56,12 +56,18 @@ func _build() -> void:
 
 func _bench() -> void:
 	UI.put(self, UI.label("L'ÉTABLI · achats en pigments", 10, UI.GOLD), Vector2(14, 42))
-	var y := 56.0
+	# L'établi défile quand il y a trop d'améliorations pour la hauteur de l'écran
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.put(self, sc, Vector2(12, 56), Vector2(300, 276))
+	var shelf := Control.new()
+	sc.add_child(shelf)
+	var y := 0.0
 	for d in UnlockDB.LIST:
 		if not UnlockDB.for_pigments(d):
 			continue
 		var card := UI.panel(Color(0, 0, 0, 0.22), Color(0, 0, 0, 0), 0)
-		UI.put(self, card, Vector2(12, y), Vector2(296, 50))
+		UI.put(shelf, card, Vector2(0, y), Vector2(288, 50))
 		var pot := _Pot.new()
 		pot.col = POT.get(d.id, Pal.ACCENT)
 		pot.fill = float(Meta.level(d.id)) / float(d.cost.size())
@@ -84,8 +90,9 @@ func _bench() -> void:
 					Sfx.play("buy")
 					_build())
 			b.disabled = Meta.pigments() < cost
-		UI.put(card, b, Vector2(218, 16), Vector2(72, 18))
+		UI.put(card, b, Vector2(210, 16), Vector2(72, 18))
 		y += 54.0
+	shelf.custom_minimum_size = Vector2(288, y)
 
 
 # ------------------------------------------------------------------ Tableau des succès
