@@ -62,14 +62,14 @@ static func _order(rar: int, name: String) -> String:
 ## Cet objet a-t-il quelque chose à débloquer ? (sinon il ne compte pas dans le % débloqué)
 func _lockable(id: String) -> bool:
 	if tab == "ennemis":
-		return int(EnemyDB.get_def(id).get("map", 1)) > 1
+		return true   # chaque ennemi se « débloque » en le rencontrant
 	return ItemUnlockDB.CONDS.has(_item_key(id))
 
 
 func _locked(id: String) -> bool:
 	if tab != "ennemis":
 		return not Meta.item_open(_item_key(id))   # arme / amulette pas encore débloquée : « ??? »
-	return not Meta.map_unlocked(int(EnemyDB.get_def(id).get("map", 1)))
+	return Meta.bestiary_get(id) == null   # ennemi jamais rencontré (on dessine chaque ennemi la 1re fois qu'il arrive)
 
 
 func _name(id: String) -> String:
@@ -163,7 +163,6 @@ func _build() -> void:
 	picker = null
 	UI.fill_bg(self)
 	UI.put(self, UI.label("CODEX", 20, Pal.ACCENT), Vector2(12, 8))
-	UI.put(self, UI.label("Choisis le dessin par défaut de chaque objet : il sera proposé en premier en partie.", 10, Pal.DIM), Vector2(130, 14), Vector2(500, 14))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(250, 16))
@@ -377,9 +376,9 @@ func _stats_text(id: String) -> String:
 		"ennemis":
 			var def := EnemyDB.get_def(id)
 			var kind := "Boss" if def.get("boss", 0) == 2 else ("Mini-boss" if def.has("boss") else "Ennemi")
-			L.append("%s — %s, vague %d. %s" % [kind, MapDB.get_def(int(def.get("map", 1))).name, def.wave, def.desc])
+			L.append("%s — %s, vague %d." % [kind, MapDB.get_def(int(def.get("map", 1))).name, def.wave])
 			L.append("PV de base %d · dégâts %s · vitesse %d · encre %d%s" % [roundi(def.hp), str(def.dmg), roundi(def.spd), def.ink,
-				" (95 %% minimum)" if def.has("boss") else ""])
+				" (95 % minimum)" if def.has("boss") else ""])
 			var d = Meta.bestiary_get(id)
 			if d != null:
 				var m := Stats.enemy_art(Analyzer.analyze(d.image), def.ink, d.get("effect", ""))

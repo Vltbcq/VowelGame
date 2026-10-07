@@ -28,6 +28,8 @@ func _ready() -> void:
 	_check(not f.contains("[img"), "Oursin : « 6 épines d'encre » reste du texte")
 	var g := UI.stat_bbcode("+12% dégâts de MÊLÉE · -8% dégâts à distance")
 	_check(not g.contains("[img"), "Spatule : « dégâts de mêlée / à distance » reste du texte")
+	var vi := UI.stat_bbcode("+12% dégâts À DISTANCE · -8% dégâts de mêlée")
+	_check(not vi.contains("[img"), "Viseur : « dégâts À DISTANCE / de mêlée » reste du texte")
 	var h := UI.stat_bbcode("+35% dégâts contre boss et élites, +30% dégâts des familiers")
 	_check(not h.contains("[img"), "dégâts contre… / des… : texte")
 	var e := UI.stat_bbcode("Insensible aux flaques d'encre ennemies")

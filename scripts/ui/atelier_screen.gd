@@ -44,8 +44,6 @@ func _build() -> void:
 	var jar := UI.panel(Color(0.9, 0.95, 1.0, 0.18), Color(0.85, 0.9, 1.0, 0.6), 1)
 	UI.put(self, jar, Vector2(470, 6), Vector2(158, 28))
 	UI.put(jar, UI.label("◆ %d pigments" % Meta.pigments(), 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(158, 14))
-	var hint := UI.label("Les pigments achètent l'encre et la boutique.\nLe reste se gagne en succès.", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-	UI.put(self, hint, Vector2(164, 6), Vector2(304, 28))
 
 	_bench()
 	_board()
@@ -55,7 +53,7 @@ func _build() -> void:
 # ------------------------------------------------------------------ Établi (pigments)
 
 func _bench() -> void:
-	UI.put(self, UI.label("L'ÉTABLI · achats en pigments", 10, UI.GOLD), Vector2(14, 42))
+	UI.put(self, UI.label("L'ÉTABLI", 10, UI.GOLD), Vector2(14, 42))
 	# L'établi défile quand il y a trop d'améliorations pour la hauteur de l'écran
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

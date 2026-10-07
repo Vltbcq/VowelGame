@@ -400,7 +400,7 @@ func stat_bbcode(text: String, px := 12) -> String:
 		var alt := []
 		for w in STAT_WORDS:
 			alt.append(String(w[0]).replace(".", "\\."))
-		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])(?!\\s*(?:d['’]|de |des |du |à |au |aux |contre |pendant |par |sur |en |quand |si |selon ))")
+		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])(?!\\s*(?:d['’]|de |des |du |à |À |au |aux |contre |pendant |par |sur |en |quand |si |selon ))")
 	var out := ""
 	var pos := 0
 	for m in _stat_re.search_all(text):
