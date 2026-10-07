@@ -108,7 +108,7 @@ func _ready() -> void:
 	Meta.data.item_unlocks = {}
 	Meta.unlock_all()
 	var all_items := ItemUnlockDB.CONDS.keys().all(func(k): return Meta.item_open(k))
-	_check(all_items and Meta.map_unlocked(2) and Meta.max_diff(2) == Meta.DIFFICULTIES.size() - 1 and Meta.level("ink") == 5, "Tout débloquer : objets, cartes, difficultés, Atelier")
+	_check(all_items and Meta.map_unlocked(2) and Meta.max_diff(2) == Meta.DIFFICULTIES.size() - 1 and Meta.level("ink") == (UnlockDB.get_def("ink").cost as Array).size(), "Tout débloquer : objets, cartes, difficultés, Atelier")
 	Meta.data = keep
 	var base := Stats.player(Run)
 	Run.joconde = 2

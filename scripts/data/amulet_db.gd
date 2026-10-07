@@ -226,6 +226,6 @@ static func describe(def: Dictionary, mag := 1.0) -> String:
 	if Run.active:
 		var live := Stats.amulet_live(String(def.id))
 		if live != "":
-			s = "Actuellement : %s
-%s" % [live, s]
+			s = "%s
+Actuellement : %s" % [s, live]
 	return s

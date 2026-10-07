@@ -274,7 +274,7 @@ Couleur : " + Pal.color_name(wcolor)
 				desc += " · ×%s" % ["", "1,8", "3,2", "6"][o.rar]
 			if def.has("scale"):
 				# Arme à ratio : la valeur ACTUELLE d'abord (le cartel est petit)
-				desc = Stats.scale_text(def.scale).replace("Ratio : ", "") + "\n" + desc
+				desc += "\nActuellement : " + Stats.scale_text(def.scale).replace("Ratio : ", "")
 			full = Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) < 0
 			if Run.weapons.size() >= Run.max_weapons() and not full:
 				desc += "\n→ fusionne !"

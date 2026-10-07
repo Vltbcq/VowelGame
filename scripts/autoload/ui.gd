@@ -385,7 +385,8 @@ func cercle(parent: Node, pos: Vector2, mini := false) -> TextureRect:
 
 
 ## Icônes de stats dans un texte : « +4 PV max » -> « +4 » + l'icône du cœur (BBCode).
-## Seulement après un nombre, pour ne pas toucher aux phrases (« les dégâts des familiers »...).
+## Seulement après un nombre, et pas quand un mot précise de quoi on parle (« 6 épines d'encre »,
+## « +12% dégâts de mêlée », « +30% dégâts des familiers ») : là, ce n'est pas la stat du perso.
 const STAT_WORDS := [["vit. d'attaque", "atk_speed"], ["vitesse d'attaque", "atk_speed"], ["PV max", "max_hp"],
 	["régénération", "regen"], ["armure", "armor"], ["esquive", "dodge"], ["vitesse", "move"], ["dégâts", "dmg"],
 	["dégât", "dmg"], ["critique", "crit"], ["portée", "range"], ["vol de vie", "lifesteal"], ["chance", "luck"],
@@ -399,7 +400,7 @@ func stat_bbcode(text: String, px := 12) -> String:
 		var alt := []
 		for w in STAT_WORDS:
 			alt.append(String(w[0]).replace(".", "\\."))
-		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])")
+		_stat_re = RegEx.create_from_string("(?i)([+\\-−×]?\\d+(?:[.,]\\d+)?\\s?%?)\\s+(" + "|".join(alt) + ")(?![\\wàâéèêëîïôûùç])(?!\\s*(?:d['’]|de |des |du |à |au |aux |contre |pendant |par |sur |en |quand |si |selon ))")
 	var out := ""
 	var pos := 0
 	for m in _stat_re.search_all(text):

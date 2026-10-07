@@ -308,6 +308,15 @@ func weapon_ink_bonus() -> int:
 	return 10 * level("ink")
 
 
+## Encrier : encre en plus pour les amulettes et les balles (plus petites que les armes).
+func amulet_ink_bonus() -> int:
+	return 5 * level("ink")
+
+
+func bullet_ink_bonus() -> int:
+	return 3 * level("ink")
+
+
 func canvas_bonus() -> int:
 	return 8 * level("canvas")
 

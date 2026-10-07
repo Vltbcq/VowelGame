@@ -66,8 +66,11 @@ func _bench() -> void:
 	for d in UnlockDB.LIST:
 		if not UnlockDB.for_pigments(d):
 			continue
+		# La carte prend la hauteur de sa description (rien ne dépasse)
+		var dh := UI.font.get_multiline_string_size(d.desc, HORIZONTAL_ALIGNMENT_LEFT, 160, UI.fs(10)).y
+		var chh := maxf(50.0, 22.0 + dh)
 		var card := UI.panel(Color(0, 0, 0, 0.22), Color(0, 0, 0, 0), 0)
-		UI.put(shelf, card, Vector2(0, y), Vector2(288, 50))
+		UI.put(shelf, card, Vector2(0, y), Vector2(288, chh))
 		var pot := _Pot.new()
 		pot.col = POT.get(d.id, Pal.ACCENT)
 		pot.fill = float(Meta.level(d.id)) / float(d.cost.size())
@@ -77,7 +80,7 @@ func _bench() -> void:
 		UI.put(card, UI.label(d.name + ("  %d/%d" % [lv, mx] if mx > 1 else ""), 10, Pal.ACCENT if lv > 0 else Pal.TEXT), Vector2(42, 4), Vector2(170, 12))
 		var ds := UI.label(d.desc, 10, Pal.DIM)
 		ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		UI.put(card, ds, Vector2(42, 18), Vector2(170, 30))
+		UI.put(card, ds, Vector2(42, 18), Vector2(164, dh))
 		var cost := Meta.next_cost(d.id)
 		var id: String = d.id
 		var b: Button
@@ -90,8 +93,8 @@ func _bench() -> void:
 					Sfx.play("buy")
 					_build())
 			b.disabled = Meta.pigments() < cost
-		UI.put(card, b, Vector2(210, 16), Vector2(72, 18))
-		y += 54.0
+		UI.put(card, b, Vector2(210, (chh - 18.0) / 2.0), Vector2(72, 18))
+		y += chh + 4.0
 	shelf.custom_minimum_size = Vector2(288, y)
 
 
@@ -126,28 +129,38 @@ func _board() -> void:
 
 func _note(a: Dictionary, i: int) -> Control:
 	var ok := Meta.achieved(a.id)
+	var reward: String = UnlockDB.get_def(a.unlock).name
+	var wait := ok and Meta.pending(a.id)   # obtenu pendant la partie en cours : arrive à la fin
+	var line := ("⌛ " + reward + " (fin de partie)") if wait else (("✓ " if ok else "→ ") + reward)
+	# La note prend la hauteur de son texte (rien ne dépasse ; le tableau défile)
+	var mh := func(t: String) -> float: return UI.font.get_multiline_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, 126, UI.fs(10)).y
+	var nh: float = mh.call(a.name)
+	var dh: float = mh.call(a.desc)
+	var lh: float = mh.call(line)
+	var hh := 6.0 + nh + dh + lh + 4.0
 	var holder := Control.new()
-	holder.custom_minimum_size = Vector2(142, 62)
+	holder.custom_minimum_size = Vector2(142, hh + 6.0)
 	var n := UI.panel(NOTE_DONE if ok else NOTE, Color(0, 0, 0, 0.25), 1)
 	n.position = Vector2(2, 4)
-	n.size = Vector2(138, 56)
+	n.size = Vector2(138, hh)
 	n.pivot_offset = n.size / 2.0
 	n.rotation = deg_to_rad([-1.5, 1.0, 0.5, -1.0, 1.5, -0.5][i % 6])   # notes épinglées un peu de travers
 	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.add_child(n)
-	UI.put(n, UI.label(a.name, 10, Pal.INK), Vector2(6, 4), Vector2(128, 12))
+	var nl := UI.label(a.name, 10, Pal.INK)
+	nl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(n, nl, Vector2(6, 4), Vector2(126, nh))
 	var ds := UI.label(a.desc, 10, Color("5a4a3a"))
 	ds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.put(n, ds, Vector2(6, 16), Vector2(128, 26))
-	var reward: String = UnlockDB.get_def(a.unlock).name
-	var wait := ok and Meta.pending(a.id)   # obtenu pendant la partie en cours : arrive à la fin
-	var line := ("⌛ " + reward + " (fin de partie)") if wait else (("✓ " if ok else "→ ") + reward)
-	UI.put(n, UI.label(line, 10, Color("b06a10") if wait else (Color("2e7d32") if ok else Color("8a5a2b"))), Vector2(6, 41), Vector2(128, 12))
+	UI.put(n, ds, Vector2(6, 4 + nh), Vector2(126, dh))
+	var rl := UI.label(line, 10, Color("b06a10") if wait else (Color("2e7d32") if ok else Color("8a5a2b")))
+	rl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UI.put(n, rl, Vector2(6, 4 + nh + dh + 2), Vector2(126, lh))
 	var pin := _Pin.new()
 	pin.col = Color("f0a030") if wait else (PIN_ON if ok else PIN_OFF)
 	pin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UI.put(holder, pin, Vector2(64, 0), Vector2(12, 12))
-	holder.tooltip_text = "%s\n%s\nDébloque : %s — %s" % [a.name, a.desc, reward, UnlockDB.get_def(a.unlock).desc]
+	holder.tooltip_text = "%s\n%s\nDébloque : %s\n%s" % [a.name, a.desc, reward, UnlockDB.get_def(a.unlock).desc]   # (lignes courtes : l'infobulle tient dans l'écran)
 	holder.mouse_filter = Control.MOUSE_FILTER_STOP
 	return holder
 

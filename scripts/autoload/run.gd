@@ -623,7 +623,7 @@ func xp_needed() -> int:
 
 ## Retourne le nombre de niveaux gagnés. Chaque niveau : +1 PV max et un peu d'encre.
 func add_xp(n: int) -> int:
-	xp_rest += n * XP_MULT * (1.0 + 0.25 * amulet_count("carnet") + 0.1 * amulet_count("gommette") + 0.01 * Meta.level("mecenat_xp"))
+	xp_rest += n * XP_MULT * (1.0 + 0.25 * amulet_count("carnet") + 0.1 * amulet_count("gommette") + 0.02 * Meta.level("mecenat_xp"))
 	var whole := floori(xp_rest)
 	xp_rest -= whole
 	xp += whole

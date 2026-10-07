@@ -28,7 +28,7 @@ static func bullet(type: String, weapon_a: Dictionary, weapon_effect: String, ra
 	var def := WeaponDB.get_def(type)
 	@warning_ignore("integer_division")
 	var s: int = def.bcanvas + Meta.canvas_bonus() / 2
-	return {"kind": "bullet", "wtype": type, "gallery": "bullet", "size": Vector2i(s, s), "ink": roundi(def.bink * WeaponDB.RAR_INK[rar]),
+	return {"kind": "bullet", "wtype": type, "gallery": "bullet", "size": Vector2i(s, s), "ink": roundi(def.bink * WeaponDB.RAR_INK[rar]) + Meta.bullet_ink_bonus(),
 		"weapon_a": weapon_a, "weapon_effect": weapon_effect,
 		"title": "Dessine les projectiles : %s" % def.name,
 		"sub": "Chaque morceau séparé = un projectile en plus !",
@@ -83,8 +83,9 @@ static func familiar(def: Dictionary) -> Dictionary:
 
 
 static func amulet(def: Dictionary) -> Dictionary:
-	var s := AmuletDB.canvas(def)
-	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def),
+	@warning_ignore("integer_division")
+	var s := AmuletDB.canvas(def) + Meta.canvas_bonus() / 2   # Grande toile : +4 px par niveau
+	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def) + Meta.amulet_ink_bonus(),
 		"def": def, "title": "Dessine l'amulette : %s" % def.name,
 		"sub": AmuletDB.describe(def) + "  Ce dessin servira pour toute la partie.",
 		"cancel": true, "min": 3}

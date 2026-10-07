@@ -317,10 +317,16 @@ func _pre_wave(w: int) -> void:
 	if Run.difficulty >= 1 and w >= 4 and EnemyDB.boss_for(w) == "":   # élites dès Croquis
 		for id in EnemyDB.pool(w):
 			if Run.enemy_art.has(id) and not Run.elite_art.has(id):
-				# Comme l'upgrade d'arme : on complète directement le dessin de l'ennemi de cette partie
-				var art = await _paint(DrawCfg.elite(id))
-				await _remember(id + "_elite", Meta.bestiary_get(id + "_elite"), art)
-				Run.set_elite_art(id, art.image, art.effect, art.outline)
+				# Comme pour les armes : un dessin d'élite dans le Codex -> choix (le reprendre, le
+				# modifier, en faire un nouveau) ; sinon on complète directement le dessin de l'ennemi.
+				var art
+				if Meta.bestiary_get(id + "_elite") != null:
+					art = await _obtain(id + "_elite", DrawCfg.elite(id))
+				else:
+					art = await _paint(DrawCfg.elite(id))
+					await _remember(id + "_elite", null, art)
+				if art != null:
+					Run.set_elite_art(id, art.image, art.effect, art.outline)
 				break
 
 
