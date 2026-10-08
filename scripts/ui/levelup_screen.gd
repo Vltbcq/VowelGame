@@ -30,7 +30,8 @@ func _ready() -> void:
 		if u.get("pact", false):
 			UI.put(p, UI.label("PACTE : bonus doublé, mais...", 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(cw, 12))
 		# Le bonus avec l'icône de la stat à la place du mot (son nom au survol)
-		var big: bool = String(u.text).length() <= 14
+		# Bonus simple (« +5 % » + icône) en grand ; un pacte (2 lignes) en petit
+		var big: bool = not String(u.text).contains("\n")
 		var l := UI.rich(u.text, 20 if big else 10, Pal.TEXT, 32 if big else 14, true)
 		l.custom_minimum_size.x = cw - 16
 		l.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -45,3 +46,4 @@ func _ready() -> void:
 	var stx := StatText.new(2)
 	UI.put(sp, stx, Vector2(8, 22), Vector2(136, 208))
 	stx.set_text(Stats.describe_player(Run.stats))
+	sp.size.y = 22.0 + stx.custom_minimum_size.y + 8.0   # la boîte prend juste la hauteur des stats

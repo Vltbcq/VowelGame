@@ -14,6 +14,10 @@ func _ready() -> void:
 	Run.recompute()
 	Run.level = 2
 	Run.pending_levels = 1
+	# (la vitesse d'attaque, au texte long, doit s'afficher en grand comme les autres)
+	Run.levelup_choices = [{"stat": "luck", "v": 5.0, "rar": 0, "text": "+5 chance"},
+		{"stat": "atk_speed", "v": 5.0, "rar": 0, "text": "+5% vit. d'attaque"},
+		{"stat": "harvest", "v": 3.0, "rar": 0, "text": "+3 pourboire"}]
 	var s := LevelUpScreen.new()
 	s.size = Vector2(640, 360)
 	add_child(s)

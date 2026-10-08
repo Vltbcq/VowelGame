@@ -197,7 +197,8 @@ func _build() -> void:
 	UI.put(self, px, Vector2(312, 296), Vector2(84, 26))
 	var ct := UI.panel(CARTEL, Color("b9a883"), 1)
 	UI.put(self, ct, Vector2(392, 216), Vector2(238, 112))
-	var stx := StatText.new(3, Pal.INK)   # icônes des stats (le nom au survol)
+	var stx := StatText.new(4, Pal.INK)   # icônes des stats (le nom au survol) ; 4 colonnes : tout tient, même avec les 7 résistances
+	stx.stretch = true   # les lignes s'écartent pour remplir le cartel
 	UI.put(ct, stx, Vector2(5, 4), Vector2(228, 104))
 	stx.set_text(Stats.describe_player(Run.stats))
 

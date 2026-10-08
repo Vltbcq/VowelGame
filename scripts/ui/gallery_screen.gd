@@ -29,6 +29,19 @@ func _build() -> void:
 	viewer = null
 	UI.fill_bg(self)
 	UI.put(self, UI.label("GALERIE", 20, Pal.ACCENT), Vector2(12, 8))
+	# Partage avec d'autres joueurs : un .zip de dessins
+	var ib := UI.button("Importer…", func():
+		GalleryShare.pick_import(self, func(path: String):
+			var s := GalleryShare.open_import(self, path)
+			s.done.connect(func(ch): if ch: _build())))
+	ib.tooltip_text = "Ajouter des dessins reçus d'un ami (fichier .zip)"
+	UI.put(self, ib, Vector2(456, 10), Vector2(84, 18))
+	var eb := UI.button("Exporter…", func():
+		var s := GalleryShare.open_export(self)
+		s.done.connect(func(_ch): pass))
+	eb.tooltip_text = "Partager tes dessins : crée un fichier .zip à envoyer"
+	eb.disabled = Meta.gallery("all").is_empty()
+	UI.put(self, eb, Vector2(544, 10), Vector2(84, 18))
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	UI.put(self, tabs, Vector2(12, 34), Vector2(616, 16))

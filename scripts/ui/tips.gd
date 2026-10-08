@@ -11,7 +11,7 @@ const TEXT := {
 	"colors": ["Les couleurs = les éléments",
 		"Chaque couleur a un élément : rouge = Feu, bleu = Glace, jaune = Foudre...\n\n• Sur ton perso : une résistance et un bonus (dégâts, armure, vitesse d'attaque...).\n• Sur une arme : un effet (brûlure, gel, éclairs...). Plus il y a de pixels d'une couleur, plus l'effet se déclenche souvent.\n• 3 armes du même élément = une SYNERGIE."],
 	"draw_weapon": ["Dessine ton arme",
-		"Dessine-la POINTÉE VERS LA DROITE : c'est ce côté qui vise les ennemis.\n\nLa forme de ton dessin change ses stats : regarde l'APERÇU à droite.\n\nCe dessin servira pour toutes les copies de ce type d'arme."],
+		"Dessine-la POINTÉE VERS LA DROITE : c'est ce côté qui vise les ennemis.\n\nLa forme de ton dessin change ses stats : regarde l'APERÇU à droite."],
 	"draw_bullet": ["Dessine tes balles",
 		"• Chaque MORCEAU séparé devient un projectile : 5 petits points = une rafale de 5 balles !\n• La forme des balles change leurs stats : regarde l'APERÇU."],
 	"draw_enemy": ["Dessine un ennemi",

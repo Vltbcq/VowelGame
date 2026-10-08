@@ -20,7 +20,7 @@ static func weapon(type: String, rar := 0, cancel := true) -> Dictionary:
 		sub = "Crosse à GAUCHE, canon à DROITE → (les tirs partent de là).  %s" % def.desc
 	return {"kind": kind, "wtype": type, "gallery": kind, "size": Vector2i(s, s),
 		"ink": roundi(def.ink * WeaponDB.RAR_INK[rar]) + Meta.weapon_ink_bonus(), "rar": rar,
-		"title": "Dessine ton arme : %s" % def.name, "sub": sub + "  (Ce dessin servira pour toute la partie.)",
+		"title": "Dessine ton arme : %s" % def.name, "sub": sub,
 		"cancel": cancel, "min": 6}
 
 
@@ -41,12 +41,12 @@ static func enemy(id: String) -> Dictionary:
 	var title := "Nouvel ennemi : %s" % def.name
 	if boss:
 		title = ("BOSS : %s" if def.boss == 2 else "MINI-BOSS : %s") % def.name
-	var sub := "%s  Sa couleur = son élément." % def.desc
+	var sub := ""   # (pas de description des monstres en haut de la toile)
 	var min_ink := 0
 	if boss:
 		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
 		min_ink = ceili(def.ink * 0.95)
-		sub = "Un boss doit utiliser au moins 95%% de l'encre (%d) ! Sa couleur = son élément.  %s" % [min_ink, def.desc]
+		sub = "Un boss doit utiliser au moins 95%% de l'encre (%d) !" % min_ink
 	var cfg := {"kind": "boss" if boss else "enemy", "gallery": "boss" if boss else "enemy",
 		"size": Vector2i(def.canvas, def.canvas), "ink": def.ink, "title": title, "sub": sub,
 		"cancel": false, "min": 6, "min_ink": min_ink, "random": true}
@@ -63,7 +63,7 @@ static func _need_color(cfg: Dictionary, id: String) -> void:
 	if el <= 0:
 		return
 	cfg.need_el = el
-	cfg.sub = "COULEUR IMPOSÉE : %s (au moins la moitié de la couleur).  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]
+	cfg.sub = ("COULEUR IMPOSÉE : %s (au moins la moitié de la couleur).  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]).strip_edges()
 
 
 ## "" si le dessin respecte la couleur imposée (cfg.need_el), sinon la raison.
@@ -94,7 +94,7 @@ static func elite(id: String, base: Image = null, base_effect := "", base_outlin
 		"effect": Run.enemy_art[id].effect if in_run else base_effect,
 		"outline": Run.enemy_art[id].get("outline", false) if in_run else base_outline,
 		"title": "ÉLITE : %s" % def.name,
-		"sub": "Complète ton dessin : c'est sa version élite (aura, PV ×3, butin ×3). Ajoute au moins 15 d'encre.",
+		"sub": "Ajoute au moins 15 d'encre à ton dessin.",
 		"cancel": false, "min": 6, "min_ink": base_cost + 15, "random": false}
 	if in_run:
 		_need_color(cfg, id)
@@ -105,7 +105,7 @@ static func eproj(id: String) -> Dictionary:
 	var def := EnemyDB.get_def(id)
 	return {"kind": "eproj", "gallery": "eproj", "size": Vector2i(12, 12), "ink": 40,
 		"title": "Dessine les projectiles de : %s" % def.name,
-		"sub": "Sa couleur = son élément.",
+		"sub": "",
 		"cancel": false, "min": 1, "random": true}
 
 
@@ -122,7 +122,7 @@ static func amulet(def: Dictionary) -> Dictionary:
 	var s := AmuletDB.canvas(def) + Meta.canvas_bonus() / 2   # Grande toile : +4 px par niveau
 	return {"kind": "amulet", "gallery": "amulet", "size": Vector2i(s, s), "ink": AmuletDB.ink(def) + Meta.amulet_ink_bonus(),
 		"def": def, "title": "Dessine l'amulette : %s" % def.name,
-		"sub": AmuletDB.describe(def) + "  Ce dessin servira pour toute la partie.",
+		"sub": AmuletDB.describe(def),
 		"cancel": true, "min": 3}
 
 

@@ -55,6 +55,9 @@ La pipeline `.github/workflows/release.yml` exporte le jeu sur les serveurs de G
 
 ## Sauvegardes et reprise
 
+- **Partage de dessins** (Galerie) : « Exporter… » ouvre une sélection (tout coché, filtres par catégorie) puis la fenêtre Windows « Enregistrer sous » crée un `.zip` (PNG + fiche `paintit_galerie.json` : type, effet, bord). « Importer… » lit un `.zip` reçu : aperçu des dessins, ceux déjà présents sont grisés, tu coches ceux à ajouter. Chaque dessin importé reçoit un nouveau numéro (rien n'est écrasé) ; il ne compte ni dans tes pixels peints ni pour les succès de galerie. Ne copie pas le dossier `gallery` d'un autre joueur à la main : la galerie est une liste dans la sauvegarde, et les noms de fichiers se recouperaient. Code : `scripts/ui/gallery_share.gd`, `Meta.export_gallery / read_share / import_share`, test : `tests/sharetest.tscn`.
+- La galerie ne supprime jamais rien toute seule (plus de limite par catégorie).
+
 - **3 sauvegardes** au lancement du jeu : chacune a sa progression (pigments, déblocages, records), sa galerie, son Codex et sa partie en cours. Les options sont communes. Bouton **Supprimer** avec confirmation (il faut cliquer, Entrée ne suffit pas). Depuis le titre : « Sauvegarde N · changer » (touche **S**).
 - La sauvegarde 1 utilise les fichiers d'origine (`user://vowel_save.json`, `gallery/`, `bestiary/`) ; les 2 et 3 sont dans `user://slot2/` et `user://slot3/`. Options : `user://settings.json`.
 - **Reprise de partie** : la partie est enregistrée automatiquement au début de chaque vague, à la fin de chaque vague, après chaque niveau et à chaque action en boutique (`run_save.dat`). **Sauvegarder et quitter** est dans le menu pause et dans la boutique ; au titre, **Reprendre** (Entrée). Quitter en pleine vague (ou fermer le jeu) fait recommencer cette vague depuis son début, avec les PV du début de vague. Commencer une nouvelle partie remplace la partie en cours (après confirmation, sans compter de défaite).

@@ -23,6 +23,7 @@ const KEY_NAMES := {"max_hp": "PV max", "regen": "Régénération", "armor": "Ar
 var columns := 2
 var color := Pal.TEXT
 var row_h := 16.0
+var stretch := false   # les lignes s'écartent pour remplir toute la hauteur (boutique)
 
 
 func _init(cols := 2, col := Pal.TEXT) -> void:
@@ -57,6 +58,10 @@ func set_text(text: String) -> void:
 		elif l != "":
 			others.append(l)
 	var cw := size.x / columns if columns > 0 else size.x
+	var rows := ceili(cells.size() / float(columns))
+	if stretch and others.is_empty() and rows > 0:
+		row_h = maxf(16.0, floorf(size.y / rows))
+	var dy := floorf((row_h - 16.0) / 2.0)   # (icône et valeur centrées dans une ligne plus haute)
 	for k in cells.size():
 		var c: Array = cells[k]
 		var cell := Control.new()
@@ -68,9 +73,9 @@ func set_text(text: String) -> void:
 		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		tr.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		UI.put(cell, tr, Vector2(0, 0), Vector2(16, 16))
+		UI.put(cell, tr, Vector2(0, dy), Vector2(16, 16))
 		var lb := UI.label(String(c[1]), 10, color)
-		UI.put(cell, lb, Vector2(18, 1), Vector2(cw - 18, 14))
+		UI.put(cell, lb, Vector2(18, 1 + dy), Vector2(cw - 18, 14))
 	var y := ceilf(cells.size() / float(columns)) * row_h
 	for o in others:
 		var lb := UI.label(o, 10, color)

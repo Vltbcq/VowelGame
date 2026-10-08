@@ -222,6 +222,39 @@ func amulet_count(id: String) -> int:
 # ------------------------------------------------------------------ Armes
 
 ## Vague « effective » pour la difficulté : la vague 15 est aussi dure que l'ancienne vague 20.
+# ------------------------------------------------------------------ Fin de partie plus dure
+## Passé la vague 8, le joueur grandit plus vite que les ennemis : à partir de la vague 9, chaque
+## vague ajoute (cumulé, jusqu'à la 15e) PV ennemis ×1,12, dégâts ennemis ×1,06 (boss compris),
+## prix ×1,05 et or ramassé ×0,96. Les bonus de niveau baissent de 3 % par niveau après le 10e.
+const LATE_FROM := 8
+const LATE_HP := 1.12
+const LATE_DMG := 1.06
+const LATE_PRICE := 1.05
+const LATE_GOLD := 0.96
+const LEVEL_DECAY := 0.97
+const LEVEL_DECAY_FROM := 10
+var late_on := true   # (les tests de réglage comparent avec / sans)
+
+
+func late_waves() -> int:
+	return clampi(wave - LATE_FROM, 0, WAVES - LATE_FROM) if late_on else 0
+
+
+func late_hp() -> float:
+	return pow(LATE_HP, late_waves())
+
+
+func late_dmg() -> float:
+	return pow(LATE_DMG, late_waves())
+
+
+## Bonus de niveau dégressifs : ×0,97 par niveau au-delà du 10e (jamais sous ×0,5).
+func level_decay() -> float:
+	if not late_on:
+		return 1.0
+	return maxf(0.5, pow(LEVEL_DECAY, maxi(0, level - LEVEL_DECAY_FROM)))
+
+
 func eff_wave() -> float:
 	return 1.0 + (wave - 1) * 19.0 / (WAVES - 1)
 
@@ -688,7 +721,7 @@ func _roll_upgrades() -> Array:
 		var u: Array = pool[i]
 		var rar := roll_rarity()
 		var pact := randf() < PACT_CHANCE
-		var v := snappedf(u[1] * UPGRADE_MULT[rar] * (2.0 if pact else 1.0), 0.5)
+		var v := maxf(0.5, snappedf(u[1] * UPGRADE_MULT[rar] * (2.0 if pact else 1.0) * level_decay(), 0.5))
 		var up := {"stat": u[0], "v": v, "rar": rar, "text": String(u[2]).replace("{v}", _num(v))}
 		if pact:
 			# Pacte : un autre attribut baisse
@@ -791,7 +824,8 @@ func pigments_endless() -> int:
 func price_mult() -> float:
 	var w := eff_wave() - 1.0
 	# Étiquette de prix : -8 % par exemplaire (5 au plus)
-	return (1.0 + 0.12 * w + 0.004 * w * w) * pow(0.92, amulet_count("etiquette_prix"))
+	return (1.0 + 0.12 * w + 0.004 * w * w) * pow(0.92, amulet_count("etiquette_prix")) \
+		* pow(LATE_PRICE if late_on else 1.0, late_waves())   # (fin de partie : +5 % par vague après la 8e)
 
 
 ## Chances (en %) de [rare, épique, légendaire] pour une offre ou un bonus, selon la vague qui

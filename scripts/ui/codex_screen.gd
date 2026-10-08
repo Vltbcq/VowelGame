@@ -198,7 +198,7 @@ Débloqué : armes, amulettes et ennemis disponibles"
 
 	var cb := UI.button("Cercle des faiblesses", func(): UI.cercle_popup(self, "", false))
 	cb.tooltip_text = "Les faiblesses entre couleurs (éléments)"
-	UI.put(self, cb, Vector2(100, 338), Vector2(130, 16))
+	UI.put(self, cb, Vector2(100, 334), Vector2(130, 18))   # (aligné sur « Retour »)
 
 	var items := _items()
 	if sel == "" or not sel in items:

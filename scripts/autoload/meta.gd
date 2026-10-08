@@ -6,7 +6,6 @@ extends Node
 
 const SLOTS := 3
 const RUN_SCRIPT := preload("res://scripts/autoload/run.gd")
-const GALLERY_MAX_PER_KIND := 60
 
 const DIFFICULTIES := [
 	{"name": "Esquisse", "desc": "Déjà pas facile.", "hp": 1.0, "dmg": 1.0, "spawn": 1.0, "reward": 1.0},
@@ -421,7 +420,7 @@ func _retro_achievements() -> void:
 	var wins := int(data.get("wins", 0))
 	# (Run est chargé après Meta : on lit la constante dans le script, pas sur le nœud)
 	var ctx := {"cleared": mini(int(data.get("best_wave", 0)), RUN_SCRIPT.WAVES), "win": wins > 0,
-		"diff": int(data.get("max_diff", 0)) - 1, "gallery": (data.gallery as Array).size(),
+		"diff": int(data.get("max_diff", 0)) - 1, "gallery": own_gallery_size(),
 		"total_kills": int(data.get("total_kills", 0))}
 	if wins > 0:
 		data.unlocks["map2"] = 1   # déjà gagné une partie : Le Tableau noir est ouvert
@@ -478,7 +477,7 @@ func check_achievements(ctx: Dictionary) -> void:
 	bosses.merge(ctx.get("bosses", {}))
 	ctx.bosses = bosses
 	ctx.runs = int(data.get("runs", 0)) + (1 if Run.active else 0)
-	ctx.gallery = (data.gallery as Array).size()
+	ctx.gallery = own_gallery_size()
 	ctx.counters = data.get("counters", {})
 	ctx.maps = (data.get("maps_cleared", {}) as Dictionary).size()
 	var changed := false
@@ -519,32 +518,123 @@ func check_achievements(ctx: Dictionary) -> void:
 
 # ------------------------------------------------------------------ Galerie
 
-func add_to_gallery(kind: String, img: Image, effect: String) -> void:
+## Ajoute un dessin à la galerie (sans limite : la galerie ne supprime jamais rien toute seule).
+## imported : dessin reçu d'un autre joueur (il ne compte pas dans tes pixels peints).
+## Retourne true si le dessin a été ajouté (false : vide, caché, ou déjà là).
+func add_to_gallery(kind: String, img: Image, effect: String, imported := false, outline := false) -> bool:
 	if kind in GALLERY_HIDDEN:
-		return
+		return false
 	if no_save:
-		return
+		return false
 	if Analyzer.count_pixels(img) == 0:
-		return
+		return false
 	var h := str(hash(img.get_data()))
-	data.pixels_painted = int(data.get("pixels_painted", 0)) + Analyzer.count_pixels(img)   # (statistiques)
-	for e in data.gallery:
-		if e.kind == kind and e.get("hash", "") == h:
-			return
+	if not imported:
+		data.pixels_painted = int(data.get("pixels_painted", 0)) + Analyzer.count_pixels(img)   # (statistiques)
+	if gallery_has(kind, h):
+		return false
 	var id := int(data.next_id)
 	data.next_id = id + 1
 	var path := "%s/%s_%d.png" % [gallery_dir(), kind, id]
 	img.save_png(path)
-	data.gallery.append({"id": id, "kind": kind, "file": path, "effect": effect, "hash": h,
-		"w": img.get_width(), "h": img.get_height(), "px": Analyzer.count_pixels(img)})
-	# On garde les plus récents
-	var same: Array = data.gallery.filter(func(e): return e.kind == kind)
-	if same.size() > GALLERY_MAX_PER_KIND:
-		var old: Dictionary = same[0]
-		DirAccess.remove_absolute(old.file)
-		data.gallery.erase(old)
+	var entry := {"id": id, "kind": kind, "file": path, "effect": effect, "hash": h,
+		"w": img.get_width(), "h": img.get_height(), "px": Analyzer.count_pixels(img)}
+	if outline:
+		entry.outline = true
+	if imported:
+		entry.imported = true   # (reçu d'un ami : ne compte pas pour les succès de galerie)
+	data.gallery.append(entry)
 	save()
-	check_achievements({})
+	if not imported:
+		check_achievements({})
+	return true
+
+
+## Nombre de dessins de la galerie faits par TOI (pour les succès : les dessins importés ne comptent pas).
+func own_gallery_size() -> int:
+	return (data.gallery as Array).filter(func(e): return not e.get("imported", false)).size()
+
+
+## Ce dessin (même type, mêmes pixels) est-il déjà dans la galerie ?
+func gallery_has(kind: String, h: String) -> bool:
+	for e in data.gallery:
+		if e.kind == kind and e.get("hash", "") == h:
+			return true
+	return false
+
+
+# ------------------------------------------------------------------ Partage de dessins (.zip)
+## Un fichier .zip : les PNG dans « dessins/ » + une fiche « paintit_galerie.json »
+## {version, items: [{file, kind, effect, outline}]}. Rien n'est jamais écrasé à l'import :
+## chaque dessin reçoit un nouveau numéro, les doublons sont ignorés.
+const SHARE_MANIFEST := "paintit_galerie.json"
+const SHARE_KINDS := ["character", "melee", "ranged", "bullet", "amulet", "familiar", "enemy", "boss"]
+const SHARE_MAX_PX := 256   # (un dessin plus grand qu'une toile du jeu est refusé)
+
+
+## Exporte ces entrées de galerie dans un .zip. Retourne le nombre de dessins écrits (-1 : erreur).
+func export_gallery(entries: Array, path: String) -> int:
+	var zp := ZIPPacker.new()
+	if zp.open(path) != OK:
+		return -1
+	var items := []
+	var n := 0
+	for e in entries:
+		var bytes := FileAccess.get_file_as_bytes(String(e.file))
+		if bytes.is_empty():
+			continue
+		n += 1
+		var name := "dessins/%03d_%s.png" % [n, e.kind]
+		zp.start_file(name)
+		zp.write_file(bytes)
+		zp.close_file()
+		items.append({"file": name, "kind": e.kind, "effect": e.get("effect", ""), "outline": e.get("outline", false)})
+	zp.start_file(SHARE_MANIFEST)
+	zp.write_file(JSON.stringify({"version": 1, "game": "Paint It Until You Make It", "items": items}, "\t").to_utf8_buffer())
+	zp.close_file()
+	zp.close()
+	return n
+
+
+## Lit un .zip de dessins. Retourne {ok, error, items: [{image, kind, effect, outline, dup}]}.
+func read_share(path: String) -> Dictionary:
+	var zr := ZIPReader.new()
+	if zr.open(path) != OK:
+		return {"ok": false, "error": "Impossible d'ouvrir ce fichier.", "items": []}
+	var files := zr.get_files()
+	if not SHARE_MANIFEST in files:
+		zr.close()
+		return {"ok": false, "error": "Ce n'est pas un partage de dessins de Paint It.", "items": []}
+	var man = JSON.parse_string(zr.read_file(SHARE_MANIFEST).get_string_from_utf8())
+	var out := []
+	if man is Dictionary:
+		for it in man.get("items", []):
+			if not it is Dictionary or not String(it.get("kind", "")) in SHARE_KINDS or not String(it.get("file", "")) in files:
+				continue
+			var img := Image.new()
+			if img.load_png_from_buffer(zr.read_file(String(it.file))) != OK:
+				continue
+			if img.get_width() > SHARE_MAX_PX or img.get_height() > SHARE_MAX_PX or Analyzer.count_pixels(img) == 0:
+				continue
+			img.convert(Image.FORMAT_RGBA8)
+			var fx := String(it.get("effect", ""))
+			if not fx in Stats.EFFECTS:
+				fx = ""
+			out.append({"image": img, "kind": String(it.kind), "effect": fx, "outline": bool(it.get("outline", false)),
+				"dup": gallery_has(String(it.kind), str(hash(img.get_data())))})
+	zr.close()
+	if out.is_empty():
+		return {"ok": false, "error": "Aucun dessin lisible dans ce fichier.", "items": []}
+	return {"ok": true, "error": "", "items": out}
+
+
+## Ajoute ces dessins reçus (les doublons sont ignorés). Retourne le nombre ajouté.
+func import_share(items: Array) -> int:
+	var n := 0
+	for it in items:
+		if add_to_gallery(String(it.kind), it.image, String(it.effect), true, bool(it.get("outline", false))):
+			n += 1
+	return n
 
 
 ## Galerie : à quoi ce dessin sert-il de dessin de base dans le Codex ? (noms lisibles)

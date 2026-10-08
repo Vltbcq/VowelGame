@@ -155,6 +155,9 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		if Run.endless and Run.wave > Run.WAVES:
 			# Infini : un boss de la vague 5 ou 10 revient avec des PV de boss final
 			max_hp *= float(Run.WAVES) / float(Run.boss_home_wave(id))
+	# Fin de partie (vagues 9 à 15) : PV ×1,12 et dégâts ×1,06 par vague, boss compris
+	max_hp *= Run.late_hp()
+	dmg *= Run.late_dmg()
 	# Infini : +15 % de PV et de dégâts par vague après la 15e (cumulé)
 	var em := Run.endless_mult()
 	max_hp *= em

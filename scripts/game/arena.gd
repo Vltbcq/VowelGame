@@ -915,6 +915,7 @@ func kill_enemy(e: Enemy) -> void:
 		# Arrondi au hasard : 0.6 or = 60% de chances d'avoir 1 pièce (jamais bloqué à 0)
 		var g: float = v * Run.GOLD_MULT * pow(0.85, Run.amulet_count("restauration"))
 		g *= 1.0 + 0.15 * Run.amulet_count("aimant_pepites") + 0.02 * Meta.level("mecenat_or")   # (Mécène de l'or)
+		g *= pow(Run.LATE_GOLD, Run.late_waves())   # fin de partie : -4 % d'or par vague après la 8e
 		if e.elite:
 			g *= 1.0 + Run.amulet_count("cachet_cire")
 		pk.value = floori(g) + (1 if randf() < g - floorf(g) else 0)
