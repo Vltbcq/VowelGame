@@ -77,7 +77,7 @@ func setup_bird(a: Arena, tex: Texture2D, effect: String, outline: bool, dmg: fl
 
 ## Dégâts d'un familier : base + vague, × tes dégâts, × bonus des amulettes de familiers.
 func fdmg(base: float, per_wave: float) -> float:
-	var m: float = sm.dmg * (1.0 + 0.3 * Run.amulet_count("niche")) * (1.0 + 0.25 * Run.amulet_count("dresseur") * Run.familiars.size())
+	var m: float = sm.dmg * (1.0 + 0.3 * Run.amulet_count("niche")) * (1.0 + 0.2 * Run.amulet_count("dresseur") * Run.familiars.size())
 	if arena.whip_t > 0.0:
 		m *= 1.0 + 0.1 * arena.whip_stacks   # Fouet de dresseur
 	return (base + per_wave * Run.wave) * (1.0 + Run.stats.dmg / 100.0) * m

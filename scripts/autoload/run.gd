@@ -49,8 +49,8 @@ const EVENTS := ["roulette", "scratch", "auction", "restorer", "patron"]
 const EVENT_CHANCE := 0.35
 const SCRATCH_PRICE := 8
 const RESTORE_PRICE := [15, 30, 50]   # Restaurateur : selon la rareté de l'amulette donnée
-## Mécène : [id, or reçu, texte du contrat]
-const PATRON_DEALS := [["more", 40, "+15% d'ennemis à la vague suivante"], ["elites", 50, "8 élites en plus à la vague suivante"]]
+## Mécène : [id, multiplicateur d'or, texte du contrat] ; or = (20 + 8 × vague) × multiplicateur
+const PATRON_DEALS := [["more", 1.0, "+15% d'ennemis à la vague suivante"], ["elites", 1.25, "8 élites en plus à la vague suivante"]]
 const PATRON_MORE := 1.15   # contrat I : ennemis en plus
 const PATRON_ELITES := 8    # contrat II : élites en plus
 
@@ -949,6 +949,11 @@ func roll_shop() -> void:
 	if wave >= 2 and not event_used and randf() < EVENT_CHANCE:
 		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())
 		shop_offers.append(make_event(evs.pick_random()))
+
+
+## Mécène : or reçu pour un contrat (grandit avec la vague).
+func patron_gold(k: int) -> int:
+	return roundi((20.0 + 8.0 * maxi(1, wave)) * float(PATRON_DEALS[k][1]))
 
 
 ## Offre « événement » de la boutique.

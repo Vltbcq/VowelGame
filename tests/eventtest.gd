@@ -179,7 +179,7 @@ func _ready() -> void:
 	# --- Enchère : on relance jusqu'au bout
 	Run.gold = 500
 	var auc := Run.make_event("auction")
-	auc.cap = int(auc.value)   # plafond connu pour le test
+	auc.cap = int(auc.bid) + 30   # plafond connu pour le test (gagnable en 3 mises)
 	shop = _shop([auc])
 	shop._open_auction(0)
 	await get_tree().process_frame
@@ -198,6 +198,28 @@ func _ready() -> void:
 		var won: Dictionary = Run.shop_offers[got_done.i]
 		print("     enchère : %s %s adjugé ● %d (prix habituel %d, plafond %d)" % [won.type, won.get("wtype", won.get("id", "")), won.price, auc.value, auc.cap])
 		_check(int(won.price) > int(auc.bid) and int(won.price) <= int(auc.cap) + 20 and int(won.rar) >= 2, "enchère : prix payé cohérent, objet épique+")
+	shop.queue_free()
+
+	# --- Enchère : 3 mises maximum, puis le collectionneur l'emporte
+	Run.gold = 5000
+	var auc2 := Run.make_event("auction")
+	auc2.cap = 99999
+	shop = _shop([auc2])
+	shop._open_auction(0)
+	await get_tree().process_frame
+	got_done = null
+	shop.done.connect(func(r): got_done = r)
+	var presses := 0
+	guard = 0
+	while not auc2.sold and guard < 40:
+		guard += 1
+		var b5: Array = shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.text == "+5") if shop.ev_layer else []
+		if not b5.is_empty() and not b5[0].disabled:
+			presses += 1
+			b5[0].pressed.emit()
+		await get_tree().create_timer(0.8).timeout
+	await get_tree().create_timer(1.5).timeout
+	_check(auc2.sold and presses <= 3 and (got_done != null or Run.gold == 5000), "enchère : 3 mises max (%d), puis vendue ou perdue sans payer" % presses)
 	shop.queue_free()
 
 	# --- Restaurateur : amulette commune → rare, l'ancienne est remplacée
@@ -232,7 +254,11 @@ func _ready() -> void:
 	await _shot("mecene")
 	var signs := shop.ev_layer.find_children("*", "Button", true, false).filter(func(b): return b.text == "Signer")
 	signs[1].pressed.emit()
-	_check(Run.gold == 60 and Run.patron == "elites", "mécène : +50 or, contrat élites")
+	_check(Run.gold == 10 + Run.patron_gold(1) and Run.patron == "elites", "mécène : +%d or (vague %d), contrat élites" % [Run.patron_gold(1), Run.wave])
+	var w0 := Run.wave
+	Run.wave = 10
+	_check(Run.patron_gold(0) == 100 and Run.patron_gold(1) == 125, "mécène : 100 / 125 or en vague 10")
+	Run.wave = w0
 	shop.queue_free()
 	await get_tree().process_frame
 	# la vague suivante : 3 élites promises + étoile du grattage

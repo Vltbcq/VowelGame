@@ -104,8 +104,9 @@ static func player(run: Node) -> Dictionary:
 		for e in range(1, Pal.COUNT):
 			s.res[e] += af[e] * 20.0
 	# Bonus choisis en montant de niveau
-	# Palimpseste : les bonus de niveau comptent double
+	# Palimpseste : les bonus de niveau comptent double ; Stéroïdes : +50 %
 	var bm := 2.0 if run.amulet_count("palimpseste") > 0 else 1.0
+	bm *= pow(1.5, run.amulet_count("encrier"))
 	for k in run.bonus:
 		s[k] += run.bonus[k] * bm
 	# Marques d'encre : leur couleur donne un peu de résistance (elles ne comptent pas dans la taille)

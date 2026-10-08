@@ -25,6 +25,7 @@ const FRAME_HEAL := [Color("5d9a6a"), Color("2e5a38")]
 const FRAME_ROULETTE := [Color("b8322a"), Color("1d1a1a")]
 const FRAME_EVENT := [Color("2a8a8a"), Color("134444")]
 const CASE_FRAME := [[Color("8a5a2b"), Color("4a2e14")], [Color("b8c0c8"), Color("5a6068")], [Color("e0a830"), Color("8c6414")], [Color("6ee0f0"), Color("2a8aa0")]]
+const AUCTION_BIDS := 3   # Enchères : mises maximum du joueur
 const EVENT_TYPES := ["roulette", "scratch", "auction", "restorer", "patron"]
 const WHEEL_RED := Color("c8322a")
 const WHEEL_BLACK := Color("221e1e")
@@ -1450,20 +1451,21 @@ func _open_auction(i: int) -> void:
 	if it.type == "weapon" and Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(it.wtype, it.rar) < 0:
 		blocked = "Plus de place pour une arme : revends-en une d'abord."
 	var btns := []
-	var st := {"bid": int(o.bid), "mine": false, "busy": false}
+	var st := {"bid": int(o.bid), "mine": false, "busy": false, "n": 0}
 	var refresh := func():
 		bid_l.text = "ENCHÈRE : ● %d  (%s)" % [st.bid, "toi" if st.mine else "le collectionneur"]
 		for b in btns:
 			var add: int = b.get_meta("add", 0)
 			if add > 0:
-				b.disabled = st.busy or st.mine or blocked != "" or Run.gold < st.bid + add
+				b.disabled = st.busy or st.mine or blocked != "" or st.n >= AUCTION_BIDS or Run.gold < st.bid + add
 	for k in 3:
 		var add: int = [5, 10, 20][k]
 		var b := _ev_button(inner, "+%d" % add, Vector2(44 + k * 80, 200), Vector2(70, 20), func():
 			st.bid += add
 			st.mine = true
 			st.busy = true
-			log_l.text = "Tu proposes ● %d..." % st.bid
+			st.n += 1
+			log_l.text = "Tu proposes ● %d... (mise %d/%d)" % [st.bid, st.n, AUCTION_BIDS]
 			Sfx.play("click")
 			refresh.call()
 			await get_tree().create_timer(0.7).timeout
@@ -1474,8 +1476,19 @@ func _open_auction(i: int) -> void:
 			if cap >= st.bid + 3 and randf() < 0.85:
 				st.bid = mini(cap, st.bid + randi_range(3, 12))
 				st.mine = false
-				log_l.text = "Le collectionneur surenchérit : ● %d" % st.bid
 				Sfx.play("enemy_shot")
+				if st.n >= AUCTION_BIDS:
+					# Plus de mise possible : l'œuvre part chez le collectionneur, tu ne paies rien
+					log_l.text = "Le collectionneur surenchérit (● %d) et l'emporte..." % st.bid
+					log_l.add_theme_color_override("font_color", Color("f06a5d"))
+					Run.log_event("event", "Enchère : perdue (%s à ● %d)" % [_item_name(it), st.bid])
+					o.sold = true
+					refresh.call()
+					await get_tree().create_timer(1.2).timeout
+					if is_instance_valid(bid_l):
+						_ev_close()
+					return
+				log_l.text = "Le collectionneur surenchérit : ● %d (encore %d mise%s)" % [st.bid, AUCTION_BIDS - st.n, "s" if AUCTION_BIDS - st.n > 1 else ""]
 			else:
 				log_l.text = "Le collectionneur abandonne... ADJUGÉ !"
 				log_l.add_theme_color_override("font_color", Pal.GOOD)
@@ -1498,7 +1511,7 @@ func _open_auction(i: int) -> void:
 		log_l.text = blocked
 		log_l.add_theme_color_override("font_color", Color("f06a5d"))
 	else:
-		log_l.text = "Surenchéris ou retire-toi. Il a un plafond secret..."
+		log_l.text = "3 mises maximum. Il a un plafond secret..."
 	var back := _ev_button(inner, "Plus tard", Vector2(144, 240), Vector2(100, 18), func(): _ev_close())
 	back.tooltip_text = "Fermer sans enchérir (la vente reste ouverte)"
 	UI.hotkey(back, [KEY_ESCAPE])
@@ -1568,10 +1581,10 @@ func _open_patron(i: int) -> void:
 		var box := UI.panel(CARTEL, Color("b9a883"), 1)
 		UI.put(inner, box, Vector2(24, y), Vector2(340, 50))
 		UI.put(box, UI.label("CONTRAT %s" % ["I", "II"][k], 10, CARTEL_DIM), Vector2(8, 4), Vector2(200, 12))
-		UI.put(box, UI.label("+● %d tout de suite" % int(deal[1]), 10, Color("1e7a3a")), Vector2(8, 18), Vector2(220, 12))
+		UI.put(box, UI.label("+● %d tout de suite" % Run.patron_gold(k), 10, Color("1e7a3a")), Vector2(8, 18), Vector2(220, 12))
 		UI.put(box, UI.label(String(deal[2]), 10, Color("a02a22")), Vector2(8, 32), Vector2(240, 12))
 		var did: String = deal[0]
-		var amount: int = deal[1]
+		var amount := Run.patron_gold(k)
 		var sb := UI.button("Signer", func():
 			Run.gold += amount
 			Run.log_event("event", "Mécène : +● %d contre « %s »" % [amount, String(deal[2])])

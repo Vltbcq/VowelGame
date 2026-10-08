@@ -575,6 +575,10 @@ func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, te
 	p.knock = 25.0
 	bullet_layer.add_child(p)
 	p.setup(tex, effect, outline)
+	if Run.amulet_count("polygunnus") > 0:
+		# Polygunnus : projectile 2× plus gros (dessin et zone de touche), même vitesse
+		p.radius *= 2.0
+		p.scale = Vector2(2.0, 2.0)
 	bullets.append(p)
 	return p
 
