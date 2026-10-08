@@ -807,8 +807,8 @@ func _sell_icon() -> Texture2D:
 
 
 func _style_tag(b: Button) -> void:
-	b.add_theme_stylebox_override("normal", UI.sb(CARTEL, Color("b9a883"), 1, 1, 0))
-	b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 1, 1, 0))
+	b.add_theme_stylebox_override("normal", UI.sb(CARTEL, Color("b9a883"), 1, 3, 0))   # (3 px : l'icône respire)
+	b.add_theme_stylebox_override("hover", UI.sb(Color.WHITE, Pal.ACCENT, 1, 3, 0))
 	b.add_theme_color_override("font_color", Pal.INK)
 	b.add_theme_color_override("font_hover_color", Pal.INK)
 

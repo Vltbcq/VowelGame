@@ -1,6 +1,6 @@
 extends Node
 ## Capture : la toile avec un trait en dégradé (début rouge → fin bleue), un triangle en dégradé,
-## et les deux symétries (lignes rouges). Godot --path . res://tests/gradshot.tscn -- <png>
+## et les deux symétries (lignes rouges). Godot --path . res://tests/gradshot.tscn -- <png> [zoom <png>]
 
 
 func _ready() -> void:
@@ -33,8 +33,17 @@ func _ready() -> void:
 	d._toggle("mirror")
 	d._toggle("mirror_h")
 	d._refresh_buttons()
+	# une sélection levée puis tournée (boutons Tourner / Miroir sur la toile)
+	d._set_tool("select")
+	d.begin_stroke(Vector2i(2, 2), false)
+	d.continue_stroke(Vector2i(14, 9))
+	d.end_stroke()
+	d._sel_transform("rot")
+	if args.size() > 1:
+		d.view.zoom_step(1, Vector2(40, 40))   # 2e capture : zoomée (×1,5) vers le coin haut-gauche
+		d.view.zoom_step(1, Vector2(40, 40))
 	for k in 3:
 		await get_tree().process_frame
 	await RenderingServer.frame_post_draw
-	get_viewport().get_texture().get_image().save_png(args[0])
+	get_viewport().get_texture().get_image().save_png(args[args.size() - 1])
 	get_tree().quit()

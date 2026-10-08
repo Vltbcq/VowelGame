@@ -188,10 +188,17 @@ def mirror():
 
 
 def triangle():
+	"""Triangle isocèle parfaitement symétrique (axe entre les colonnes 7 et 8), bords de 2 px."""
 	i = Icon()
-	i.line(7, 2, 2, 12, 'gold_l', 2)
-	i.line(8, 2, 13, 12, 'gold', 2)
-	i.rect(2, 12, 14, 13, 'gold')
+	top, bot = 2, 13
+	for y in range(top, bot + 1):
+		k = round((y - top) * 6.0 / (bot - top))   # demi-largeur en plus
+		lx, rx = 7 - k, 8 + k
+		if y >= bot - 1:
+			i.rect(lx, y, rx, y, 'gold')               # base pleine (2 lignes)
+		else:
+			i.rect(lx, y, min(lx + 1, rx), y, 'gold_l')  # bord gauche (clair)
+			i.rect(max(rx - 1, lx), y, rx, y, 'gold')    # bord droit
 	return i
 
 

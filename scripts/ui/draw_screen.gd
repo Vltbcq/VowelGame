@@ -39,6 +39,7 @@ var stroke_total := 1     # forme en cours : nombre de pixels du contour (dégra
 var stroke_pts: Array[Vector2i] = []   # trait au pinceau en cours, dans l'ordre (dégradé)
 var grad_end := 0         # dégradé : 0 = la palette choisit le DÉBUT, 1 = la FIN
 var grad_chips: Array = []
+var sel_bar: Control      # boutons Tourner / Miroir, visibles quand une sélection est levée
 var last_cell := Vector2i.ZERO
 var start_cell := Vector2i.ZERO
 # Sélection : "" | "making" (rectangle en cours) | "floating" (zone levée) | "drag" (on la déplace)
@@ -184,7 +185,27 @@ func _build_ui() -> void:
 	var scale_px := maxi(2, mini(284 / s.x, 264 / s.y))
 	view = CanvasView.new(self, scale_px)
 	var vs := Vector2(s * scale_px)
-	UI.put(self, view, Vector2(maxf(156.0, 134 + (284 - vs.x) / 2.0), 62 + (264 - vs.y) / 2.0), vs)
+	# Cadre doré (fixe) + fenêtre qui coupe la toile quand on zoome (molette, vers le curseur)
+	var vpos := Vector2(maxf(156.0, 134 + (284 - vs.x) / 2.0), 62 + (264 - vs.y) / 2.0)
+	var frame := _CanvasFrame.new()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UI.put(self, frame, vpos - Vector2(3, 3), vs + Vector2(6, 6))
+	var port := Control.new()
+	port.clip_contents = true
+	port.mouse_filter = Control.MOUSE_FILTER_PASS
+	UI.put(self, port, vpos, vs)
+	UI.put(port, view, Vector2.ZERO, vs)
+	# Sélection levée : « Tourner » (R) et « Miroir » (F), posés sur la toile tant qu'elle est levée
+	sel_bar = HBoxContainer.new()
+	sel_bar.add_theme_constant_override("separation", 2)
+	var rot_b := UI.button("Tourner (R)", func(): _sel_transform("rot"))
+	rot_b.tooltip_text = "Tourner la sélection d'un quart de tour"
+	var flip_b := UI.button("Miroir (F)", func(): _sel_transform("flip"))
+	flip_b.tooltip_text = "Retourner la sélection en miroir"
+	sel_bar.add_child(rot_b)
+	sel_bar.add_child(flip_b)
+	UI.put(self, sel_bar, vpos + Vector2(2, vs.y - 18), Vector2(150, 16))
+	sel_bar.visible = false
 	ink_bar = Control.new()
 	ink_bar.draw.connect(_draw_ink_bar)
 	UI.put(self, ink_bar, Vector2(134, 332), Vector2(284, 12))
@@ -196,9 +217,9 @@ func _build_ui() -> void:
 	var els := Meta.elements()
 	for i in els.size():
 		var e: int = els[i]
-		for sh in 3:
-			var sw := _Swatch.new(Pal.SHADES[e][sh], self)
-			UI.put(self, sw, Vector2(426 + i * 18, 76 + sh * 16), Vector2(16, 14))
+		for row in Pal.SHADE_ORDER.size():   # 5 nuances, de la plus foncée à la plus claire
+			var sw := _Swatch.new(Pal.SHADES[e][Pal.SHADE_ORDER[row]], self)
+			UI.put(self, sw, Vector2(426 + i * 18, 75 + row * 10), Vector2(16, 9))
 			swatches.append(sw)
 	color_label = UI.label("", 10, Pal.TEXT)
 	UI.put(self, color_label, Vector2(426, 126), Vector2(136, 12))
@@ -254,6 +275,13 @@ func _build_ui() -> void:
 		UI.put(self, UI.hotkey(UI.button(cfg.get("cancel_label", "Retour"), func(): done.emit(null)), [KEY_ESCAPE]), Vector2(426, 338), Vector2(66, 16))
 	UI.put(self, UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER]), Vector2(496, 338), Vector2(136, 16))
 	_refresh_buttons()
+
+
+## Cadre de la toile (or + filet d'encre), qui ne bouge pas quand on zoome.
+class _CanvasFrame extends Control:
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Pal.ACCENT)
+		draw_rect(Rect2(Vector2(2, 2), size - Vector2(4, 4)), Pal.INK)
 
 
 ## Pastille « Début » ou « Fin » du dégradé (celle qui est active reçoit la prochaine couleur).
@@ -525,6 +553,9 @@ func _unhandled_input(ev: InputEvent) -> void:
 		var k: int = ev.keycode
 		if (k == KEY_DELETE or k == KEY_BACKSPACE) and sel_state == "floating":
 			_sel_delete()
+			return
+		if sel_state == "floating" and (k == KEY_R or k == KEY_F):
+			_sel_transform("rot" if k == KEY_R else "flip")   # (pendant une sélection, R et F la transforment)
 			return
 		for t in TOOLS:
 			if k == t[3] and tool_btns.has(t[0]):
@@ -953,7 +984,8 @@ func _sel_release() -> void:
 			sel_base.fill_rect(r, Color(0, 0, 0, 0))
 			sel_pos = r.position
 			sel_state = "floating"
-			_warn("Glisse : déplacer · Suppr : effacer · clic à côté : poser")
+			sel_bar.visible = true
+			_warn("R : tourner · F : miroir · Suppr : effacer")
 		"drag":
 			sel_state = "floating"
 			if used > eff_budget():
@@ -965,6 +997,30 @@ func _sel_release() -> void:
 	view.queue_redraw()
 
 
+## Sélection levée : quart de tour (sur son centre) ou miroir. Si l'encre ne suffit plus, on annule.
+func _sel_transform(what: String) -> void:
+	if sel_state != "floating" or sel_img == null:
+		_warn("Fais d'abord une sélection (outil S)")
+		return
+	var old_img := sel_img.duplicate()
+	var old_pos := sel_pos
+	var c := Vector2(sel_pos) + Vector2(sel_img.get_size()) / 2.0
+	if what == "rot":
+		sel_img.rotate_90(CLOCKWISE)
+		sel_pos = Vector2i((c - Vector2(sel_img.get_size()) / 2.0).round())
+	else:
+		sel_img.flip_x()
+	_sel_compose()
+	if used > eff_budget():
+		sel_img = old_img
+		sel_pos = old_pos
+		_sel_compose()
+		_warn("Pas assez d'encre pour la tourner là")
+		return
+	Sfx.play("click")
+	view.queue_redraw()
+
+
 ## Pose la sélection (elle fait déjà partie du dessin) et arrête de la déplacer.
 func _sel_commit() -> void:
 	if sel_state == "":
@@ -973,6 +1029,8 @@ func _sel_commit() -> void:
 	sel_img = null
 	sel_base = null
 	drawing = false
+	if sel_bar:
+		sel_bar.visible = false
 	if view:
 		view.queue_redraw()
 

@@ -8,6 +8,11 @@ var hover := Vector2i(-1, -1)
 var edges := PackedVector2Array()
 var edge_light := PackedByteArray()   # 1 = pixel clair (blanc, jaune pâle...) : point foncé   # pixels de contour (ceux qui coûtent de l'encre)
 var pulse_t := 0.0
+# Zoom (molette, vers le curseur) de ×1 à ×4 ; clic molette (ou Espace) maintenu : déplacer la vue ;
+# double-clic molette : toute la toile.
+const ZOOMS := [1.0, 1.5, 2.0, 3.0, 4.0]
+var zoom_i := 0
+var panning := false
 
 
 func _init(s: DrawScreen, scale_px: int) -> void:
@@ -43,9 +48,52 @@ func cell_at(p: Vector2) -> Vector2i:
 	return Vector2i(floori(p.x / px), floori(p.y / px))
 
 
+## Zoome d'un cran (dir = +1 / -1) en gardant sous la souris le même point de la toile.
+func zoom_step(dir: int, at: Vector2) -> void:
+	var ni := clampi(zoom_i + dir, 0, ZOOMS.size() - 1)
+	if ni == zoom_i:
+		return
+	var old: float = ZOOMS[zoom_i]
+	zoom_i = ni
+	var z: float = ZOOMS[zoom_i]
+	var anchor := position + at * old            # le point sous la souris, dans la fenêtre
+	scale = Vector2(z, z)
+	position = anchor - at * z
+	_clamp_view()
+	queue_redraw()
+
+
+func reset_zoom() -> void:
+	zoom_i = 0
+	scale = Vector2.ONE
+	position = Vector2.ZERO
+	queue_redraw()
+
+
+## La toile couvre toujours toute la fenêtre (on ne peut pas la faire sortir du cadre).
+func _clamp_view() -> void:
+	var z: float = ZOOMS[zoom_i]
+	position.x = clampf(position.x, size.x - size.x * z, 0.0)
+	position.y = clampf(position.y, size.y - size.y * z, 0.0)
+
+
 func _gui_input(ev: InputEvent) -> void:
 	if ev is InputEventMouseButton:
 		var mb := ev as InputEventMouseButton
+		if mb.pressed and (mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			zoom_step(1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1, mb.position)
+			accept_event()
+			return
+		if mb.button_index == MOUSE_BUTTON_MIDDLE:
+			if mb.double_click:
+				reset_zoom()
+			panning = mb.pressed
+			accept_event()
+			return
+		if mb.button_index == MOUSE_BUTTON_LEFT and Input.is_key_pressed(KEY_SPACE) and zoom_i > 0:
+			panning = mb.pressed   # Espace + clic : déplacer la vue (au lieu de dessiner)
+			accept_event()
+			return
 		if mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT:
 			if mb.pressed:
 				screen.begin_stroke(cell_at(mb.position), mb.button_index == MOUSE_BUTTON_RIGHT)
@@ -53,6 +101,11 @@ func _gui_input(ev: InputEvent) -> void:
 				screen.end_stroke()
 			accept_event()
 	elif ev is InputEventMouseMotion:
+		if panning:
+			position += (ev as InputEventMouseMotion).relative * scale.x
+			_clamp_view()
+			accept_event()
+			return
 		var c := cell_at((ev as InputEventMouseMotion).position)
 		if c != hover:
 			hover = c
@@ -63,8 +116,6 @@ func _gui_input(ev: InputEvent) -> void:
 
 func _draw() -> void:
 	var s := screen.img.get_size()
-	draw_rect(Rect2(Vector2(-3, -3), size + Vector2(6, 6)), Pal.ACCENT)
-	draw_rect(Rect2(Vector2(-1, -1), size + Vector2(2, 2)), Pal.INK)
 	# Papier en damier très léger
 	for y in s.y:
 		for x in s.x:

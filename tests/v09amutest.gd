@@ -28,6 +28,7 @@ func _ready() -> void:
 	var p1 := arena.spawn_bullet(Vector2(100, 100), Vector2(200, 0), b, {}, null, "", 1.0)
 	_check(p0.radius == 4.0 and p1.radius == 8.0, "Polygunnus : zone de touche ×2 (%.0f → %.0f)" % [p0.radius, p1.radius])
 	_check(p1.vel == p0.vel and p1.scale == Vector2(2, 2), "Polygunnus : même vitesse, dessin ×2")
+	_check(p0.pierce < 5 and p1.pierce >= 999, "Polygunnus : traverse tous les ennemis (perforation %d)" % p1.pierce)
 	arena.queue_free()
 	await get_tree().process_frame
 

@@ -20,7 +20,7 @@ const FILL_REF := 1.6
 
 const STAT_LABELS := [
 	["max_hp", "PV max", ""], ["regen", "Régénération", ""], ["armor", "Armure", ""],
-	["dodge", "Esquive", "%"], ["move", "Vitesse", ""], ["dmg", "Dégâts", "%"],
+	["dodge", "Esquive", "%"], ["speed", "Vitesse", "%"], ["dmg", "Dégâts", "%"],
 	["atk_speed", "Vit. d'attaque", "%"], ["crit", "Critique", "%"], ["range", "Portée", "%"],
 	["lifesteal", "Vol de vie", "%"], ["luck", "Chance", ""], ["harvest", "Pourboire", ""],
 	["thorns", "Épines", ""], ["el_power", "Puissance élém.", "%"],
@@ -597,7 +597,7 @@ static func describe_player(s: Dictionary) -> String:
 	var L := []
 	for row in STAT_LABELS:
 		var v: float = s[row[0]]
-		if row[0] == "move" or row[0] == "max_hp":
+		if row[0] == "max_hp":
 			L.append("%s : %d" % [row[1], roundi(v)])
 		else:
 			L.append("%s : %s%d%s" % [row[1], "+" if v > 0 else "", roundi(v), row[2]])

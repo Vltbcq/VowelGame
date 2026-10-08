@@ -14,15 +14,18 @@ const CHAR_BONUS := ["", "+Dégâts", "+Armure", "+Vit. d'attaque", "+Régénér
 const WEAPON_EFFECT := ["", "Brûlure", "Gel", "Chaîne d'éclairs", "Poison cumulable", "Marque arcanique", "Éclat de lumière"]
 
 ## 3 nuances par élément : sombre, normale, claire.
+## 5 nuances par couleur : [foncé, principale, claire, TRÈS foncée, TRÈS claire]
+## (les 2 dernières ajoutées en v0.10 ; l'ordre d'affichage est SHADE_ORDER : du plus foncé au plus clair)
 const SHADES := [
-	[Color("1a1423"), Color("3d3450"), Color("6e6784")],
-	[Color("8c1f2a"), Color("d8433b"), Color("f08a5d")],
-	[Color("23407a"), Color("3f7fd9"), Color("8cc4f2")],
-	[Color("b07d1c"), Color("f0c43a"), Color("fbe79a")],
-	[Color("2c6b3a"), Color("4faa4c"), Color("a4d86a")],
-	[Color("4d2a7a"), Color("8c52c9"), Color("c79bea")],
-	[Color("c8bfae"), Color("f4efe2"), Color("ffffff")],
+	[Color("1a1423"), Color("3d3450"), Color("6e6784"), Color("0b0810"), Color("a39cb8")],
+	[Color("8c1f2a"), Color("d8433b"), Color("f08a5d"), Color("561119"), Color("f9bf98")],
+	[Color("23407a"), Color("3f7fd9"), Color("8cc4f2"), Color("13254b"), Color("c8e4fb")],
+	[Color("b07d1c"), Color("f0c43a"), Color("fbe79a"), Color("70500f"), Color("fff5cf")],
+	[Color("2c6b3a"), Color("4faa4c"), Color("a4d86a"), Color("173f22"), Color("d2efa8")],
+	[Color("4d2a7a"), Color("8c52c9"), Color("c79bea"), Color("2d184a"), Color("e5cdf6")],
+	[Color("c8bfae"), Color("f4efe2"), Color("ffffff"), Color("9f9686"), Color("e2dbcb")],
 ]
+const SHADE_ORDER := [3, 0, 1, 2, 4]
 
 # Interface
 const INK := Color("1a1423")

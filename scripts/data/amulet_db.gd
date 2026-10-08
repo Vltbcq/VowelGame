@@ -157,7 +157,7 @@ const LIST := [
 	{"id": "speed_painting", "ink": 36, "name": "Speed painting", "rar": 2, "flag": true, "limit": 1, "desc": "Tout le jeu va 25% plus vite (toi et les ennemis), butin +30%"},
 	{"id": "vernissage", "ink": 70, "name": "Scalper", "rar": 3, "flag": true, "desc": "La boutique n'a plus que 2 œuvres, mais toutes d'une rareté au-dessus"},
 	# --- v0.9
-	{"id": "polygunnus", "ink": 60, "name": "Polygunnus", "rar": 3, "flag": true, "desc": "Tes projectiles sont 2× plus GROS (zone de touche ×2, même vitesse) · {m}% vit. d'attaque", "malus": ["atk_speed", -8.0]},
+	{"id": "polygunnus", "ink": 60, "name": "Polygunnus", "rar": 3, "flag": true, "desc": "Tes projectiles sont 2× plus GROS (zone de touche ×2, même vitesse) et traversent TOUS les ennemis · {m}% vit. d'attaque", "malus": ["atk_speed", -30.0]},
 	{"id": "infini", "ink": 90, "name": "L'infini", "rar": 3, "stat": "dmg", "v": 8.0,
 		"plus": [["max_hp", 5.0], ["regen", 1.0], ["armor", 1.0], ["dodge", 5.0], ["speed", 8.0], ["atk_speed", 8.0], ["crit", 3.0], ["range", 10.0], ["lifesteal", 3.0], ["luck", 5.0], ["harvest", 5.0], ["thorns", 1.0]],
 		"desc": "Un peu de TOUT : +{v}% dégâts, +5 PV max, +1 régénération, +1 armure, +5% esquive, +8% vitesse, +8% vit. d'attaque, +3% critique, +10% portée, +3% vol de vie, +5 chance, +5 pourboire, +1 épines"},

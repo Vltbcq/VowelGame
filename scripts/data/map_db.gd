@@ -8,7 +8,7 @@ const MAPS := {
 		"desc": "La page blanche du début : taches, gribouillis, ratures... et la Toile Blanche au bout.",
 		"bosses": {5: ["rature"], 10: ["critique", "muse"], 15: ["toile"]}},
 	2: {"name": "Le Tableau noir", "floor": "board", "events": true,
-		"desc": "Une salle de classe hantée. Punaises, trombones, gommes... et des ÉVÉNEMENTS en pleine vague : éponge, pluie de craies, sonnerie, bon point.",
+		"desc": "Une salle de classe hantée. Punaises, trombones, gommes... et des événements surprises en pleine vague.",
 		"unlock": "Gagne une partie sur La Feuille (Esquisse ou plus dur).",
 		"bosses": {5: ["professeur"], 10: ["photocopieuse"], 15: ["encrier"]}},
 }

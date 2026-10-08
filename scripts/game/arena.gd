@@ -560,6 +560,9 @@ func _dot(el: int) -> Texture2D:
 
 # ------------------------------------------------------------------ Projectiles
 
+const POLY_PIERCE := 9999   # Polygunnus : perforation « infinie »
+
+
 func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, tex: Texture2D, effect: String, life: float, outline := false) -> Projectile:
 	var p := Projectile.new()
 	p.position = pos
@@ -578,9 +581,11 @@ func spawn_bullet(pos: Vector2, vel: Vector2, b: Dictionary, wst: Dictionary, te
 	bullet_layer.add_child(p)
 	p.setup(tex, effect, outline)
 	if Run.amulet_count("polygunnus") > 0:
-		# Polygunnus : projectile 2× plus gros (dessin et zone de touche), même vitesse
+		# Polygunnus : projectile 2× plus gros (dessin et zone de touche), même vitesse, et il
+		# traverse tout (chaque ennemi n'est touché qu'une fois par projectile)
 		p.radius *= 2.0
 		p.scale = Vector2(2.0, 2.0)
+		p.pierce = POLY_PIERCE
 	bullets.append(p)
 	return p
 
@@ -1783,8 +1788,16 @@ func quiz(n: int, dmg: float) -> void:
 		if good + o > 0:
 			answers.append(good + o)
 	answers.shuffle()
+	# Le temps s'adapte à ta vitesse : 1,5 s pour lire + le trajet jusqu'à la colonne la plus loin
+	# (×1,2 de marge), jamais moins qu'avant (3,2 s, 2,8 s si difficile)
+	var cw := float(W) / n
+	var far := 0.0
+	for i in n:
+		var cx := cw * (i + 0.5)
+		far = maxf(far, maxf(0.0, absf(cx - player.position.x) - cw * 0.35))
+	var dur := maxf(2.8 if hard else 3.2, 1.5 + far / maxf(30.0, float(player.st.move)) * 1.2)
 	quizzes.append({"cols": n, "safe": answers.find(good), "answers": answers, "question": q + " = ?",
-		"t": 0.0, "dur": 2.8 if hard else 3.2, "dmg": dmg})
+		"t": 0.0, "dur": dur, "dmg": dmg})
 	hud.announce("INTERRO SURPRISE !", Pal.ACCENT)
 	Sfx.play("zap")
 
