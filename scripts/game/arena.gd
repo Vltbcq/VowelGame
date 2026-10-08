@@ -238,10 +238,11 @@ func _ready() -> void:
 		_after(1.6, func():
 			if not ended:
 				hud.announce("SALLE : " + String(THEMES[theme]), Pal.ACCENT))
+	# Carnet de commandes : l'objectif de la vague s'annonce au début (après la salle thématique)
 	if not Run.order.is_empty():
-		_after(3.2, func():
+		_after(3.2 if theme != "" else 1.6, func():
 			if not ended:
-				float_text(player.position + Vector2(0, -34), "COMMANDE : " + String(Run.order.text), Pal.ACCENT))
+				hud.announce("COMMANDE", Pal.ACCENT, "%s  →  +● %d" % [String(Run.order.text), int(Run.order.reward)]))
 
 
 ## Vitesse du jeu : le réglage, ×1,25 par Speed painting.

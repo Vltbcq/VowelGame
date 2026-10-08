@@ -214,6 +214,7 @@ func _ready() -> void:
 	for e in arena.enemies.duplicate():
 		arena.kill_enemy(e)
 	var pv: Enemy = arena.spawn_enemy_now("colosse", par.position + Vector2(40, 0), false)
+	pv.dodge = 0.0   # (sinon une esquive fait rater le test)
 	var pvh := pv.hp
 	par.cd = 0.0
 	par.tick(1.0 / 60.0)

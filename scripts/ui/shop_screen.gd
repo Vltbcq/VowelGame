@@ -60,10 +60,6 @@ func _build() -> void:
 	_plaque(Vector2(10, 4), Vector2(150, 26), "♥ %d / %d  ·  NIV %d" % [ceili(Run.hp), int(Run.stats.max_hp), Run.level], 10, hp_col)
 	_plaque(Vector2(480, 4), Vector2(150, 26), "BOURSE  ● %d" % Run.gold, 10, Pal.ACCENT)
 
-	# Carnet de commandes : la commande de la prochaine vague
-	if not Run.order.is_empty():
-		UI.put(self, UI.label("COMMANDE : %s  →  +● %d" % [Run.order.text, int(Run.order.reward)], 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 31), Vector2(640, 12))
-
 	# --- Les tableaux accrochés
 	var n := Run.shop_offers.size()
 	var gap := 10.0 if n <= 4 else 6.0   # 5 offres et plus : on serre pour garder des fiches lisibles

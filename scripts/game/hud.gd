@@ -5,6 +5,9 @@ extends CanvasLayer
 var arena: Arena
 var draw_layer: Control
 var announce_label: Label
+var announce_sub: Label      # ligne sous l'annonce (ex. l'objectif de la commande)
+var ann_tw: Tween
+var sub_tw: Tween
 var pause_menu: Control
 var hint_label: Label
 var hint_t := 0.0
@@ -25,6 +28,14 @@ func _ready() -> void:
 	announce_label.position = Vector2(0, 130)
 	announce_label.size = Vector2(640, 40)
 	add_child(announce_label)
+	announce_sub = UI.label("", 13, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	announce_sub.position = Vector2(40, 172)
+	announce_sub.size = Vector2(560, 36)
+	announce_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	announce_sub.add_theme_constant_override("outline_size", 4)
+	announce_sub.add_theme_color_override("font_outline_color", Pal.INK)
+	announce_sub.modulate.a = 0.0
+	add_child(announce_sub)
 	hint_label = UI.label("", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	hint_label.position = Vector2(60, 300)
 	hint_label.size = Vector2(520, 14)
@@ -103,16 +114,27 @@ func _check_hints() -> void:
 			break
 
 
-func announce(text: String, color: Color) -> void:
+func announce(text: String, color: Color, sub := "") -> void:
+	# Une nouvelle annonce remplace la précédente (sinon l'ancien fondu l'efface aussitôt)
+	if ann_tw:
+		ann_tw.kill()
+	if sub_tw:
+		sub_tw.kill()
+	announce_sub.text = sub
+	announce_sub.modulate.a = 1.0 if sub != "" else 0.0
+	if sub != "":
+		sub_tw = announce_sub.create_tween()
+		sub_tw.tween_interval(3.0)   # le détail reste plus longtemps, le temps de le lire
+		sub_tw.tween_property(announce_sub, "modulate:a", 0.0, 0.6)
 	announce_label.text = text
 	announce_label.add_theme_color_override("font_color", color)
 	announce_label.modulate.a = 1.0
 	announce_label.pivot_offset = announce_label.size / 2.0
 	announce_label.scale = Vector2(1.8, 1.8)
-	var tw := announce_label.create_tween()
-	tw.tween_property(announce_label, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(1.2)
-	tw.tween_property(announce_label, "modulate:a", 0.0, 0.5)
+	ann_tw = announce_label.create_tween()
+	ann_tw.tween_property(announce_label, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	ann_tw.tween_interval(2.75 if sub != "" else 1.2)
+	ann_tw.tween_property(announce_label, "modulate:a", 0.0, 0.5)
 
 
 func _bar(pos: Vector2, size: Vector2, t: float, col: Color, text := "") -> void:
