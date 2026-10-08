@@ -77,6 +77,7 @@ const THEMES := {"geants": "ENNEMIS GÉANTS", "minus": "ENNEMIS MINUSCULES", "ra
 var blotters: Array = []  # Encrier renversé : buvards qui nettoient tes taches {pos, t}
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
 # Armes épiques / légendaires et Horloge
+var last_shot_by := ""    # statistiques : l'ennemi dont le tir va toucher le joueur
 var allies: Array = []    # Retouche : ennemis redessinés dans ton camp
 var wells: Array = []     # Point final {pos, t, dur, r, dmg, wst}
 var staple_last: Enemy    # Agrafeuse : dernier ennemi agrafé
@@ -247,7 +248,7 @@ func _ready() -> void:
 
 ## Vitesse du jeu : le réglage, ×1,25 par Speed painting.
 func game_speed() -> float:
-	return float(Meta.setting("speed")) * pow(1.25, Run.amulet_count("speed_painting"))
+	return pow(1.25, Run.amulet_count("speed_painting"))
 
 
 func _exit_tree() -> void:
@@ -588,6 +589,7 @@ func spawn_enemy_bullet(src: Enemy, pos: Vector2, vel: Vector2, hang := 0.0, lig
 	var p := Projectile.new()
 	p.hang = hang
 	p.hostile = true
+	p.src_id = src.id if src else ""
 	p.position = pos
 	p.dmg = src.dmg * (0.8 * pow(0.75, Run.amulet_count("bache")) if src.is_boss else 1.0)   # Bâche : -25 %
 	p.life = 6.0
@@ -918,7 +920,7 @@ func kill_enemy(e: Enemy) -> void:
 		pickups.append(pk)
 		if pk.value > 0:
 			for fm in familiars:
-				if fm.id == "pie" and fm.fetch.size() < 6 and randf() < 0.15:
+				if fm.form == "pie" and fm.fetch.size() < 6 and randf() < 0.15:
 					fm.fetch.append({"pos": pk.position, "v": randi_range(1, 2)})
 	# Synergie Glace : un ennemi gelé (ou ralenti) éclate en éclats de glace
 	if syn.has(Pal.GLACE) and (e.freeze_t > 0.0 or e.slow_t > 0.0):
@@ -1012,6 +1014,8 @@ func collect(p: Pickup) -> void:
 	if p.heal > 0.0:
 		player.heal(p.heal)
 	Run.gold += p.value
+	Meta.count("gold_earned", p.value)
+	Run.run_gold += p.value
 	if p.value > 0 and not Run.order.is_empty() and not Run.order.done and Run.order.kind == "gold":
 		_order_progress(p.value)
 	Sfx.play("pickup", 0.2)
@@ -1654,8 +1658,33 @@ func spawn_ally(id: String, pos: Vector2, elite := false) -> void:
 	float_text(pos + Vector2(0, -16), "REDESSINÉ !", Pal.GOOD)
 
 
+## Le Paon : l'ennemi passe dans ton camp quelques secondes, puis redevient ennemi.
+## Renvoie false s'il ne peut pas être charmé (boss, mort, déjà allié).
+func charm(e: Enemy, dur: float) -> bool:
+	if e == null or e.dead or e.is_boss or e.ally or e.reflet_of != null:
+		return false
+	enemies.erase(e)
+	e.ally = true
+	e.charmed = true
+	e.charm_contact = e.contact
+	e.contact = false
+	e.ally_t = dur
+	allies.append(e)
+	burst(e.position, Color("f08ac0"), 6, 50.0)
+	return true
+
+
 func remove_ally(a: Enemy) -> void:
 	allies.erase(a)
+	if a.charmed:
+		# fin du charme : il redevient un ennemi
+		a.ally = false
+		a.charmed = false
+		a.contact = a.charm_contact
+		a.mat.set_shader_parameter("flash", 0.0)
+		enemies.append(a)
+		a.queue_redraw()
+		return
 	burst(a.position, Pal.GOOD, 8, 60.0)
 	a.queue_free()
 
@@ -2381,7 +2410,7 @@ func _whistle_call(e: Enemy) -> void:
 	float_text(player.position + Vector2(0, -28), "FIIIT !", Pal.ACCENT)
 	Sfx.play("zap")
 	for fm in familiars:
-		if fm.id in ["yuki", "pavel", "pie"]:
+		if fm.form in ["yuki", "pavel", "pie"]:
 			continue
 		fm.cd = 0.0
 		fm.rush_t = 1.0

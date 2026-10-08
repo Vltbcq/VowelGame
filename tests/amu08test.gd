@@ -145,7 +145,7 @@ func _ready() -> void:
 	a._process(1.0 / 60.0)
 	_check(a.ghost.position.distance_to(Vector2(Arena.W - 100, 200)) < 1.0, "Reflet : en miroir de l'autre côté de la page")
 	_check(a.theme in Arena.THEMES, "Salle thématique : règle de la vague = %s" % a.theme)
-	_check(is_equal_approx(Engine.time_scale, float(Meta.setting("speed")) * 1.25), "Speed painting : jeu ×1,25")
+	_check(is_equal_approx(Engine.time_scale, 1.25), "Speed painting : jeu ×1,25")
 	_check(a.time_left < len0 * 0.6, "Performance live : vague 2× plus courte (%.0f → %.0f s)" % [len0, a.time_left])
 	a.queue_free()
 	Engine.time_scale = 1.0

@@ -2,6 +2,8 @@ class_name TitleScreen
 extends Control
 ## Écran titre façon « galerie d'exposition » : les dessins du joueur sont accrochés dans des
 ## cadres qui changent régulièrement, et ses persos / ennemis / boss défilent en bas.
+## Sans aucun dessin : l'expo est « en cours d'installation » (cadres bâchés, escabeau, pots de
+## peinture, ruban de chantier, déménageurs qui passent avec des cadres et des cartons). Aucun texte.
 ## done("play" | "atelier" | "gallery" | "options" | "quit")
 
 signal done(result)
@@ -20,7 +22,8 @@ var tex_cache := {}
 var frames: Array = []      # {panel, pic, label}
 var swap_t := 4.0
 var swap_i := 0
-var walkers: Array = []     # {tex, x, speed, scale, phase}
+var walkers: Array = []     # {tex, x, speed, scale, phase} ; en installation : {mover, load, x, speed, phase}
+var installing := false     # aucun dessin : l'expo est en cours d'installation
 var walk_t := 0.5
 var parade: Control
 var hero: TextureRect
@@ -31,14 +34,11 @@ func _ready() -> void:
 	UI.fill_bg(self)
 	for k in FRAME_KINDS + ["bullet"]:
 		entries += Meta.gallery(k)
+	installing = entries.is_empty()
 	# Version du jeu (en bas à droite) : écrite par la pipeline de Release à partir du tag
 	var ver := UI.label("v" + String(ProjectSettings.get_setting("application/config/version", "?")), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	ver.z_index = 10
 	UI.put(self, ver, Vector2(480, 346), Vector2(154, 12))
-	# Crédit obligatoire des musiques (licence de soundimage.org)
-	var cr := UI.label("Musique : Eric Matyas · soundimage.org", 10, Pal.DIM)
-	cr.z_index = 10
-	UI.put(self, cr, Vector2(6, 346), Vector2(300, 12))
 
 	# Mur de l'expo (papier) derrière les cadres et le défilé
 	var rail := ColorRect.new()
@@ -50,6 +50,10 @@ func _ready() -> void:
 	var floor_line := ColorRect.new()
 	floor_line.color = UI.GOLD_DARK
 	UI.put(self, floor_line, Vector2(0, 310), Vector2(640, 2))
+	if installing:
+		var site := _Site.new()
+		site.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.put(self, site, Vector2.ZERO, Vector2(640, 360))
 
 	# Défilé en bas (derrière le menu)
 	parade = Control.new()
@@ -85,7 +89,16 @@ func _ready() -> void:
 		vb.add_child(UI.hotkey(UI.button("Nouvelle partie", func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
 	vb.add_child(UI.hotkey(UI.button("Atelier  ◆ %d" % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
 	vb.add_child(UI.hotkey(UI.button("Galerie (%d dessins)" % entries.size(), func(): done.emit("gallery")), [KEY_G]))
-	vb.add_child(UI.hotkey(UI.button("Codex", func(): done.emit("codex")), [KEY_B]))
+	# Codex et Statistiques sur la même ligne (le menu tient dans son panneau)
+	var cs := HBoxContainer.new()
+	cs.add_theme_constant_override("separation", 4)
+	var cb := UI.hotkey(UI.button("Codex", func(): done.emit("codex")), [KEY_B])
+	cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cs.add_child(cb)
+	var stb := UI.hotkey(UI.button("Stats", func(): done.emit("stats")), [KEY_T])
+	stb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cs.add_child(stb)
+	vb.add_child(cs)
 	vb.add_child(UI.hotkey(UI.button("Options", func(): done.emit("options")), [KEY_O]))
 	vb.add_child(UI.button("Quitter", func(): done.emit("quit")))
 	var d := Meta.data
@@ -94,8 +107,6 @@ func _ready() -> void:
 
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))
-	if entries.is_empty():
-		UI.put(self, UI.label("Tes dessins seront exposés ici !", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 318), Vector2(640, 14))
 	UI.use_menu_font(self)   # tout l'écran titre en Yoster Island
 	Tips.show(self, "welcome")
 
@@ -119,6 +130,13 @@ func _make_frame(pos: Vector2) -> Dictionary:
 	UI.put(self, plate, pos + Vector2(12, FRAME_SIZE.y + 2), Vector2(FRAME_SIZE.x - 24, 14))
 	var label := UI.label("", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
 	UI.put(plate, label, Vector2(0, 1), Vector2(FRAME_SIZE.x - 24, 12))
+	if installing:
+		# Expo en installation : le cadre est bâché et n'a pas encore de cartel
+		plate.visible = false
+		var drape := _Drape.new()
+		drape.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		drape.seed_v = int(pos.x + pos.y)
+		UI.put(outer, drape, Vector2(-5, -7), Vector2(FRAME_SIZE.x + 10, FRAME_SIZE.y - 14))   # le bas du cadre dépasse
 	return {"panel": outer, "pic": pic, "label": label, "inner": inner}
 
 
@@ -151,7 +169,7 @@ func _fill_frame(i: int, animate: bool) -> void:
 				kind = e.kind
 				f.file = e.file
 				break
-	if tex == null:
+	if tex == null and not installing:
 		tex = ImageTexture.create_from_image(Gfx.icon(Gfx.ICON_UNKNOWN))
 		kind = ""
 	var pic: TextureRect = f.pic
@@ -171,6 +189,11 @@ func _fill_frame(i: int, animate: bool) -> void:
 # ------------------------------------------------------------------ Défilé
 
 func _spawn_walker(x := -60.0) -> void:
+	if installing:
+		# Déménageurs : un carton, un cadre retourné, ou un grand cadre porté à deux
+		walkers.append({"mover": true, "load": ["box", "frame", "duo"].pick_random(), "x": x,
+			"speed": randf_range(24.0, 34.0), "phase": randf() * TAU})
+		return
 	var pool := entries.filter(func(e): return e.kind in WALKER_KINDS)
 	if pool.is_empty():
 		return
@@ -209,6 +232,9 @@ func _process(delta: float) -> void:
 
 func _draw_parade() -> void:
 	for w in walkers:
+		if w.has("mover"):
+			_draw_mover(w)
+			continue
 		var tex: Texture2D = w.tex
 		var sz: Vector2 = tex.get_size() * w.scale
 		var bob := absf(sin(t * 7.0 + w.phase)) * 3.0
@@ -217,3 +243,115 @@ func _draw_parade() -> void:
 		parade.draw_circle(Vector2.ZERO, sz.x * 0.4, Color(0, 0, 0, 0.3))
 		parade.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 		parade.draw_texture_rect(tex, Rect2(pos, sz), false)
+
+
+# ------------------------------------------------------------------ Expo en installation
+
+const MOVER := Color("3a6ea5")        # bleu de travail des déménageurs
+const SKIN := Color("e8b890")
+const CAP := Color("d2433a")
+const BOX := Color("c8975a")
+const BOX_D := Color("8a6436")
+const FRAME_BACK := Color("8a5a2b")
+const FRAME_BAR := Color("b9864a")
+
+
+## Un déménageur (ou deux) qui traverse la page avec sa charge.
+func _draw_mover(w: Dictionary) -> void:
+	var x: float = w.x
+	var step: float = t * 7.0 + float(w.phase)
+	var bob := absf(sin(step)) * 2.0
+	match String(w.load):
+		"box":
+			_person(x, step)
+			var b := Rect2(x + 1, FLOOR_Y - 31 - bob, 17, 14)   # porté contre lui : la tête reste visible
+			parade.draw_rect(b, BOX)
+			parade.draw_rect(b, BOX_D, false, 1.0)
+			parade.draw_rect(Rect2(b.position.x + 9, b.position.y, 4, b.size.y), Color("e6d3a8"))   # scotch
+			parade.draw_line(b.position + Vector2(0, 5), b.position + Vector2(b.size.x, 5), BOX_D, 1.0)
+		"frame":
+			_person(x, step)
+			_frame_back(Rect2(x + 6, FLOOR_Y - 44 - bob, 24, 32))   # porté sur le côté
+		"duo":
+			_person(x, step)
+			_person(x - 64, step + PI)
+			_frame_back(Rect2(x - 70, FLOOR_Y - 70 - bob, 78, 26))   # à bout de bras, au-dessus des têtes
+
+
+func _person(x: float, step: float) -> void:
+	var y := FLOOR_Y
+	var sw := sin(step) * 4.0
+	parade.draw_set_transform(Vector2(x, y), 0.0, Vector2(1.0, 0.35))
+	parade.draw_circle(Vector2.ZERO, 8.0, Color(0, 0, 0, 0.25))
+	parade.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	parade.draw_line(Vector2(x - 2, y - 14), Vector2(x - 3 + sw, y), Color("27496e"), 3.0)    # jambes
+	parade.draw_line(Vector2(x + 2, y - 14), Vector2(x + 3 - sw, y), Color("27496e"), 3.0)
+	parade.draw_rect(Rect2(x - 5, y - 30, 10, 17), MOVER)                           # corps
+	parade.draw_rect(Rect2(x - 5, y - 30, 10, 17), Pal.INK, false, 1.0)
+	parade.draw_circle(Vector2(x, y - 35), 5.0, SKIN)                                # tête
+	parade.draw_arc(Vector2(x, y - 35), 5.0, 0.0, TAU, 14, Pal.INK, 1.0)
+	parade.draw_rect(Rect2(x - 6, y - 41, 12, 3), CAP)                               # casquette
+	parade.draw_line(Vector2(x + 3, y - 28), Vector2(x + 9, y - 36), SKIN, 2.5)     # bras levés
+	parade.draw_line(Vector2(x - 3, y - 28), Vector2(x + 3, y - 38), SKIN, 2.5)
+
+
+## Un cadre vu de dos (châssis et traverses).
+func _frame_back(r: Rect2) -> void:
+	parade.draw_rect(r, FRAME_BACK)
+	parade.draw_rect(r.grow(-3), Color("6f4520"))
+	parade.draw_line(r.position + Vector2(3, r.size.y / 2.0), r.end - Vector2(3, r.size.y / 2.0), FRAME_BAR, 3.0)
+	parade.draw_line(r.position + Vector2(r.size.x / 2.0, 3), r.position + Vector2(r.size.x / 2.0, r.size.y - 3), FRAME_BAR, 3.0)
+	parade.draw_rect(r, Pal.INK, false, 1.0)
+
+
+## Drap posé sur un cadre : il dépasse un peu, avec des plis et un bas ondulé.
+class _Drape extends Control:
+	var seed_v := 0
+
+	func _draw() -> void:
+		var w := size.x
+		var h := size.y
+		var cloth := Color("eee6d6")
+		var shade := Color("cfc3ab")
+		var pts := PackedVector2Array([Vector2(6, 2), Vector2(w - 6, 2), Vector2(w - 1, 10)])
+		for i in range(9, -1, -1):   # bas ondulé
+			var x := w * i / 9.0
+			pts.append(Vector2(x, h - 4.0 + sin(i * 1.7 + seed_v) * 3.0))
+		pts.append(Vector2(1, 10))
+		draw_colored_polygon(pts, cloth)
+		for i in 5:   # plis
+			var x := w * (0.15 + 0.18 * i) + sin(seed_v + i) * 3.0
+			draw_line(Vector2(x, 10 + (i % 2) * 6), Vector2(x + 4.0 * sin(i + seed_v), h - 7), shade, 2.0)
+		draw_polyline(pts + PackedVector2Array([pts[0]]), Color("9c8f78"), 1.0)
+
+
+## Le chantier : escabeau, pots de peinture et ruban de chantier au sol.
+class _Site extends Control:
+	func _draw() -> void:
+		var fy := 338.0
+		# ruban de chantier jaune et noir le long du sol
+		var x := 0.0
+		var k := 0
+		while x < 640.0:
+			draw_rect(Rect2(x, 314, 10, 5), Color("f0c43a") if k % 2 == 0 else Color("2b2433"))
+			x += 10.0
+			k += 1
+		# escabeau (près des cadres de gauche)
+		var wood := Color("b9864a")
+		draw_line(Vector2(132, fy), Vector2(150, fy - 74), wood, 3.0)
+		draw_line(Vector2(168, fy), Vector2(150, fy - 74), wood, 3.0)
+		for i in 4:
+			var yy := fy - 14.0 - i * 15.0
+			var off := (fy - yy) * 18.0 / 74.0
+			draw_line(Vector2(132 + off, yy), Vector2(168 - off, yy), wood, 2.0)
+		# pots de peinture (et une coulure)
+		for p in [[476.0, Color("d2433a")], [500.0, Color("3a86ff")], [588.0, Color("f0c43a")]]:
+			var px: float = p[0]
+			draw_rect(Rect2(px, fy - 16, 16, 16), Color("b8b8c4"))
+			draw_rect(Rect2(px, fy - 16, 16, 4), p[1])
+			draw_rect(Rect2(px, fy - 16, 16, 16), Pal.INK, false, 1.0)
+			draw_arc(Vector2(px + 8, fy - 16), 7.0, PI, TAU, 10, Pal.INK, 1.0)   # anse
+		draw_circle(Vector2(520, fy + 2), 5.0, Color(0.23, 0.53, 1.0, 0.8))
+		# un pinceau posé sur le pot jaune
+		draw_line(Vector2(584, fy - 22), Vector2(610, fy - 12), Color("8a5a2b"), 2.0)
+		draw_rect(Rect2(580, fy - 25, 6, 5), Color("f0c43a"))

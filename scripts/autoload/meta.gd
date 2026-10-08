@@ -16,7 +16,7 @@ const DIFFICULTIES := [
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.9, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
-const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "speed": 1.0, "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
+const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
 
 var data := {}
 var settings := {}
@@ -283,13 +283,19 @@ func buy(id: String) -> bool:
 	var c := next_cost(id)
 	if c < 0 or int(data.pigments) < c:
 		return false
-	var req: String = UnlockDB.get_def(id).get("req", "")
-	if req != "" and not has(req):
+	if not buy_open(id):
 		return false
 	data.pigments = int(data.pigments) - c
 	data.unlocks[id] = level(id) + 1
 	save()
 	return true
+
+
+## Conditions d'achat remplies (amélioration nécessaire, victoires) ?
+func buy_open(id: String) -> bool:
+	var d := UnlockDB.get_def(id)
+	return has(String(d.get("req", ""))) and int(data.get("wins", 0)) >= int(d.get("wins", 0)) \
+		and int(data.get("best_wave", 0)) >= int(d.get("best_wave", 0))
 
 
 func pigments() -> int:
@@ -393,7 +399,7 @@ func pending(id: String) -> bool:
 func apply_pending_unlocks() -> Array:
 	var out: Array = (data.get("pending_unlocks", []) as Array).duplicate()
 	for id in out:
-		if String(id).begins_with("w:") or String(id).begins_with("a:"):
+		if String(id).begins_with("w:") or String(id).begins_with("a:") or String(id).begins_with("f:"):
 			if not data.has("item_unlocks"):
 				data.item_unlocks = {}
 			data.item_unlocks[id] = true
@@ -434,10 +440,16 @@ func _retro_achievements() -> void:
 			data.achievements[a.id] = true
 			if level(a.unlock) == 0:
 				data.unlocks[a.unlock] = 1
+	# Succès déjà obtenus dont la récompense a changé (ex. « Sans rature » → Triangle) : on la donne
+	for a in AchievementDB.LIST:
+		if achieved(a.id) and not pending(a.id) and level(a.unlock) == 0:
+			data.unlocks[a.unlock] = 1
 
 
 ## Compteurs de toutes les parties (dégâts, or dépensé, boss vaincus, roulette...).
 func count(key: String, n := 1.0) -> void:
+	if Run.seeded and Run.active:
+		return   # partie avec seed : rien ne compte
 	if not data.has("counters"):
 		data.counters = {}
 	data.counters[key] = float(data.counters.get(key, 0.0)) + n
@@ -453,6 +465,8 @@ func map_cleared(map_id: int) -> void:
 ## Vérifie tous les succès avec ce contexte. Pendant une partie, l'amélioration gagnée est mise
 ## de côté et n'est appliquée qu'à la fin (apply_pending_unlocks) ; hors partie, tout de suite.
 func check_achievements(ctx: Dictionary) -> void:
+	if Run.seeded and Run.active:
+		return   # partie avec seed : elle ne débloque rien
 	if not data.has("achievements"):
 		data.achievements = {}
 	if not data.has("pending_unlocks"):
@@ -513,6 +527,7 @@ func add_to_gallery(kind: String, img: Image, effect: String) -> void:
 	if Analyzer.count_pixels(img) == 0:
 		return
 	var h := str(hash(img.get_data()))
+	data.pixels_painted = int(data.get("pixels_painted", 0)) + Analyzer.count_pixels(img)   # (statistiques)
 	for e in data.gallery:
 		if e.kind == kind and e.get("hash", "") == h:
 			return
@@ -667,6 +682,30 @@ func map_unlocked(id: int) -> bool:
 
 
 ## Retourne true si cette partie vient de débloquer une nouvelle carte.
+## Fin d'une partie en mode infini (la victoire a déjà été comptée) : record de vague infinie.
+func record_endless(wave_reached: int, earned: int, kills: int, elites: int) -> void:
+	data.total_elites = int(data.get("total_elites", 0)) + maxi(0, elites)
+	var bb: Dictionary = data.get("bosses_beaten", {})
+	bb.merge(Run.boss_ids)
+	data.bosses_beaten = bb
+	data.total_kills = int(data.get("total_kills", 0)) + maxi(0, kills)
+	data.pigments = int(data.pigments) + earned
+	data.best_wave = maxi(int(data.best_wave), wave_reached)
+	data.best_endless = maxi(int(data.get("best_endless", 0)), wave_reached)
+	data.play_time = float(data.get("play_time", 0.0)) + Run.play_time - float(Run.endless_base.get("time", 0.0))
+	# l'historique garde UNE fiche par partie : celle de la victoire est complétée
+	var h: Array = data.get("history", [])
+	if not h.is_empty() and bool(h[-1].get("win", false)):
+		var e: Dictionary = Run.history_entry(true)
+		e.endless = true
+		e.killer = Run.killer
+		h[-1] = e
+	save()
+
+
+const HISTORY_MAX := 300   # parties gardées pour les statistiques
+
+
 func record_run(wave_reached: int, win: bool, difficulty: int, earned: int, kills := 0, map_id := 1) -> bool:
 	var new_map := false
 	data.total_elites = int(data.get("total_elites", 0)) + Run.elite_kills
@@ -680,6 +719,12 @@ func record_run(wave_reached: int, win: bool, difficulty: int, earned: int, kill
 	data.runs = int(data.runs) + 1
 	data.pigments = int(data.pigments) + earned
 	data.best_wave = maxi(int(data.best_wave), wave_reached)
+	data.play_time = float(data.get("play_time", 0.0)) + Run.play_time
+	if not data.has("history"):
+		data.history = []
+	data.history.append(Run.history_entry(win))
+	if data.history.size() > HISTORY_MAX:
+		data.history = data.history.slice(data.history.size() - HISTORY_MAX)
 	if win:
 		data.wins = int(data.wins) + 1
 		var next := mini(difficulty + 1, DIFFICULTIES.size() - 1)

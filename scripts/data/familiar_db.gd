@@ -26,6 +26,8 @@ const LIST := [
 		"desc": "Coup de langue circulaire qui touche tous les ennemis autour d'elle."},
 	{"id": "fantome", "name": "Fantôme", "rar": 2, "ink": 55,
 		"desc": "Traverse la page : blesse et aveugle les ennemis sur son passage."},
+	{"id": "paon", "name": "Le Paon", "rar": 2, "ink": 65,
+		"desc": "Toutes les 10 s, fait la roue : les ennemis proches sont CHARMÉS 3 s et attaquent les autres (pas les boss)."},
 	# Légendaires
 	{"id": "yuki", "name": "Yuki", "rar": 3, "ink": 70,
 		"desc": "Reste sur toi : te soigne, bloque des coups et t'accélère quand tu es en danger."},
@@ -33,7 +35,13 @@ const LIST := [
 		"desc": "Tank de poche : les ennemis proches l'attaquent lui. Revient après un K.O."},
 	{"id": "teemeo", "name": "Teemeo", "rar": 3, "ink": 70,
 		"desc": "Plante des champignons empoisonnés et tire des fléchettes qui aveuglent et empoisonnent."},
+	{"id": "chimere", "name": "Chimère", "rar": 3, "ink": 85,
+		"desc": "Toutes les 5 s, prend le pouvoir d'un AUTRE familier au hasard."},
 ]
+
+## Pouvoirs que la Chimère peut prendre (tous les familiers sauf elle).
+const CHIMERA_FORMS := ["moustique", "taupe", "pie", "herisson_f", "luciole", "perroquet", "corbeau",
+	"grenouille", "fantome", "paon", "yuki", "pavel", "teemeo"]
 
 const PRICE := [16, 30, 52, 88]
 const RAR_INK := [1.0, 1.3, 1.6, 2.0]

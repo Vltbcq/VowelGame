@@ -85,6 +85,10 @@ func _bench() -> void:
 		if cost < 0:
 			b = UI.button("Acquis", func(): pass)
 			b.disabled = true
+		elif not Meta.buy_open(id):
+			b = UI.button("Verrouillé", func(): pass)
+			b.disabled = true
+			b.tooltip_text = _lock_reason(d)
 		else:
 			b = UI.button("◆ %d" % cost, func():
 				if Meta.buy(id):
@@ -94,6 +98,18 @@ func _bench() -> void:
 		UI.put(card, b, Vector2(210, (chh - 18.0) / 2.0), Vector2(72, 18))
 		y += chh + 4.0
 	shelf.custom_minimum_size = Vector2(288, y)
+
+
+## Pourquoi une amélioration de l'établi n'est pas encore achetable.
+func _lock_reason(d: Dictionary) -> String:
+	var why := []
+	if int(Meta.data.get("best_wave", 0)) < int(d.get("best_wave", 0)):
+		why.append("Termine la vague %d (une fois suffit)." % int(d.best_wave))
+	if int(Meta.data.get("wins", 0)) < int(d.get("wins", 0)):
+		why.append("Gagne une partie.")
+	if d.has("req") and not Meta.has(String(d.req)):
+		why.append("Achète d'abord : " + UnlockDB.get_def(String(d.req)).name + ".")
+	return "\n".join(why)
 
 
 # ------------------------------------------------------------------ Tableau des succès

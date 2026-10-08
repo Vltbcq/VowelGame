@@ -12,6 +12,7 @@ const TOOLS := [
 	["line", "Ligne", "tool_line", KEY_L],
 	["rect", "Rectangle", "tool_rect", KEY_R],
 	["ellipse", "Ellipse", "tool_ellipse", KEY_O],
+	["triangle", "Triangle", "tool_triangle", KEY_T],
 	["fill", "Remplir", "", KEY_F],
 	["select", "Sélection", "", KEY_S],
 ]
@@ -28,11 +29,16 @@ var col_a: Color = Pal.SHADES[0][0]
 var col_b: Color = Pal.SHADES[0][2]
 var gradient := false
 var mirror := false
+var mirror_h := false   # symétrie haut / bas (avec mirror : les 4 coins)
 var effect := ""
 var outline := false
 var drawing := false
 var rmb := false
 var stroke_len := 0.0
+var stroke_total := 1     # forme en cours : nombre de pixels du contour (dégradé de bout en bout)
+var stroke_pts: Array[Vector2i] = []   # trait au pinceau en cours, dans l'ordre (dégradé)
+var grad_end := 0         # dégradé : 0 = la palette choisit le DÉBUT, 1 = la FIN
+var grad_chips: Array = []
 var last_cell := Vector2i.ZERO
 var start_cell := Vector2i.ZERO
 # Sélection : "" | "making" (rectangle en cours) | "floating" (zone levée) | "drag" (on la déplace)
@@ -118,7 +124,7 @@ func _build_ui() -> void:
 	# Outils en icônes (assets/ui/tools, dessinées par docs/tool_icons.py), rangés par famille ;
 	# le nom et le raccourci s'affichent au survol.
 	var icon_of := {"brush": "pinceau", "eraser": "gomme", "line": "ligne", "rect": "rect", "ellipse": "ellipse",
-		"fill": "remplir", "select": "selection"}
+		"triangle": "triangle", "fill": "remplir", "select": "selection"}
 	var tools := {}
 	for t in TOOLS:
 		if not Meta.has(t[2]):
@@ -131,7 +137,7 @@ func _build_ui() -> void:
 		tool_btns[id] = b
 		tools[id] = b
 	_tool_row(left, "DESSINER", ["brush", "eraser", "fill", "select"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
-	_tool_row(left, "FORMES", ["line", "rect", "ellipse"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
+	_tool_row(left, "FORMES", ["line", "rect", "ellipse", "triangle"].filter(func(k): return tools.has(k)).map(func(k): return tools[k]))
 	var sizes := []
 	if Meta.has("tool_big"):
 		for n in [1, 2, 3]:
@@ -144,8 +150,11 @@ func _build_ui() -> void:
 	if Meta.has("tool_mirror"):
 		toggle_btns.mirror = _icon_button("symetrie", "Symétrie : ce que tu dessines d'un côté se dessine aussi de l'autre", func(): _toggle("mirror"))
 		opts.append(toggle_btns.mirror)
+	if Meta.has("tool_mirror_h"):
+		toggle_btns.mirror_h = _icon_button("symetrie_h", "Symétrie haut / bas (H) : ce que tu dessines en haut se dessine aussi en bas", func(): _toggle("mirror_h"))
+		opts.append(toggle_btns.mirror_h)
 	if Meta.has("gradient"):
-		toggle_btns.gradient = _icon_button("degrade", "Dégradé : clic gauche = couleur A, clic droit = couleur B", func(): _toggle("gradient"))
+		toggle_btns.gradient = _icon_button("degrade", "Dégradé (G) : chaque trait passe de la couleur de début à celle de fin,\nsur toute sa longueur (choisis-les avec les pastilles Début / Fin)", func(): _toggle("gradient"))
 		opts.append(toggle_btns.gradient)
 	_tool_row(left, "OPTIONS", opts)
 	# Défaire / refaire à gauche, tout effacer à part, à droite
@@ -193,6 +202,12 @@ func _build_ui() -> void:
 			swatches.append(sw)
 	color_label = UI.label("", 10, Pal.TEXT)
 	UI.put(self, color_label, Vector2(426, 126), Vector2(136, 12))
+	# Dégradé : 2 pastilles. On clique l'une, puis une couleur de la palette pour la changer.
+	for k in 2:
+		var chip := _GradChip.new(self, k)
+		chip.tooltip_text = ["Début du dégradé : clique-moi, puis une couleur", "Fin du dégradé : clique-moi, puis une couleur"][k]
+		UI.put(self, chip, Vector2(426 + k * 64, 125), Vector2(60, 14))
+		grad_chips.append(chip)
 
 	# Aperçu en jeu avec ou sans contour noir
 	var pv := UI.panel(Pal.PAPER, Pal.BORDER, 1)
@@ -241,6 +256,32 @@ func _build_ui() -> void:
 	_refresh_buttons()
 
 
+## Pastille « Début » ou « Fin » du dégradé (celle qui est active reçoit la prochaine couleur).
+class _GradChip extends Control:
+	var ds: DrawScreen
+	var k := 0
+
+	func _init(s: DrawScreen, which: int) -> void:
+		ds = s
+		k = which
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _gui_input(ev: InputEvent) -> void:
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+			ds.grad_end = k
+			Sfx.play("click")
+			ds._refresh_buttons()
+
+	func _draw() -> void:
+		var on := ds.grad_end == k
+		var c: Color = ds.col_a if k == 0 else ds.col_b
+		draw_rect(Rect2(Vector2.ZERO, size), Pal.INK)
+		draw_rect(Rect2(1, 1, 12, size.y - 2), c)
+		draw_string(UI.font, Vector2(16, size.y - 3), "Début" if k == 0 else "Fin", HORIZONTAL_ALIGNMENT_LEFT, -1, UI.fs(10), Pal.ACCENT if on else Pal.DIM)
+		if on:
+			draw_rect(Rect2(Vector2.ZERO, size), Pal.ACCENT, false, 1.0)
+
+
 class _Swatch extends Control:
 	var color: Color
 	var ds: DrawScreen
@@ -248,12 +289,15 @@ class _Swatch extends Control:
 	func _init(c: Color, s: DrawScreen) -> void:
 		color = c
 		ds = s
-		tooltip_text = "Clic gauche : couleur A · Clic droit : couleur B (dégradé)"
+		tooltip_text = "Clic : choisir cette couleur (en dégradé : pour la pastille active)"
 
 	func _gui_input(ev: InputEvent) -> void:
 		if ev is InputEventMouseButton and ev.pressed:
 			if ev.button_index == MOUSE_BUTTON_LEFT:
-				ds.col_a = color
+				if ds.gradient and ds.grad_end == 1:
+					ds.col_b = color
+				else:
+					ds.col_a = color
 			elif ev.button_index == MOUSE_BUTTON_RIGHT:
 				ds.col_b = color
 			if ds.tool == "eraser":
@@ -294,6 +338,8 @@ func _refresh_buttons() -> void:
 		_mark(tool_btns[id], id == tool)
 	if toggle_btns.has("mirror"):
 		_mark(toggle_btns.mirror, mirror)
+	if toggle_btns.has("mirror_h"):
+		_mark(toggle_btns.mirror_h, mirror_h)
 	if toggle_btns.has("gradient"):
 		_mark(toggle_btns.gradient, gradient)
 	for n in size_btns:
@@ -306,11 +352,11 @@ func _refresh_buttons() -> void:
 	for sw in swatches:
 		sw.queue_redraw()
 	var ea := Pal.element_of(col_a)
-	var txt := "A : %s (%s)" % [Pal.COLOR_NAMES[ea], Pal.NAMES[ea]]
-	if gradient:
-		var eb := Pal.element_of(col_b)
-		txt += "  B : %s" % Pal.COLOR_NAMES[eb]
-	color_label.text = txt
+	color_label.text = "%s (%s)" % [Pal.COLOR_NAMES[ea], Pal.NAMES[ea]]
+	color_label.visible = not gradient   # en dégradé : les pastilles Début / Fin à la place
+	for chip in grad_chips:
+		chip.visible = gradient
+		chip.queue_redraw()
 	if view:
 		view.queue_redraw()
 
@@ -433,6 +479,8 @@ func _toggle_outline() -> void:
 func _toggle(what: String) -> void:
 	if what == "mirror":
 		mirror = not mirror
+	elif what == "mirror_h":
+		mirror_h = not mirror_h
 	else:
 		gradient = not gradient
 	_refresh_buttons()
@@ -484,6 +532,8 @@ func _unhandled_input(ev: InputEvent) -> void:
 				return
 		if k == KEY_M and toggle_btns.has("mirror"):
 			_toggle("mirror")
+		elif k == KEY_H and toggle_btns.has("mirror_h"):
+			_toggle("mirror_h")
 		elif k == KEY_G and toggle_btns.has("gradient"):
 			_toggle("gradient")
 		elif k == KEY_C:
@@ -519,11 +569,13 @@ func begin_stroke(cell: Vector2i, right: bool) -> void:
 	drawing = true
 	rmb = right
 	stroke_len = 0.0
+	stroke_pts.clear()
 	last_cell = cell
 	start_cell = cell
 	match _cur_tool():
 		"brush", "eraser":
 			_stamp(cell)
+			_regrad()
 		"fill":
 			_flood(cell)
 			drawing = false
@@ -546,6 +598,7 @@ func continue_stroke(cell: Vector2i) -> void:
 			for i in range(1, pts.size()):
 				stroke_len += 1.0
 				_stamp(pts[i])
+			_regrad()
 		_:
 			_shape(cell)
 	last_cell = cell
@@ -564,11 +617,30 @@ func end_stroke() -> void:
 	_changed()
 
 
+## Couleur à poser. Dégradé : du début à la fin du trait (formes : sur tout le contour ;
+## pinceau : le trait entier est recoloré à mesure qu'il s'allonge, voir _regrad).
 func _paint_color() -> Color:
 	if not gradient:
 		return col_a
-	var t := pingpong(stroke_len / 10.0, 1.0)
-	return col_a.lerp(col_b, roundf(t * 4.0) / 4.0)
+	if tool in ["brush", "eraser"]:
+		return col_a
+	return _grad_at(stroke_len / maxf(1.0, stroke_total - 1.0))
+
+
+func _grad_at(t: float) -> Color:
+	return col_a.lerp(col_b, roundf(clampf(t, 0.0, 1.0) * 4.0) / 4.0)
+
+
+## Dégradé au pinceau : recolore tout le trait en cours, du début (couleur de début) au bout
+## (couleur de fin). Recolorier ne coûte pas d'encre.
+func _regrad() -> void:
+	if not gradient or _cur_tool() != "brush" or stroke_pts.is_empty():
+		return
+	var n := stroke_pts.size()
+	for i in n:
+		var p: Vector2i = stroke_pts[i]
+		if img.get_pixelv(p).a > 0.5:
+			img.set_pixelv(p, _grad_at(float(i) / maxf(1.0, n - 1.0)))
 
 
 func _stamp(c: Vector2i) -> void:
@@ -578,8 +650,14 @@ func _stamp(c: Vector2i) -> void:
 		for dx in brush:
 			var p := Vector2i(c.x + off + dx, c.y + off + dy)
 			_plot(p)
+			var fx := img.get_width() - 1 - p.x
+			var fy := img.get_height() - 1 - p.y
 			if mirror:
-				_plot(Vector2i(img.get_width() - 1 - p.x, p.y))
+				_plot(Vector2i(fx, p.y))
+			if mirror_h:
+				_plot(Vector2i(p.x, fy))
+				if mirror:
+					_plot(Vector2i(fx, fy))
 
 
 ## Coût local : nombre de pixels de contour parmi p et ses 4 voisins.
@@ -602,6 +680,8 @@ func _plot(p: Vector2i) -> void:
 			used += _local_cost(p) - before
 		return
 	var col := _paint_color()
+	if gradient and _cur_tool() == "brush" and not stroke_pts.has(p):
+		stroke_pts.append(p)
 	if cur.a > 0.5:
 		img.set_pixelv(p, col)   # recolorier est gratuit
 		return
@@ -636,6 +716,12 @@ func _shape(end: Vector2i) -> void:
 				cells.append(Vector2i(x1, y))
 		"ellipse":
 			cells = _ellipse_cells(start_cell, end)
+		"triangle":
+			# pointe au milieu de la ligne de départ, base sur la ligne d'arrivée
+			var apex := Vector2i((start_cell.x + end.x) / 2, start_cell.y)
+			var b0 := Vector2i(start_cell.x, end.y)
+			cells = _line_cells(apex, b0) + _line_cells(b0, end) + _line_cells(end, apex)
+	stroke_total = cells.size()
 	for i in cells.size():
 		stroke_len = float(i)
 		_stamp(cells[i])
@@ -910,6 +996,10 @@ func _validate() -> void:
 		return
 	if used < int(cfg.get("min_ink", 0)):
 		_warn("Encore %d d'encre à utiliser (95%% minimum) !" % (int(cfg.min_ink) - used))
+		return
+	var ci := DrawCfg.color_issue(cfg, img)
+	if ci != "":
+		_warn(ci + " !")
 		return
 	Meta.add_to_gallery(cfg.get("gallery", cfg.kind), img, effect)
 	Sfx.play("buy")

@@ -47,9 +47,37 @@ static func enemy(id: String) -> Dictionary:
 		# Un boss doit être un vrai chef-d'œuvre : au moins 95% de l'encre.
 		min_ink = ceili(def.ink * 0.95)
 		sub = "Un boss doit utiliser au moins 95%% de l'encre (%d) ! Sa couleur = son élément.  %s" % [min_ink, def.desc]
-	return {"kind": "boss" if boss else "enemy", "gallery": "boss" if boss else "enemy",
+	var cfg := {"kind": "boss" if boss else "enemy", "gallery": "boss" if boss else "enemy",
 		"size": Vector2i(def.canvas, def.canvas), "ink": def.ink, "title": title, "sub": sub,
 		"cancel": false, "min": 6, "min_ink": min_ink, "random": true}
+	_need_color(cfg, id)
+	return cfg
+
+
+## Aquarelle et plus : chaque type d'ennemi a une couleur imposée (au moins la moitié des pixels
+## de couleur, le noir et les gris ne comptent pas).
+static func _need_color(cfg: Dictionary, id: String) -> void:
+	if not Run.active:
+		return
+	var el := Run.enemy_color(id)
+	if el <= 0:
+		return
+	cfg.need_el = el
+	cfg.sub = "COULEUR IMPOSÉE : %s (au moins la moitié de la couleur).  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]
+
+
+## "" si le dessin respecte la couleur imposée (cfg.need_el), sinon la raison.
+static func color_issue(cfg: Dictionary, img: Image) -> String:
+	if not cfg.has("need_el") or img == null:
+		return ""
+	var el := int(cfg.need_el)
+	var frac: Array = Analyzer.analyze(img).get("frac", [])
+	if frac.is_empty():
+		return ""
+	var colored := 1.0 - float(frac[0])
+	if colored <= 0.0 or float(frac[el]) < colored * 0.5 - 0.0001:
+		return "Couleur imposée : au moins la moitié en %s" % Pal.NAMES[el]
+	return ""
 
 
 ## Version élite : on repart du dessin de l'ennemi, sur une toile un peu plus grande, et on AJOUTE.
@@ -62,12 +90,15 @@ static func elite(id: String, base: Image = null, base_effect := "", base_outlin
 	var base_cost := Analyzer.ink_cost(base)
 	var ink := maxi(roundi(def.ink * 1.4), base_cost + 30)
 	var s: int = def.canvas + 8
-	return {"kind": "enemy", "gallery": "enemy", "size": Vector2i(s, s), "ink": ink, "base": base,
+	var cfg := {"kind": "enemy", "gallery": "enemy", "size": Vector2i(s, s), "ink": ink, "base": base,
 		"effect": Run.enemy_art[id].effect if in_run else base_effect,
 		"outline": Run.enemy_art[id].get("outline", false) if in_run else base_outline,
 		"title": "ÉLITE : %s" % def.name,
 		"sub": "Complète ton dessin : c'est sa version élite (aura, PV ×3, butin ×3). Ajoute au moins 15 d'encre.",
 		"cancel": false, "min": 6, "min_ink": base_cost + 15, "random": false}
+	if in_run:
+		_need_color(cfg, id)
+	return cfg
 
 
 static func eproj(id: String) -> Dictionary:

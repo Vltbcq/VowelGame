@@ -41,7 +41,7 @@ func _unhandled_input(ev: InputEvent) -> void:
 	current.add_child(op)
 	op.done.connect(func(_r):
 		op.queue_free()
-		Engine.time_scale = float(Meta.setting("speed")))
+		Engine.time_scale = 1.0)
 	get_viewport().set_input_as_handled()
 
 
@@ -115,6 +115,9 @@ func _title() -> void:
 		"codex":
 			await _codex()
 			_title()
+		"stats":
+			await _ask(StatsScreen.new())
+			_title()
 		"quit":
 			get_tree().quit()
 
@@ -131,13 +134,20 @@ func _new_run() -> void:
 	if d == null:
 		_title()
 		return
-	Run.start(d, map)
+	if d is Dictionary:
+		# Partie avec seed (code partagé) : sa carte et sa difficulté, et rien ne se débloque
+		Run.start(int(d.diff), int(d.map), int(d.seed))
+	else:
+		Run.start(d, map)
 	var r = await _obtain("perso", DrawCfg.character(), 0, "TON DERNIER PERSO")
 	if r == null:
 		_title()
 		return
 	Run.set_character(r.image, r.effect, r.outline)
-	var type = await _ask(ChoiceScreens.weapon_kind())
+	Run.rseed("start")
+	var wk := ChoiceScreens.weapon_kind()   # (les 3 armes proposées suivent la seed)
+	Run.unseed()
+	var type = await _ask(wk)
 	await _get_weapon(type, 0, 0, false)
 	Run.log_event("buy", "Arme de départ : " + Run.item_label("weapon", type, 0))
 	_game_loop()
@@ -265,9 +275,10 @@ func _checkpoint(stage: String) -> void:
 ## stage "wave" : la vague `start` commence ; "after" : elle est finie (niveaux + boutique).
 func _game_loop(stage := "wave", start := 1) -> void:
 	var w := start
-	while w <= Run.WAVES:
+	while w <= Run.WAVES or Run.endless:
 		if not (w == start and stage == "after"):
 			Run.wave = w
+			Run.plan_endless_boss(w)
 			await _pre_wave(w)
 			_checkpoint("wave")
 			var res = await _ask(Arena.new())
@@ -276,7 +287,10 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				return
 			if res != "cleared":
 				Run.log_event("wave", "Effacé à la vague %d" % w)
-				await _end(false)
+				if Run.endless:
+					await _end_endless()
+				else:
+					await _end(false)
 				return
 			Run.log_event("wave", "Vague %d terminée (PV %d / %d, ● %d)" % [w, ceili(Run.hp), int(Run.stats.max_hp), Run.gold])
 			# Outil de dev : saut direct à une vague (sans niveaux ni boutique)
@@ -285,9 +299,11 @@ func _game_loop(stage := "wave", start := 1) -> void:
 				Run.dev_jump = 0
 				stage = "wave"
 				continue
-			if w == Run.WAVES:
-				await _end(true)
-				return
+			if w == Run.WAVES and not Run.endless:
+				# Victoire : on la compte tout de suite ; le joueur peut continuer en mode infini
+				if not await _end(true, true):
+					return
+				Run.log_event("wave", "Mode infini : la partie continue !")
 			Run.shop_offers = []
 			_checkpoint("after")
 		await _level_ups()
@@ -543,14 +559,38 @@ func _upgrade_weapon(i: int) -> void:
 	Run.rebuild_weapon(w)
 
 
-func _end(win: bool) -> void:
+## Fin de partie. can_endless : victoire, avec le choix de continuer en mode infini.
+## Retourne true si le joueur continue en infini (la partie reste active).
+func _end(win: bool, can_endless := false) -> bool:
 	Meta.clear_run()
-	var earned := Run.pigments_earned(win)
-	var new_map := Meta.record_run(Run.wave, win, Run.difficulty, earned, Run.kills, Run.map)
+	var earned := 0 if Run.seeded else Run.pigments_earned(win)
+	var new_map := false
+	if not Run.seeded:   # partie avec seed : ni pigments, ni record, ni déblocage
+		new_map = Meta.record_run(Run.wave, win, Run.difficulty, earned, Run.kills, Run.map)
 	var unlocked := Meta.apply_pending_unlocks()
 	if new_map:
 		unlocked.push_front("map:2")
 	Run.active = false
 	Sfx.play("win" if win else "lose")
-	await _ask(ChoiceScreens.end_run(win, earned, unlocked))
+	var r = await _ask(ChoiceScreens.end_run(win, earned, unlocked, can_endless))
+	if r is String and r == "endless":
+		Run.active = true
+		Run.endless = true
+		Run.endless_base = {"kills": Run.kills, "elites": Run.elite_kills, "pigments": earned, "bosses": Run.bosses, "time": Run.play_time}
+		return true
+	_title()
+	return false
+
+
+## Fin d'une partie en mode infini : on ne compte que ce qui a été fait après la victoire.
+func _end_endless() -> void:
+	Meta.clear_run()
+	var b: Dictionary = Run.endless_base
+	var earned := 0 if Run.seeded else Run.pigments_endless()
+	if not Run.seeded:
+		Meta.record_endless(Run.wave, earned, Run.kills - int(b.get("kills", 0)), Run.elite_kills - int(b.get("elites", 0)))
+	var unlocked := Meta.apply_pending_unlocks()
+	Run.active = false
+	Sfx.play("lose")
+	await _ask(ChoiceScreens.end_run(false, earned, unlocked))
 	_title()

@@ -89,6 +89,8 @@ var staple_guard := false
 var ink_t := 0.0             # Encre de Chine : marqué
 var ink_dmg := 0.0
 var ally := false            # Retouche : redessiné dans le camp du joueur
+var charmed := false         # Le Paon : allié pour un temps, puis redevient ennemi
+var charm_contact := true
 var ally_t := 0.0
 var ally_cd := 0.0
 var blind_t := 0.0           # Encre de seiche : aveuglé
@@ -150,6 +152,14 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		hp = max_hp
 		dmg *= ease
 		speed *= pow(0.8, Run.amulet_count("colle_forte"))   # Colle forte : boss 20 % plus lents
+		if Run.endless and Run.wave > Run.WAVES:
+			# Infini : un boss de la vague 5 ou 10 revient avec des PV de boss final
+			max_hp *= float(Run.WAVES) / float(Run.boss_home_wave(id))
+	# Infini : +15 % de PV et de dégâts par vague après la 15e (cumulé)
+	var em := Run.endless_mult()
+	max_hp *= em
+	hp = max_hp
+	dmg *= em
 	radius = mods.radius * (0.6 if small else 1.0)
 	element = mods.element
 	color = Pal.color_of(art.a.frac) if art.has("a") else element
@@ -537,6 +547,7 @@ func hurt(amount: float, crit := false, kb := Vector2.ZERO, el := 0) -> void:
 		staple.hurt(amount * 0.5, false, Vector2.ZERO, el)
 		staple.staple_guard = false
 	Meta.count("damage", minf(amount, maxf(0.0, hp)))
+	Run.run_damage += minf(amount, maxf(0.0, hp))
 	hp -= amount
 	flash = 1.0
 	squash = 1.0 if not is_boss else 0.4

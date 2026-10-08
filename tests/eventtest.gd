@@ -36,6 +36,7 @@ func _ready() -> void:
 	Run.set_amulet_art("sablier", _blob(16, 20), "")
 	Run.add_amulet("sablier", Run.amulet_art["sablier"].image, Vector2i(20, 20))   # le Restaurateur a du travail
 	for k in n:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		for o in Run.shop_offers:
 			if o.type in Run.EVENTS or o.type == "heal":
@@ -49,6 +50,7 @@ func _ready() -> void:
 	print("     fréquences : ", ", ".join(line), ", potions %.1f%%" % (100.0 * int(cnt.get("heal", 0)) / n))
 	var both := 0
 	for k in 2000:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		var types: Array = Run.shop_offers.map(func(o): return o.type)
 		if "heal" in types and types.any(func(t): return t in Run.EVENTS):
@@ -57,17 +59,21 @@ func _ready() -> void:
 	_check(ok, "chaque événement dans ~7 % des boutiques")
 	_check(both > 2000 * 0.12, "potion et événement peuvent tomber ensemble")
 	# Un événement joué : plus d'événement dans cette boutique, même en relançant
+	Run.seed_v = randi()
 	Run.new_shop()
 	Run.shop_offers.append(Run.make_event("patron"))
 	Run.shop_offers[-1].sold = true
 	var again := 0
 	for k in 200:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		again += Run.shop_offers.filter(func(o): return o.type in Run.EVENTS).size()
 	_check(again == 0, "événement joué : plus d'autre événement en relançant (%d)" % again)
+	Run.seed_v = randi()
 	Run.new_shop()
 	var back := 0
 	for k in 200:
+		Run.seed_v = randi()
 		Run.new_shop()
 		back += Run.shop_offers.filter(func(o): return o.type in Run.EVENTS).size()
 	_check(back > 30, "boutique suivante : les événements reviennent")
@@ -77,6 +83,7 @@ func _ready() -> void:
 		var s := 0.0
 		var m := 0
 		for k in 1500:
+			Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 			Run.roll_shop()
 			for o in Run.shop_offers:
 				if o.type in ["weapon", "amulet"] and not (o.type == "amulet" and o.id == "capital"):
@@ -86,12 +93,14 @@ func _ready() -> void:
 		print("     Capital vague %d : prix moyen calculé %d, mesuré %.1f" % [w, avg, s / m])
 		_check(absf(avg - s / m) <= maxf(3.0, s / m * 0.12), "Capital : prix moyen juste en vague %d" % w)
 	Run.wave = 8
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	Run.shop_offers.append({"type": "amulet", "id": "capital", "rar": 2, "price": 999, "sold": false})
 	Run.apply_capital()
 	_check(int(Run.shop_offers[-1].price) == Run.avg_item_price(), "Capital : il coûte le prix moyen")
 	Run.set_amulet_art("capital", _blob(16, 20), "")
 	Run.add_amulet("capital", Run.amulet_art["capital"].image, Vector2i(22, 22))
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	var same := Run.shop_offers.filter(func(o): return o.type in ["weapon", "amulet"]).all(func(o): return int(o.price) == Run.avg_item_price())
 	var capital_again := Run.shop_offers.any(func(o): return o.type == "amulet" and o.id == "capital")
@@ -102,6 +111,7 @@ func _ready() -> void:
 	Run.set_amulet_art("case_opening", _blob(16, 20), "")
 	Run.add_amulet("case_opening", Run.amulet_art["case_opening"].image, Vector2i(24, 24))
 	Run.wave = 8
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	var only_cases := Run.shop_offers.filter(func(o): return o.type in ["weapon", "amulet"]).is_empty() 		and Run.shop_offers.any(func(o): return o.type == "case")
 	_check(only_cases, "Case opening : la boutique ne vend que des caisses")

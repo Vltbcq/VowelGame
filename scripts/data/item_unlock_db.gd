@@ -3,7 +3,7 @@ extends RefCounted
 ## Succès qui DÉBLOQUENT des armes et des amulettes (la moitié du jeu). Un objet verrouillé
 ## n'apparaît pas en boutique. Les conditions ne sont affichées que dans le Codex.
 ## Obtenu pendant une partie : l'objet n'est disponible qu'à la fin de la partie.
-## Clés : "w:<type d'arme>" ou "a:<id d'amulette>".
+## Clés : "w:<type d'arme>", "a:<id d'amulette>" ou "f:<id de familier>".
 ##
 ## kind : "stat" (stat du perso >= v), "gold" (or en poche >= v), "colors" (couleurs du perso),
 ## "pixels" (pixels du perso), "solo" (vague v finie avec une seule arme), "wave" (vague finie),
@@ -18,6 +18,8 @@ extends RefCounted
 ## d'une seule couleur), "spent" (or dépensé, toutes parties), "roulette" (parties gagnées à la
 ## roulette), "wave_kills" (ennemis tués en une vague), "maps" (vague finie sur les 2 cartes),
 ## "fast_win" (partie gagnée en moins de v minutes), "legend_buys" (légendaires achetées dans une partie).
+## v0.9 : "earned" (or ramassé, toutes parties), "win_pet" (partie gagnée avec un familier),
+## "pets" (v familiers en même temps), "pets_wave" (vague v finie avec n familiers).
 
 const CONDS := {
 	# --- Armes à ratio : leur stat
@@ -121,6 +123,14 @@ const CONDS := {
 	"a:salle_thematique": {"kind": "maps"},
 	"a:speed_painting": {"kind": "fast_win", "v": 25},
 	"a:vernissage": {"kind": "legend_buys", "v": 3},
+	# --- Familiers : la moitié à débloquer
+	"f:pie": {"kind": "earned", "v": 3000},
+	"f:perroquet": {"kind": "win_pet"},
+	"f:fantome": {"kind": "win", "v": 1},
+	"f:paon": {"kind": "pets_wave", "v": 10, "n": 3},
+	"f:pavel": {"kind": "wave", "v": 15},
+	"f:teemeo": {"kind": "win", "v": 2},
+	"f:chimere": {"kind": "pets", "v": 5},
 }
 
 const STAT_NAMES := {"max_hp": "PV max", "armor": "d'armure", "speed": "% de vitesse", "crit": "% de critique",
@@ -136,10 +146,16 @@ static func key_amulet(id: String) -> String:
 	return "a:" + id
 
 
+static func key_familiar(id: String) -> String:
+	return "f:" + id
+
+
 ## Nom lisible d'une clé ("Arme : Plume solitaire").
 static func label(key: String) -> String:
 	if key.begins_with("w:"):
 		return "Arme : " + String(WeaponDB.get_def(key.substr(2)).name)
+	if key.begins_with("f:"):
+		return "Familier : " + String(FamiliarDB.get_def(key.substr(2)).name)
 	return "Amulette : " + String(AmuletDB.get_def(key.substr(2)).name)
 
 
@@ -209,6 +225,14 @@ static func text(c: Dictionary) -> String:
 			return "Gagne une partie en moins de %d minutes." % int(c.v)
 		"legend_buys":
 			return "Achète %d objets légendaires dans une même partie." % int(c.v)
+		"earned":
+			return "Ramasse %d or (toutes parties)." % int(c.v)
+		"win_pet":
+			return "Gagne une partie avec au moins un familier."
+		"pets":
+			return "Aie %d familiers en même temps." % int(c.v)
+		"pets_wave":
+			return "Termine la vague %d avec %d familiers." % [int(c.v), int(c.n)]
 	return "?"
 
 
@@ -277,4 +301,12 @@ static func met(c: Dictionary, ctx: Dictionary) -> bool:
 			return bool(ctx.get("win", false)) and float(ctx.get("play_time", 1e9)) < float(c.v) * 60.0
 		"legend_buys":
 			return int(ctx.get("legend_buys", 0)) >= int(c.v)
+		"earned":
+			return int((ctx.get("counters", {}) as Dictionary).get("gold_earned", 0)) >= int(c.v)
+		"win_pet":
+			return bool(ctx.get("win", false)) and int(ctx.get("pets", 0)) >= 1
+		"pets":
+			return int(ctx.get("pets", 0)) >= int(c.v)
+		"pets_wave":
+			return int(ctx.get("pets", 0)) >= int(c.n) and int(ctx.get("cleared", 0)) >= int(c.v)
 	return false

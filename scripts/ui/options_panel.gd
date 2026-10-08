@@ -1,10 +1,9 @@
 class_name OptionsPanel
 extends Control
-## Options : volumes (général, musique, bruitages), plein écran, vitesse du jeu, zoom par défaut. Émet done(null) en fermant.
+## Options : volumes (général, musique, bruitages), plein écran, zoom par défaut, crédits. Émet done(null) en fermant.
 
 signal done(result)
 
-const SPEEDS := [0.75, 1.0, 1.25, 1.5]
 const ZOOMS := [1.0, 1.25, 1.5, 1.75, 2.0]
 
 var groups := {}
@@ -42,10 +41,6 @@ func _ready() -> void:
 	UI.put(self, fs, Vector2(280, y), Vector2(80, 16))
 
 	y += 34
-	UI.put(self, UI.label("Vitesse du jeu", 10, Pal.TEXT), Vector2(150, y + 2))
-	_choices("speed", SPEEDS, Vector2(280, y))
-
-	y += 34
 	UI.put(self, UI.label("Zoom par défaut", 10, Pal.TEXT), Vector2(150, y + 2))
 	_choices("zoom", ZOOMS, Vector2(280, y))
 	UI.put(self, UI.label("(en jeu : molette ou + / -)", 10, Pal.DIM), Vector2(280, y + 20))
@@ -64,6 +59,11 @@ func _ready() -> void:
 		tb.text = "Oui")
 	rb.tooltip_text = "Tous les conseils réapparaîtront au bon moment"
 	UI.put(self, rb, Vector2(366, y), Vector2(140, 16))
+
+	# Crédit obligatoire des musiques (licence de soundimage.org)
+	y += 34
+	UI.put(self, UI.label("Crédits", 10, Pal.TEXT), Vector2(150, y + 2))
+	UI.put(self, UI.label("Musique : Eric Matyas · soundimage.org", 10, Pal.DIM), Vector2(280, y + 2), Vector2(300, 12))
 
 	UI.put(self, UI.hotkey(UI.button("Fermer", func(): done.emit(null), 20), [KEY_ESCAPE, KEY_ENTER, KEY_KP_ENTER]), Vector2(260, 316), Vector2(120, 26))
 

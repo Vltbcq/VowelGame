@@ -116,10 +116,10 @@ func _ready() -> void:
 	Run.add_weapon("epee", 0, 12, Vector2.ZERO)
 	Run.set_enemy_art("tache", _blob(24, 150, Pal.INK), "")
 	Run.wave = 4
-	Meta.check_achievements({"cleared": 3})
+	Meta.check_achievements({"cleared": 5})
 	Meta.save_run(Run.to_save("wave"))
 	Meta.load_data()   # comme si on relançait le jeu
-	var kept := [Meta.pending("vague3"), Meta.has("pack_primaires")]
+	var kept := [Meta.pending("rature"), Meta.has("tool_triangle")]
 	main._resume()
 	var screens2 := []
 	var recap := []
@@ -141,8 +141,8 @@ func _ready() -> void:
 		elif cur is TitleScreen:
 			screens2.append("titre")
 			break
-	print("ABANDON : en attente après rechargement=%s, couleurs avant la fin=%s, écrans=%s, récap=%s, couleurs après=%s, partie effacée=%s" % [
-		kept[0], kept[1], screens2, recap, Meta.has("pack_primaires"), not Meta.has_run()])
+	print("ABANDON : en attente après rechargement=%s, triangle avant la fin=%s, écrans=%s, récap=%s, triangle après=%s, partie effacée=%s" % [
+		kept[0], kept[1], screens2, recap, Meta.has("tool_triangle"), not Meta.has_run()])
 	Meta.delete_slot(3)
 	# --- Suppression de la sauvegarde 2 (la 1 n'est pas touchée)
 	Meta.select_slot(1)

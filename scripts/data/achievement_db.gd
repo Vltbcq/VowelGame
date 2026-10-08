@@ -7,8 +7,7 @@ extends RefCounted
 ## "clean" (vague finie sans perdre de PV), "win" (partie gagnée, difficulté >= v).
 
 const LIST := [
-	{"id": "vague3", "name": "Premiers traits", "desc": "Termine la vague 3.", "kind": "wave", "v": 3, "unlock": "pack_primaires"},
-	{"id": "rature", "name": "Sans rature", "desc": "Vaincs le boss de la vague 5.", "kind": "wave", "v": 5, "unlock": "pack_secondaires"},
+	{"id": "rature", "name": "Sans rature", "desc": "Vaincs le boss de la vague 5.", "kind": "wave", "v": 5, "unlock": "tool_triangle"},
 	{"id": "kills", "name": "Gomme à tout", "desc": "Efface 500 ennemis (toutes parties).", "kind": "kills", "v": 500, "unlock": "tool_big"},
 	{"id": "galerie", "name": "Carnet bien rempli", "desc": "Aie 15 dessins dans ta galerie.", "kind": "gallery", "v": 15, "unlock": "tool_line"},
 	{"id": "vague8", "name": "Coup de crayon", "desc": "Termine la vague 8.", "kind": "wave", "v": 8, "unlock": "tool_rect"},

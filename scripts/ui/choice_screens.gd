@@ -94,6 +94,29 @@ static func difficulty(map_id := 1) -> Control:
 				txt = "Gagne une partie en %s sur cette carte pour débloquer." % Meta.DIFFICULTIES[i - 1].name
 			UI.put(root, UI.label(txt, 10, Pal.DIM if i > maxd else Pal.TEXT), Vector2(322, y + 4), Vector2(300, 30))
 		UI.put(root, UI.hotkey(UI.button("Retour", func(): root.done.emit(null)), [KEY_ESCAPE]), Vector2(20, 330), Vector2(80, 18))
+		# Jouer la seed d'une autre partie (code partagé) : même tirage, mais rien ne se débloque
+		var sl := UI.label("", 10, Pal.BAD)
+		UI.put(root, sl, Vector2(330, 316), Vector2(300, 12))
+		var le := LineEdit.new()
+		le.placeholder_text = "Seed (ex. 12-3KQ7M)"
+		le.max_length = 12
+		le.add_theme_font_override("font", UI.font)
+		le.add_theme_font_size_override("font_size", UI.fs(10))
+		UI.put(root, le, Vector2(330, 330), Vector2(180, 18))
+		var go := func():
+			var p := Run.parse_seed(le.text)
+			if p.is_empty():
+				sl.text = "Seed mal écrite."
+			elif int(p.map) == 2 and not Meta.map_unlocked(2):
+				sl.text = "Cette seed est sur une carte que tu n'as pas encore."
+			elif int(p.diff) > Meta.max_diff(int(p.map)):
+				sl.text = "Cette seed est dans une difficulté que tu n'as pas encore."
+			else:
+				root.done.emit(p)
+		le.text_submitted.connect(func(_t): go.call())
+		var sb := UI.button("Jouer la seed", go)
+		sb.tooltip_text = "Même boss, mêmes boutiques, mêmes choix de niveau que la partie partagée.\nUne partie avec seed ne débloque rien (ni succès, ni objets, ni pigments)."
+		UI.put(root, sb, Vector2(516, 330), Vector2(104, 18))
 	return s
 
 
@@ -110,7 +133,6 @@ static func weapon_kind() -> Control:
 	picks.shuffle()
 	s.build = func(root: _Screen):
 		UI.put(root, UI.label("Ta première arme", 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 20), Vector2(640, 24))
-		UI.put(root, UI.label("3 armes tirées au hasard. Ton dessin de base est affiché s'il existe.", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 48), Vector2(640, 14))
 		for i in picks.size():
 			var id: String = picks[i]
 			var def := WeaponDB.get_def(id)
@@ -129,8 +151,6 @@ static func weapon_kind() -> Control:
 				var bf := UI.panel(Pal.PAPER, Pal.BORDER, 1)
 				UI.put(p, bf, Vector2(104, 60), Vector2(34, 34))
 				UI.put(bf, UI.thumb(Analyzer.trim(bart.image), Vector2(28, 28)), Vector2(3, 3), Vector2(28, 28))
-			if art == null:
-				UI.put(p, UI.label("pas encore dessinée", 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 106), Vector2(176, 12))
 			var ink := "Encre %d" % def.ink
 			if def.kind == "ranged":
 				ink += " + balles %d" % def.bink
@@ -141,35 +161,56 @@ static func weapon_kind() -> Control:
 	return s
 
 
-static func end_run(win: bool, earned: int, unlocked: Array = []) -> Control:
+static func end_run(win: bool, earned: int, unlocked: Array = [], can_endless := false) -> Control:
 	var s := _Screen.new()
 	s.build = func(root: _Screen):
 		var title := "VICTOIRE !" if win else "EFFACÉ..."
 		UI.put(root, UI.label(title, 40, Pal.GOOD if win else Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 30), Vector2(640, 50))
+		var wave_line := "Vague atteinte : %d / %d" % [Run.wave, Run.WAVES]
+		if Run.endless:
+			wave_line = "Mode infini : vague %d (record : %d)" % [Run.wave, maxi(Run.wave, int(Meta.data.get("best_endless", 0)))]
 		var lines := [
 			"Difficulté : %s" % Meta.DIFFICULTIES[Run.difficulty].name,
-			"Vague atteinte : %d / %d" % [Run.wave, Run.WAVES],
+			wave_line,
 			"Ennemis effacés : %d" % Run.kills,
 			"Boss vaincus : %d" % Run.bosses,
 			"Niveau : %d" % Run.level,
-			"",
-			"Pigments gagnés : ◆ %d" % earned,
 		]
 		# Sans déblocage : colonne centrée ; sinon, stats à gauche et récapitulatif à droite
 		var cx := 0.0 if unlocked.is_empty() else -150.0
-		UI.put(root, UI.label("\n".join(lines), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(cx, 96), Vector2(640, 120))
+		var stats_l := UI.label("\n".join(lines), 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		UI.put(root, stats_l, Vector2(cx, 96), Vector2(640, 70))
+		# La seed, juste sous « Niveau », avec « Copier » à côté ; puis les pigments
+		var lh := float(stats_l.get_line_height())
+		var sy := 96.0 + lines.size() * lh + 7.0   # un peu d'air sous « Niveau »
+		var seed_row := HBoxContainer.new()
+		seed_row.add_theme_constant_override("separation", 6)
+		seed_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		UI.put(root, seed_row, Vector2(cx, sy), Vector2(640, 16))
+		seed_row.add_child(UI.label("Seed : %s%s" % [Run.seed_code(), "  (rien de débloqué)" if Run.seeded else ""], 10, Pal.DIM))
+		var cb := UI.button("Copier", func(): DisplayServer.clipboard_set(Run.seed_code()))
+		cb.tooltip_text = "Partage-la : un ami peut rejouer les mêmes boss, boutiques et choix de niveau"
+		seed_row.add_child(cb)
+		UI.put(root, UI.label("Pigments gagnés : ◆ %d" % earned, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(cx, sy + 24), Vector2(640, 12))
 		if Run.character:
 			var th := UI.thumb(Run.build_player_image(), Vector2(72, 72))
 			UI.put(root, th, Vector2(284 + cx, 214), Vector2(72, 72))
 		if not unlocked.is_empty():
 			_recap_panel(root, unlocked, Vector2(330, 96))
-		UI.put(root, UI.hotkey(UI.button("Continuer", func(): root.done.emit(true), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_ESCAPE]), Vector2(250, 310), Vector2(140, 26))
+		if can_endless:
+			# Victoire : finir ici, ou continuer la même partie en mode infini
+			UI.put(root, UI.hotkey(UI.button("Terminer", func(): root.done.emit(true), 20), [KEY_ESCAPE]), Vector2(160, 310), Vector2(140, 26))
+			var eb := UI.hotkey(UI.button("Continuer en infini", func(): root.done.emit("endless"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE])
+			eb.tooltip_text = "La partie continue : +15 % de PV et de dégâts ennemis par vague,\nun boss au hasard toutes les 5 vagues. Ta victoire est déjà comptée."
+			UI.put(root, eb, Vector2(310, 310), Vector2(170, 26))
+		else:
+			UI.put(root, UI.hotkey(UI.button("Continuer", func(): root.done.emit(true), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_SPACE, KEY_ESCAPE]), Vector2(250, 310), Vector2(140, 26))
 		var jb := UI.hotkey(UI.button("Journal", func():
 			var j := RunLogScreen.new("view")
 			root.add_child(j)
 			j.done.connect(func(_r): j.queue_free())), [KEY_J])
 		jb.tooltip_text = "Tout ce que tu as fait pendant la partie (J)"
-		UI.put(root, jb, Vector2(400, 314), Vector2(80, 18))
+		UI.put(root, jb, Vector2(490 if can_endless else 400, 314), Vector2(80, 18))
 		Tips.show(root, "end")
 	return s
 

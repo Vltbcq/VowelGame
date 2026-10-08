@@ -5,6 +5,8 @@ extends Node2D
 
 var arena: Arena
 var id := ""
+var form := ""          # comportement joué (= id ; la Chimère en change toutes les 5 s)
+var chim_t := 0.0       # Chimère : prochain changement
 var def: Dictionary
 var sprite: Sprite2D
 var t := 0.0
@@ -28,6 +30,8 @@ var line_col := Color.WHITE
 var shroom_n := 0       # Teemeo : champignons posés
 const LUCIOLE_R := 48.0
 const GRENOUILLE_R := 58.0
+const PAON_R := 70.0
+const CHIMERA_EVERY := 5.0
 var fetch: Array = []   # Pie : pièces brillantes à aller chercher {pos, v}
 var carry := false      # Pie : elle rapporte une pièce
 var sm := {"fill": 0.5, "dmg": 1.0, "spd": 1.0}   # effet de la taille du dessin
@@ -52,11 +56,42 @@ func setup(a: Arena, fid: String) -> void:
 	goal = position
 	ang = randf() * TAU
 	cd = randf_range(0.8, 2.0)
-	if id == "pavel":
+	form = id
+	if id == "chimere":
+		form = FamiliarDB.CHIMERA_FORMS.pick_random()
+		chim_t = CHIMERA_EVERY
+	_init_form()
+
+
+## Ce que le comportement en cours a besoin au départ (PV de Woinic, élan du Hérisson).
+func _init_form() -> void:
+	if form == "pavel":
 		max_hp = 60.0 + 18.0 * Run.wave
 		hp = max_hp
-	if id == "herisson_f":
+	if form == "herisson_f":
 		vel = Vector2.from_angle(randf() * TAU) * 110.0
+
+
+## Chimère : abandonne son pouvoir actuel (proprement) et en prend un autre au hasard.
+func _chimera_swap() -> void:
+	_exit_tree_luciole()
+	for f in fetch:
+		Run.gold += int(f.v)
+	fetch.clear()
+	carry = false
+	darts.clear()
+	state = "walk"
+	st_t = 0.0
+	ko_t = 0.0
+	visible = true
+	sprite.modulate = Color.WHITE
+	sprite.rotation = 0.0
+	var forms: Array = FamiliarDB.CHIMERA_FORMS.filter(func(f): return f != form)
+	form = forms.pick_random()
+	cd = minf(cd, 0.6)   # le nouveau pouvoir sert presque tout de suite
+	_init_form()
+	arena.burst(position, Color("c071f0"), 10, 80.0)
+	arena.float_text(position + Vector2(0, -18), String(FamiliarDB.get_def(form).name).to_upper(), Color("c071f0"))
 
 
 ## Oiseau de la Cage : vit 6 s, pique l'ennemi le plus proche.
@@ -198,6 +233,11 @@ func tick(delta: float) -> void:
 			goal = w.position
 			if id == "herisson_f":
 				vel = (w.position - position).normalized() * vel.length()
+	if id == "chimere":
+		chim_t -= delta
+		if chim_t <= 0.0:
+			chim_t = CHIMERA_EVERY
+			_chimera_swap()
 	if life >= 0.0:
 		life -= delta
 		sprite.modulate.a = clampf(life / 0.5, 0.0, 1.0)
@@ -205,7 +245,7 @@ func tick(delta: float) -> void:
 			arena.familiars.erase(self)
 			queue_free()
 			return
-	match id:
+	match form:
 		"oiseau":
 			_oiseau(delta)
 		"moustique":
@@ -232,6 +272,8 @@ func tick(delta: float) -> void:
 			_pavel(delta)
 		"teemeo":
 			_teemeo(delta)
+		"paon":
+			_paon(delta)
 	queue_redraw()
 
 
@@ -247,15 +289,15 @@ func _draw() -> void:
 		var dp: Vector2 = dt.pos - position
 		draw_line(dp, dp - dt.vel.normalized() * 6.0, Color("3a5a1a"), 2.0)
 		draw_circle(dp, 1.5, Color("c8e070"))
-	if id == "luciole":
+	if form == "luciole":
 		var glow := 0.5 + 0.5 * sin(t * 4.0)
 		draw_circle(Vector2.ZERO, LUCIOLE_R, Color(1.0, 0.95, 0.4, 0.07 + 0.04 * glow))
 		draw_arc(Vector2.ZERO, LUCIOLE_R, 0.0, TAU, 40, Color(1.0, 0.9, 0.3, 0.25 + 0.15 * glow), 1.0)
-	if id == "grenouille" and state == "tongue":
+	if form == "grenouille" and state == "tongue":
 		var a := (1.0 - st_t / 0.35) * TAU + ang
 		draw_line(Vector2.ZERO, Vector2.from_angle(a) * GRENOUILLE_R, Color("e85a8a"), 3.0)
 		draw_arc(Vector2.ZERO, GRENOUILLE_R, ang, a, 24, Color(0.9, 0.35, 0.55, 0.35), 2.0)
-	if id == "pie":
+	if form == "pie":
 		# pièces qui brillent au sol, et celle qu'elle tient dans le bec
 		for k in fetch.size():
 			if k == 0 and carry:
@@ -263,7 +305,19 @@ func _draw() -> void:
 			_coin(fetch[k].pos - position, k)
 		if carry:
 			_coin(Vector2(5, -3), 0)
-	if id == "pavel" and hp < max_hp:
+	if form == "paon" and state == "roue":
+		# la roue : un éventail de plumes colorées qui s'ouvre
+		var k := clampf(1.0 - st_t / 0.8, 0.0, 1.0)
+		var open := minf(1.0, k * 3.0)
+		var cols := [Color("3a86ff"), Color("4caf50"), Color("f0c43a"), Color("3a86ff"), Color("4caf50")]
+		for i in 9:
+			var a := -PI / 2.0 + (float(i) - 4.0) / 4.0 * 1.3 * open
+			var tip := Vector2.from_angle(a) * 22.0 * open
+			draw_line(Vector2.ZERO, tip, Color("2a6a5a"), 2.0)
+			draw_circle(tip, 3.5, cols[i % cols.size()])
+			draw_circle(tip, 1.5, Color("1a1423"))
+		draw_arc(Vector2.ZERO, PAON_R * k, 0.0, TAU, 40, Color(0.95, 0.5, 0.8, 0.5 * (1.0 - k)), 2.0)
+	if form == "pavel" and hp < max_hp:
 		draw_rect(Rect2(-10, 12, 20, 3), Color(0, 0, 0, 0.5))
 		draw_rect(Rect2(-10, 12, 20 * hp / max_hp, 3), Pal.GOOD)
 
@@ -500,7 +554,7 @@ func _pavel(delta: float) -> void:
 
 ## Woinic est-il là pour attirer les ennemis ?
 func pavel_up() -> bool:
-	return id == "pavel" and ko_t <= 0.0
+	return form == "pavel" and ko_t <= 0.0
 
 
 func _teemeo(delta: float) -> void:
@@ -536,6 +590,29 @@ func _teemeo(delta: float) -> void:
 			darts.append({"pos": position, "vel": (e.position - position).normalized() * 260.0, "life": 1.2})
 			_action()
 			Sfx.play("shoot")
+
+
+## Le Paon : toutes les 10 s, fait la roue ; les ennemis proches (pas les boss) sont charmés 3 s.
+func _paon(delta: float) -> void:
+	if state == "roue":
+		st_t -= delta
+		if st_t <= 0.0:
+			state = "walk"
+		return
+	_wander(delta, 70.0)
+	if cd > 0.0 or arena.nearest(position, PAON_R) == null:
+		return
+	cd = fcd(10.0)
+	state = "roue"
+	st_t = 0.8
+	var n := 0
+	for e in arena.near(position, PAON_R):
+		if arena.charm(e, 3.0):
+			n += 1
+	if n > 0:
+		arena.float_text(position + Vector2(0, -20), "CHARMÉS !", Color("f08ac0"))
+		Sfx.play("level")
+	_action()
 
 
 func _oiseau(delta: float) -> void:

@@ -328,43 +328,103 @@ func toggle_pause() -> void:
 	pause_menu = Control.new()
 	pause_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(pause_menu)
-	UI.fill_bg(pause_menu, Color(Pal.BG, 0.88))
-	UI.put(pause_menu, UI.label("PAUSE", 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 16), Vector2(640, 36))
+	_build_pause()
+
+
+## Menu pause « cadre de musée » : ton perso encadré au centre, ses stats à gauche, ton
+## équipement à droite, faiblesses et synergies sous le cadre, boutons et seed en bas.
+func _build_pause() -> void:
+	var pm := pause_menu
+	UI.fill_bg(pm, Color(Pal.BG, 0.85))   # on devine la partie derrière
+	UI.put(pm, UI.label("PAUSE", 30, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 36))
+	var wave_txt := ("Vague %d · infini" % Run.wave) if Run.endless else ("Vague %d / %d" % [Run.wave, Run.WAVES])
+	var info := "%s   ·   ♥ %d / %d   ·   ● %d   ·   Niveau %d" % [wave_txt, ceili(arena.player.hp), int(arena.player.max_hp), Run.gold, Run.level]
+	UI.put(pm, UI.label(info, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 42), Vector2(640, 12))
+
+	# --- Gauche : les stats (icônes, le nom au survol)
+	var left := UI.panel()
+	UI.put(pm, left, Vector2(14, 62), Vector2(196, 150))
+	UI.put(left, UI.label("STATS", 10, Pal.ACCENT), Vector2(8, 4))
+	# Beaucoup de résistances : la liste défile (barre à droite, molette)
+	var sc := ScrollContainer.new()
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	UI.put(left, sc, Vector2(6, 18), Vector2(186, 128))
 	var stats := StatText.new(2)
-	UI.put(pause_menu, stats, Vector2(40, 64), Vector2(200, 280))
+	stats.size = Vector2(174, 10)
+	stats.custom_minimum_size.x = 174
+	sc.add_child(stats)
 	stats.set_text(Stats.describe_player(Run.stats))
-	var ws := ""
-	for i in Run.weapons.size():
-		var w: Dictionary = Run.weapons[i]
-		var st: Dictionary = w.st
-		var wn: String = WeaponDB.get_def(w.type).name
-		if st.kind == "melee":
-			ws += "%d. %s %s : %.1f dégâts / %.2fs\n" % [i + 1, wn, Pal.RARITY_NAMES[w.rar], st.damage, st.cooldown]
-		else:
-			var tot := 0.0
-			for bl in st.bullets:
-				tot += bl.damage
-			ws += "%d. %s %s : %d×, %.1f dégâts / %.2fs\n" % [i + 1, wn, Pal.RARITY_NAMES[w.rar], st.bullets.size() * st.pellets, tot * st.pellets, st.cooldown]
-	var am := ""
-	for a in Run.amulets:
-		am += "%s (%s)\n" % [AmuletDB.get_def(a.id).name, a.zone]
-	var syn := ""
+
+	# --- Centre : le perso dans un cadre doré
+	var frame := UI.panel(Color("b07d1c"), Pal.ACCENT, 3)
+	UI.put(pm, frame, Vector2(250, 62), Vector2(140, 124))
+	var inner := UI.panel(Pal.PAPER, Color("8c6a1a"), 1)
+	UI.put(frame, inner, Vector2(8, 8), Vector2(124, 108))
+	if Run.character:
+		UI.put(inner, UI.thumb(Run.build_player_image(), Vector2(116, 100)), Vector2(4, 4), Vector2(116, 100))
+	# faiblesses (en petit) et synergies sous le cadre
+	UI.cercle(pm, Vector2(228, 194), true)
+	var syn_box := VBoxContainer.new()
+	syn_box.add_theme_constant_override("separation", 3)
+	UI.put(pm, syn_box, Vector2(318, 196), Vector2(100, 100))
+	syn_box.add_child(UI.label("SYNERGIES", 10, Pal.DIM))
 	var counts := Run.synergy_counts()
+	if counts.is_empty():
+		syn_box.add_child(UI.label("aucune", 10, Pal.DIM))
 	for e in counts:
-		syn += "%s %d/%d%s\n" % [Pal.NAMES[e], counts[e], Run.synergy_need(), (" ✓ " + Run.SYNERGY_DESC[e]) if counts[e] >= Run.synergy_need() else ""]
-	var mid := UI.label("ARMES\n" + ws + "\nAMULETTES\n" + (am if am != "" else "aucune") + "\n\nSYNERGIES\n" + (syn if syn != "" else "aucune"), 10, Pal.TEXT)
-	mid.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.put(pause_menu, mid, Vector2(240, 64), Vector2(160, 280))
-	# Cercle des faiblesses
-	UI.put(pause_menu, UI.label("FAIBLESSES", 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(400, 60), Vector2(236, 12))
-	UI.cercle(pause_menu, Vector2(400, 74))
-	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 6)
-	UI.put(pause_menu, vb, Vector2(40, 270), Vector2(160, 80))
-	vb.add_child(UI.hotkey(UI.button("Reprendre", toggle_pause), [KEY_ENTER, KEY_KP_ENTER]))
-	vb.add_child(UI.hotkey(UI.button("Options", func():
+		var on: bool = counts[e] >= Run.synergy_need()
+		var chip := UI.panel(Color(Pal.main_color(e), 0.9 if on else 0.35), Pal.ACCENT if on else Pal.BORDER, 1)
+		chip.custom_minimum_size = Vector2(96, 14)
+		chip.mouse_filter = Control.MOUSE_FILTER_STOP
+		chip.tooltip_text = "%s : %s" % [Pal.NAMES[e], Run.SYNERGY_DESC[e]]
+		var cl := UI.label("%s %d/%d%s" % [Pal.NAMES[e], counts[e], Run.synergy_need(), " ✓" if on else ""], 10, Pal.INK if on else Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		UI.put(chip, cl, Vector2(0, 1), Vector2(96, 12))
+		syn_box.add_child(chip)
+
+	# --- Droite : armes, amulettes, familiers en vignettes (le nom au survol)
+	var right := UI.panel()
+	UI.put(pm, right, Vector2(430, 62), Vector2(196, 280))
+	var y := 4.0
+	var groups := [["ARMES", Run.weapons.map(func(w): return [Run.weapon_image(w), Pal.RARITY[w.rar],
+			"%s %s" % [WeaponDB.get_def(w.type).name, Pal.RARITY_NAMES[w.rar]]])],
+		["AMULETTES", Run.amulets.map(func(a): return [a.image, Pal.RARITY[int(AmuletDB.get_def(a.id).rar)],
+			"%s (%s)" % [AmuletDB.get_def(a.id).name, a.get("zone", "")]])],
+		["FAMILIERS", Run.familiars.filter(func(f): return Run.familiar_art.has(f)).map(func(f): return [Run.familiar_art[f].image,
+			Pal.RARITY[int(FamiliarDB.get_def(f).rar)], String(FamiliarDB.get_def(f).name)])]]
+	for g in groups:
+		var items: Array = g[1]
+		if items.is_empty() and g[0] == "FAMILIERS":
+			continue
+		UI.put(right, UI.label(g[0], 10, Pal.ACCENT), Vector2(8, y))
+		y += 14.0
+		var grid := GridContainer.new()
+		grid.columns = 7
+		grid.add_theme_constant_override("h_separation", 3)
+		grid.add_theme_constant_override("v_separation", 3)
+		UI.put(right, grid, Vector2(8, y), Vector2(180, 10))
+		for it in items:
+			var cell := UI.panel(Pal.PAPER, it[1], 1)
+			cell.custom_minimum_size = Vector2(23, 23)
+			cell.mouse_filter = Control.MOUSE_FILTER_STOP
+			cell.tooltip_text = it[2]
+			if it[0] != null:
+				var th := UI.thumb(Analyzer.trim(it[0]), Vector2(19, 19))
+				th.position = Vector2(2, 2)
+				cell.add_child(th)
+			grid.add_child(cell)
+		if items.is_empty():
+			UI.put(right, UI.label("aucune", 10, Pal.DIM), Vector2(8, y))
+		var rows := maxi(1, ceili(items.size() / 7.0))
+		y += rows * 26.0 + 4.0
+
+	# --- Sous les stats : les boutons en colonne, puis la seed
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	UI.put(pm, row, Vector2(14, 220), Vector2(196, 92))
+	row.add_child(UI.hotkey(UI.button("Reprendre", toggle_pause), [KEY_ENTER, KEY_KP_ENTER]))
+	row.add_child(UI.hotkey(UI.button("Options", func():
 		var op := OptionsPanel.new()
-		pause_menu.add_child(op)
+		pm.add_child(op)
 		op.done.connect(func(_r):
 			op.queue_free()
 			Engine.time_scale = arena.game_speed())), [KEY_O]))
@@ -373,8 +433,24 @@ func toggle_pause() -> void:
 		arena.ended = true
 		arena.done.emit("suspend"))
 	sq.tooltip_text = "Retour au menu. Tu pourras reprendre plus tard :\ncette vague recommencera depuis son début."
-	vb.add_child(sq)
-	vb.add_child(UI.button("Abandonner la partie", func():
-		get_tree().paused = false
-		arena.ended = true
-		arena.done.emit("quit")))
+	row.add_child(sq)
+	row.add_child(UI.button("Abandonner la partie", func():
+		# confirmation : une partie abandonnée compte comme perdue
+		var c := ChoiceScreens.confirm("Abandonner la partie ?", "Elle comptera comme une défaite.", "Abandonner", "Annuler", true)
+		c.process_mode = Node.PROCESS_MODE_ALWAYS
+		pm.add_child(c)
+		c.done.connect(func(yes):
+			c.queue_free()
+			if yes:
+				get_tree().paused = false
+				arena.ended = true
+				arena.done.emit("quit"))))
+	for b in row.get_children():
+		b.custom_minimum_size = Vector2(0, 20)
+	var seed_row := HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 6)
+	UI.put(pm, seed_row, Vector2(14, 322), Vector2(196, 16))
+	seed_row.add_child(UI.label("Seed : %s%s" % [Run.seed_code(), "  (rien ne se débloque)" if Run.seeded else ""], 10, Pal.DIM))
+	var cs := UI.button("Copier", func(): DisplayServer.clipboard_set(Run.seed_code()))
+	cs.tooltip_text = "Copier la seed pour la partager"
+	seed_row.add_child(cs)

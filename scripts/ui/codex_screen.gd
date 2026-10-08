@@ -255,7 +255,7 @@ Débloqué : armes, amulettes et ennemis disponibles"
 			why = "Tu n'as pas encore rencontré cette créature."
 		else:
 			var ik := _item_key(sel)
-			why = ("Cette arme" if tab == "armes" else "Cette amulette") + " n'apparaît pas encore en boutique.\n\nSuccès : " + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
+			why = {"armes": "Cette arme", "familiers": "Ce familier"}.get(tab, "Cette amulette") + " n'apparaît pas encore en boutique.\n\nSuccès : " + ItemUnlockDB.text(ItemUnlockDB.CONDS[ik])
 			if ik in Meta.data.get("pending_unlocks", []):
 				why += "\n\n⌛ Obtenu : disponible à la fin de la partie."
 		var lk := UI.label("VERROUILLÉ\n\n" + why, 10, Pal.DIM)
@@ -332,6 +332,8 @@ func _item_key(id: String) -> String:
 			return ItemUnlockDB.key_weapon(id)
 		"amulettes":
 			return ItemUnlockDB.key_amulet(id)
+		"familiers":
+			return ItemUnlockDB.key_familiar(id)
 	return ""
 
 

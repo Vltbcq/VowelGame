@@ -218,6 +218,12 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			return
 	hp -= d
 	was_hurt = true
+	# Statistiques : qui t'a effacé (le dernier coup avant la fin)
+	if src is Enemy:
+		Run.killer = (src as Enemy).id
+	elif arena.last_shot_by != "":
+		Run.killer = arena.last_shot_by
+	arena.last_shot_by = ""
 	# L'Encrier renversé (et son reflet) TACHE ton perso
 	if src is Enemy and ((src as Enemy).def.get("beh", "") == "b_ink" or (src as Enemy).reflet_of != null):
 		stain()

@@ -1,13 +1,15 @@
 class_name UnlockDB
 extends RefCounted
 ## Déblocages permanents. Encre, Boutique et Mécénat : achetés avec les pigments ("cost").
-## Couleurs, Outils et Effets : débloqués par un SUCCÈS (voir AchievementDB, "unlock").
+## Couleurs, Outils et Effets : débloqués par un SUCCÈS (voir AchievementDB, "unlock"), sauf ceux
+## marqués "buy" (achetés à l'établi). "req" : autre amélioration nécessaire ; "wins" : victoires nécessaires ;
+## "best_wave" : vague à avoir finie au moins une fois.
 
 const LIST := [
-	{"id": "pack_primaires", "cat": "Couleurs", "name": "Pack primaire", "cost": [30],
+	{"id": "pack_primaires", "cat": "Couleurs", "name": "Pack primaire", "cost": [15], "buy": true, "best_wave": 3,
 		"desc": "Rouge (Feu), Bleu (Glace), Jaune (Foudre). Chaque couleur donne une résistance et un effet d'arme."},
-	{"id": "pack_secondaires", "cat": "Couleurs", "name": "Pack secondaire", "cost": [140],
-		"desc": "Vert (Poison), Violet (Arcane), Blanc (Lumière). Nécessite le pack primaire.", "req": "pack_primaires"},
+	{"id": "pack_secondaires", "cat": "Couleurs", "name": "Pack secondaire", "cost": [140], "buy": true, "wins": 1,
+		"desc": "Vert (Poison), Violet (Arcane), Blanc (Lumière).", "req": "pack_primaires"},
 	{"id": "ink", "cat": "Encre", "name": "Encrier", "cost": [50, 90, 140, 200, 275],
 		"desc": "+25 encre pour ton perso, +10 pour tes armes, +5 pour tes amulettes, +3 pour tes balles."},
 	{"id": "canvas", "cat": "Encre", "name": "Grande toile", "cost": [100, 225, 375],
@@ -19,6 +21,9 @@ const LIST := [
 	{"id": "tool_ellipse", "cat": "Outils", "name": "Ellipse", "cost": [60], "desc": "Trace des cercles et ellipses."},
 	{"id": "tool_mirror", "cat": "Outils", "name": "Symétrie", "cost": [90],
 		"desc": "Dessine en miroir. Un perso symétrique esquive mieux !"},
+	{"id": "tool_triangle", "cat": "Outils", "name": "Triangle", "cost": [60], "desc": "Trace des triangles."},
+	{"id": "tool_mirror_h", "cat": "Outils", "name": "Symétrie haut / bas", "cost": [90], "buy": true,
+		"desc": "Dessine en miroir de haut en bas. Avec la Symétrie : les 4 coins à la fois."},
 	{"id": "gradient", "cat": "Effets", "name": "Dégradé", "cost": [125],
 		"desc": "Le pinceau passe d'une couleur à l'autre. Les mélanges créent d'autres éléments."},
 	{"id": "fx_pulse", "cat": "Effets", "name": "Encre pulsante", "cost": [100],
@@ -39,7 +44,7 @@ const LIST := [
 
 ## Amélioration achetable avec des pigments (sinon : succès).
 static func for_pigments(d: Dictionary) -> bool:
-	return d.cat in ["Encre", "Boutique", "Mécénat"]
+	return d.cat in ["Encre", "Boutique", "Mécénat"] or d.get("buy", false)
 
 
 ## Le succès qui débloque cette amélioration ({} si elle s'achète).

@@ -41,7 +41,9 @@ func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
 	UI.put(self, UI.label(cfg.title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(640, 24))
-	var sub := UI.label(String(cfg.get("sub", "")), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	# Pas de texte d'aide ici (il reste sur la toile) ; seule une couleur imposée est rappelée
+	var need := ("COULEUR IMPOSÉE : %s (au moins la moitié de la couleur)" % String(Pal.NAMES[int(cfg.need_el)]).to_upper()) if cfg.has("need_el") else ""
+	var sub := UI.label(need, 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
 	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UI.put(self, sub, Vector2(20, 34), Vector2(600, 26))
 
@@ -86,7 +88,7 @@ func _ready() -> void:
 
 	# --- Droite : dessins de la galerie qui conviennent
 	var fits := _fitting()
-	UI.put(self, UI.label("CLIQUE UN DESSIN DE TA GALERIE POUR LE PRENDRE", 10, Pal.DIM), Vector2(248, 64))
+	UI.put(self, UI.label("TA GALERIE", 10, Pal.DIM), Vector2(248, 64))
 	var sc := ScrollContainer.new()
 	UI.put(self, sc, Vector2(248, 78), Vector2(380, 252))
 	var grid := GridContainer.new()
@@ -116,8 +118,6 @@ func _ready() -> void:
 				_style_thumb(o, o == b))
 		grid.add_child(b)
 		gallery_btns.append(b)
-	if fits.is_empty():
-		UI.put(self, UI.label("Aucun dessin de ta galerie ne convient (taille ou encre).", 10, Pal.DIM), Vector2(248, 82))
 	if existing != null:
 		UI.put(self, UI.button("< Remettre le dessin de base", func():
 			from_carnet = true
@@ -190,7 +190,7 @@ func _usable(img: Image) -> String:
 		return "Trop d'encre (%d / %d)" % [cost, int(cfg.ink)]
 	if cost < int(cfg.get("min_ink", 0)):
 		return "Pas assez d'encre (%d / %d min)" % [cost, int(cfg.min_ink)]
-	return ""
+	return DrawCfg.color_issue(cfg, img)
 
 
 ## Dessins de la galerie compatibles (taille). L'encre est vérifiée sur le dessin choisi :

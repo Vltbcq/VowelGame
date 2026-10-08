@@ -133,5 +133,159 @@ def header():
 	print('capsule_entete_920x430.png', img.size)
 
 
+# ------------------------------------------------------------------ Capsule « tu dessines ton perso »
+# Les dessins viennent de la galerie du jeu (docs/steam/dessins, copiés depuis %APPDATA%/VowelGame/bestiary).
+DESSINS = os.path.join(OUT, 'dessins')
+CANVAS, CANVAS_LINE, WOOD, WOOD_D = (0xff, 0xfa, 0xee), (0xf1, 0xe8, 0xd4), (0xa0, 0x69, 0x2f), (0x5a, 0x38, 0x18)
+
+
+def drawing(name):
+	im = Image.open(os.path.join(DESSINS, name + '.png')).convert('RGBA')
+	return im.crop(im.getbbox())
+
+
+def big(im, k):
+	return im.resize((im.width * k, im.height * k), Image.NEAREST)
+
+
+def frame(img, W, H):
+	d = ImageDraw.Draw(img)
+	for x in range(0, W, 16):
+		d.rectangle([x, 0, x + 5, H], fill=WALL_LINE)
+	m = 14
+	d.rectangle([m, m, W - m - 1, H - m - 1], fill=GOLD_D)
+	d.rectangle([m + 4, m + 4, W - m - 5, H - m - 5], fill=GOLD)
+	d.rectangle([m + 4, m + 4, W - m - 5, m + 8], fill=GOLD_L)
+	d.rectangle([m + 4, m + 4, m + 8, H - m - 5], fill=GOLD_L)
+	d.rectangle([m + 18, m + 18, W - m - 19, H - m - 19], fill=GOLD_D)
+	x0, y0, x1, y1 = m + 22, m + 22, W - m - 23, H - m - 23
+	d.rectangle([x0, y0, x1, y1], fill=PAPER)
+	for x in range(x0 + 20, x1, 20):
+		d.line([x, y0, x, y1], fill=PAPER_LINE, width=2)
+	for y in range(y0 + 20, y1, 20):
+		d.line([x0, y, x1, y], fill=PAPER_LINE, width=2)
+	return x0, y0, x1, y1
+
+
+def half_drawn(src, cut, k):
+	"""Le perso en train d'être dessiné : en couleur jusqu'à la ligne `cut`, en dessous un
+	croquis pâle dont le contour est tracé jusqu'au crayon. Renvoie l'image et la pointe du crayon."""
+	w, h = src.size
+	out = Image.new('RGBA', (w * k, h * k), (0, 0, 0, 0))
+	d = ImageDraw.Draw(out)
+	px = src.load()
+	def solid(x, y):
+		return 0 <= x < w and 0 <= y < h and px[x, y][3] > 0
+	# contour du bas, parcouru de gauche à droite : tracé à moitié
+	edge = [(x, y) for y in range(cut, h) for x in range(w) if solid(x, y)
+		and not all(solid(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)))]
+	edge.sort(key=lambda p: (p[0], p[1]))
+	drawn = set(edge[:int(len(edge) * 0.55)])
+	tip = max(drawn, key=lambda p: (p[0], p[1])) if drawn else (0, cut)
+	for y in range(h):
+		for x in range(w):
+			if not solid(x, y):
+				continue
+			r, g, b, a = px[x, y]
+			box = [x * k, y * k, (x + 1) * k - 1, (y + 1) * k - 1]
+			if y < cut:
+				d.rectangle(box, fill=(r, g, b, 255))
+			elif (x, y) in drawn:
+				d.rectangle(box, fill=INK + (255,))
+			else:
+				d.rectangle(box, fill=(r, g, b, 60))   # croquis pâle, pas encore encré
+	return out, ((tip[0] + 1) * k, (tip[1] + 1) * k)
+
+
+def pencil(k, angle):
+	im = Image.new('RGBA', (len(PENCIL[2]) * k, len(PENCIL) * k), (0, 0, 0, 0))
+	sprite(im, PENCIL, 0, 0, k)
+	return im.rotate(angle, resample=Image.NEAREST, expand=True)
+
+
+def header_dessin():
+	W, H = 920, 430
+	img = Image.new('RGB', (W, H), WALL)
+	x0, y0, x1, y1 = frame(img, W, H)
+	d = ImageDraw.Draw(img)
+
+	# --- Le chevalet et la toile (à gauche)
+	cx0, cy0, cx1, cy1 = 66, 62, 330, 300
+	d.polygon([(110, cy1), (124, cy1), (96, y1), (82, y1)], fill=WOOD_D)    # pieds
+	d.polygon([(272, cy1), (286, cy1), (316, y1), (302, y1)], fill=WOOD_D)
+	d.rectangle([191, cy1, 205, y1 - 20], fill=WOOD)
+	d.rectangle([cx0 - 6, cy0 - 6, cx1 + 6, cy1 + 6], fill=WOOD_D)
+	d.rectangle([cx0 - 2, cy0 - 2, cx1 + 2, cy1 + 2], fill=WOOD)
+	d.rectangle([cx0, cy0, cx1, cy1], fill=CANVAS)
+	for x in range(cx0 + 12, cx1, 12):
+		d.line([x, cy0, x, cy1], fill=CANVAS_LINE)
+	for y in range(cy0 + 12, cy1, 12):
+		d.line([cx0, y, cx1, y], fill=CANVAS_LINE)
+	# tablette + palette de couleurs du jeu
+	d.rectangle([cx0 - 14, cy1 + 6, cx1 + 14, cy1 + 18], fill=WOOD_D)
+	d.rectangle([cx0 - 14, cy1 + 6, cx1 + 14, cy1 + 9], fill=WOOD)
+	for i, ch in enumerate('krybgvw'):
+		x = cx0 + 14 + i * 34
+		d.rectangle([x, cy1 + 24, x + 22, cy1 + 46], fill=INK)
+		d.rectangle([x + 3, cy1 + 27, x + 19, cy1 + 43], fill=PAL[ch])
+	# le perso, à moitié dessiné, et le crayon qui trace
+	hero = drawing('perso')
+	k = 10
+	sk, tip = half_drawn(hero, 10, k)
+	hx = (cx0 + cx1 - sk.width) // 2
+	hy = (cy0 + cy1 - sk.height) // 2 + 6
+	img.paste(sk, (hx, hy), sk)
+	pen = pencil(6, 220)   # pointe en bas à gauche, sur le trait
+	img.paste(pen, (hx + tip[0] - 4, hy + tip[1] - pen.height + 4), pen)
+
+	# --- Le logo (en haut à droite)
+	logo = Image.open(os.path.join(ROOT, 'docs', 'logo_jeu_source.png')).convert('RGBA')
+	lw = 500
+	lh = round(logo.height * lw / logo.width)
+	logo = logo.resize((lw, lh), Image.NEAREST)
+	img.paste(logo, (362, 50), logo)
+
+	# --- Le même perso, vivant, qui se bat (en bas à droite)
+	ay = 50 + lh + 30
+	hb = big(hero, 5)
+	hxa, hya = 420, ay + 34
+	sword = big(drawing('arme_epee'), 3)
+	img.paste(hb, (hxa, hya), hb)
+	img.paste(sword, (hxa + hb.width - 18, hya + 10 - sword.height // 3), sword)
+	for name, x, y, kk, flip in (('gribouille', 640, ay + 6, 3, False), ('tache', 720, ay + 62, 3, False),
+			('crachoir', 790, ay - 4, 3, True), ('pate', 600, ay + 96, 2, False), ('scinde', 818, ay + 96, 2, True)):
+		e = big(drawing(name), kk)
+		if flip:
+			e = e.transpose(Image.FLIP_LEFT_RIGHT)
+		img.paste(e, (x, y), e)
+	splat(img, 694, ay + 140, 4, INK)
+	splat(img, 560, ay + 40, 3, INK)
+	splat(img, 860, ay + 70, 3, INK)
+
+	# --- La flèche en pointillés : de la toile au combat
+	pts = []
+	sx, sy, ex, ey, qx, qy = cx1 + 16, 170, hxa - 14, hya + 40, cx1 + 30, hya + 40   # arrive à l'horizontale
+	for i in range(0, 15):
+		t = i / 14.0
+		x = (1 - t) ** 2 * sx + 2 * (1 - t) * t * qx + t * t * ex
+		y = (1 - t) ** 2 * sy + 2 * (1 - t) * t * qy + t * t * ey
+		pts.append((x, y))
+	for i, (x, y) in enumerate(pts[:-1]):
+		if i % 2 == 0:
+			d.rectangle([x - 3, y - 3, x + 3, y + 3], fill=INK)
+	# pointe de flèche dans le sens du trait
+	ax, ay2 = pts[-1]
+	vx, vy = ax - pts[-3][0], ay2 - pts[-3][1]
+	n = (vx * vx + vy * vy) ** 0.5
+	vx, vy = vx / n, vy / n
+	d.polygon([(ax + vx * 16, ay2 + vy * 16), (ax - vx * 8 - vy * 12, ay2 - vy * 8 + vx * 12),
+		(ax - vx * 8 + vy * 12, ay2 - vy * 8 - vx * 12)], fill=INK)
+	splat(img, 50, 50, 3, INK)
+
+	img.save(os.path.join(OUT, 'capsule_entete_920x430_dessin.png'))
+	print('capsule_entete_920x430_dessin.png', img.size)
+
+
 if __name__ == '__main__':
 	header()
+	header_dessin()

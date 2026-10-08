@@ -77,6 +77,9 @@ func _draw() -> void:
 	if screen.mirror:
 		var mx := s.x * px / 2.0
 		draw_line(Vector2(mx, 0), Vector2(mx, size.y), Color(Pal.BAD, 0.6), 1.0)
+	if screen.mirror_h:
+		var my := s.y * px / 2.0
+		draw_line(Vector2(0, my), Vector2(size.x, my), Color(Pal.BAD, 0.6), 1.0)
 	# Sélection : rectangle en pointillés
 	if screen.sel_state != "":
 		var r := screen._sel_rect()

@@ -13,6 +13,9 @@ func _check(ok: bool, what: String) -> void:
 
 func _ready() -> void:
 	Meta.no_save = true
+	Meta.data = Meta.data.duplicate(true)
+	for d in FamiliarDB.LIST:   # tous les familiers débloqués pour le test
+		Meta.data.item_unlocks["f:" + d.id] = true
 	Meta.settings = Meta.settings.duplicate()
 	Meta.settings.tips = false
 	var args := OS.get_cmdline_user_args()
@@ -40,6 +43,7 @@ func _ready() -> void:
 	var seen := {}
 	var dup := false
 	for k in 200:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		var here := {}
 		for o in Run.shop_offers:
@@ -59,10 +63,11 @@ func _ready() -> void:
 		Run.set_familiar_art(d.id, fi, "")
 		Run.add_familiar(d.id)
 	Run.add_familiar("yuki")
-	_check(Run.familiars.size() == 12, "12 familiers uniques (%d)" % Run.familiars.size())
+	_check(Run.familiars.size() == FamiliarDB.LIST.size(), "%d familiers uniques" % Run.familiars.size())
 	_check("cage" in WeaponDB.allowed_for(3), "avec un familier : la Cage peut sortir")
 	var fresh := true
 	for k in 100:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		for o in Run.shop_offers:
 			fresh = fresh and o.type != "familiar"
@@ -74,7 +79,7 @@ func _ready() -> void:
 	Run.familiars = []
 	Run.familiar_art = {}
 	Run.from_save(sv)
-	_check(Run.familiars.size() == 12 and Run.familiar_art.size() == 12, "sauvegarde : familiers et dessins rechargés")
+	_check(Run.familiars.size() == FamiliarDB.LIST.size() and Run.familiar_art.size() == FamiliarDB.LIST.size(), "sauvegarde : familiers et dessins rechargés")
 	_check(Run.familiars == keep, "sauvegarde : même ordre")
 	Run.wave = 6
 	Run.recompute()
@@ -86,7 +91,7 @@ func _ready() -> void:
 		arena.kill_enemy(e)
 	arena.time_left = 999.0
 	await get_tree().process_frame
-	_check(arena.familiars.size() == 12, "12 familiers sur la page")
+	_check(arena.familiars.size() == FamiliarDB.LIST.size(), "tous les familiers sur la page")
 	var foes := []
 	for k in 14:
 		foes.append(arena.spawn_enemy_now("tache" if k % 2 == 0 else "colosse", arena.player.position + Vector2.from_angle(k * 0.45) * (60.0 + k * 8.0), false))
@@ -142,6 +147,10 @@ func _ready() -> void:
 	_check(gr0.position.distance_to(t.position) < d0, "la Grenouille accourt vers la cible (%.0f → %.0f)" % [d0, gr0.position.distance_to(t.position)])
 	for fm in arena.familiars:
 		fm.rush_t = 0.0
+		if fm.form == "paon" or fm.id == "chimere":
+			fm.cd = 999.0       # (le Paon charmerait la cible : elle quitterait les ennemis)
+			fm.chim_t = 999.0
+			fm.state = "walk"
 	arena.hit_enemy(t, 1.0, {"type": "sifflet", "style": "shot"}, Vector2.RIGHT, 0.0)
 	_check(arena.familiars.filter(func(f): return f.rush_t > 0.0).is_empty(), "pas de nouveau rappel avant 3 s")
 	for f in 120:
@@ -355,6 +364,7 @@ func _ready() -> void:
 	Run.familiars = ["yuki", "pie", "moustique"]
 	Run.set_amulet_art("niche", img, "")
 	Run.add_amulet("niche", img, Vector2i(20, 20))
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	Run.shop_offers[0] = {"type": "familiar", "id": "teemeo", "rar": 3, "price": 88, "sold": false}
 	Run.shop_offers[1] = {"type": "familiar", "id": "perroquet", "rar": 1, "price": 30, "sold": false}

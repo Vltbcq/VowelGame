@@ -25,6 +25,8 @@ func _ready() -> void:
 		if k.begins_with("w:"):
 			nw += 1
 			_check(WeaponDB.TYPES.has(k.substr(2)), "arme existe : " + k)
+		elif k.begins_with("f:"):
+			_check(not FamiliarDB.get_def(k.substr(2)).is_empty(), "familier existe : " + k)
 		else:
 			na += 1
 			_check(not AmuletDB.get_def(k.substr(2)).is_empty(), "amulette existe : " + k)
@@ -36,6 +38,7 @@ func _ready() -> void:
 	var bad := 0
 	for n in 400:
 		Run.wave = 1 + n % 20
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		for o in Run.shop_offers:
 			var key := ""
@@ -81,6 +84,7 @@ func _ready() -> void:
 	# « ! » : jamais vu -> nouveau une seule fois
 	Meta.data.seen_items = {}
 	Run.wave = 3
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	var first_new := true
 	for o in Run.shop_offers:
@@ -90,6 +94,7 @@ func _ready() -> void:
 	var again := 0
 	var seen_before := (Meta.data.seen_items as Dictionary).duplicate()
 	for n in 30:
+		Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 		Run.roll_shop()
 		var here := {}
 		for o in Run.shop_offers:
@@ -102,6 +107,7 @@ func _ready() -> void:
 		seen_before.merge(here)
 	_check(again == 0, "un objet déjà vu n'a plus de « ! » (%d fautifs)" % again)
 	Meta.data.seen_items = {}
+	Run.seed_v = randi()   # (seed : sinon toujours la même boutique)
 	Run.roll_shop()
 	Run.set_character(Image.create(32, 32, false, Image.FORMAT_RGBA8), "")
 	var shop := ShopScreen.new()

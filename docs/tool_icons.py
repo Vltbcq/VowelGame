@@ -187,6 +187,25 @@ def mirror():
 	return i
 
 
+def triangle():
+	i = Icon()
+	i.line(7, 2, 2, 12, 'gold_l', 2)
+	i.line(8, 2, 13, 12, 'gold', 2)
+	i.rect(2, 12, 14, 13, 'gold')
+	return i
+
+
+def mirror_h():
+	"""Symétrie haut / bas : axe horizontal, deux moitiés en miroir."""
+	i = Icon()
+	for x in range(1, 15, 3):            # axe de symétrie
+		i.rect(x, 7, x + 1, 8, 'red')
+	for k in range(4):                   # deux moitiés en miroir (pointes vers le haut / le bas)
+		i.line(4 + k, 5 - k, 11 - k, 5 - k, 'blue')
+		i.line(4 + k, 10 + k, 11 - k, 10 + k, 'blue_l')
+	return i
+
+
 def gradient():
 	i = Icon()
 	cols = ['red', (0xe8, 0x7a, 0x3a), (0xf0, 0xa0, 0x38), 'gold', 'gold_l']
@@ -245,7 +264,8 @@ def size(n):
 ICONS = [
 	("pinceau", "Pinceau", brush), ("gomme", "Gomme", eraser), ("ligne", "Ligne", line),
 	("rect", "Rect.", rect), ("ellipse", "Ellipse", ellipse), ("remplir", "Remplir", fill),
-	("selection", "Sélect.", select), ("symetrie", "Symétrie", mirror), ("degrade", "Dégradé", gradient),
+	("selection", "Sélect.", select), ("symetrie", "Symétrie", mirror), ("symetrie_h", "Sym. haut/bas", mirror_h),
+	("triangle", "Triangle", triangle), ("degrade", "Dégradé", gradient),
 	("defaire", "Défaire", lambda: arrow(False)), ("refaire", "Refaire", lambda: arrow(True)),
 	("effacer", "Tout effacer", clear), ("taille1", "1px", lambda: size(1)), ("taille2", "2px", lambda: size(2)),
 	("taille3", "3px", lambda: size(3)),

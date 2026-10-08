@@ -190,19 +190,24 @@ def range_():
 
 
 def lifesteal():
+	"""Dague ensanglantée qui goutte (à ne confondre ni avec le cœur des PV, ni avec l'épée des dégâts)."""
 	return grid([
 		"................",
-		".......r........",
-		"......rr........",
-		"......rrr.......",
-		".....rrrr.......",
-		"....rprrrr......",
-		"....rprrrrr.....",
-		"...rpprrrrr.....",
-		"...rprrrrrR.....",
-		"...rrrrrrrR.....",
-		"....rrrrrR......",
-		".....RRRR.......",
+		"...........rr...",
+		"..........rrR...",
+		".........rrR....",
+		"........WrR.....",
+		".......WsR......",
+		"..y...WsS.......",
+		"...y.WsS........",
+		"....ysS.........",
+		".....yy.....r...",
+		"....nNyy...rr...",
+		"...nN.....rprr..",
+		"..nN......rrrR..",
+		".dd.......rrrR..",
+		"...........RR...",
+		"................",
 	])
 
 

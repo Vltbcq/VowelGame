@@ -225,9 +225,9 @@ func _ready() -> void:
 			scr._update()
 			scr._validate()
 		if scr is OptionsPanel:
-			Meta.set_setting("speed", 1.25, false)
+			Meta.set_setting("zoom", 2.0, false)
 			scr._refresh()
-			Meta.set_setting("speed", 1.0, false)
+			Meta.set_setting("zoom", 1.5, false)
 		if scr is PlaceScreen:
 			scr._rotate()
 			scr._mirror()

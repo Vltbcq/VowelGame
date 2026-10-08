@@ -37,7 +37,7 @@ jobs:
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${VERSION}"
           DL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${VERSION}"
           # Même résumé que la Release, sans le titre ni la ligne « Télécharge… »
-          bash .github/scripts/release_body.sh "$VERSION" | grep -v '^## ' | grep -v '^▶' > desc.md
+          bash .github/scripts/release_body.sh "$VERSION" --short | grep -v "^## " | grep -v "^▶" > desc.md
           printf '\n⬇️ [PaintIt.exe](%s/PaintIt.exe) · [PaintIt-windows.zip](%s/PaintIt-windows.zip)\n' "$DL" "$DL" >> desc.md
           jq -n --arg title "🎨 Paint It Until You Make It ${VERSION} est sortie !" --arg url "$URL" --rawfile desc desc.md '{
             username: "Paint It",

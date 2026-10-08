@@ -55,7 +55,7 @@ func _build() -> void:
 	add_child(wall)
 
 	# --- En-tête : plaques en laiton
-	_plaque(Vector2(210, 4), Vector2(220, 26), "GALERIE · SALLE %d / %d" % [Run.wave + 1, Run.WAVES], 10)
+	_plaque(Vector2(210, 4), Vector2(220, 26), ("GALERIE · SALLE %d · INFINI" % (Run.wave + 1)) if Run.endless else ("GALERIE · SALLE %d / %d" % [Run.wave + 1, Run.WAVES]), 10)
 	var hp_col := Color("f06a5d") if Run.hp < Run.stats.max_hp * 0.35 else CARTEL
 	_plaque(Vector2(10, 4), Vector2(150, 26), "♥ %d / %d  ·  NIV %d" % [ceili(Run.hp), int(Run.stats.max_hp), Run.level], 10, hp_col)
 	_plaque(Vector2(480, 4), Vector2(150, 26), "BOURSE  ● %d" % Run.gold, 10, Pal.ACCENT)

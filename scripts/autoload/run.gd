@@ -73,6 +73,14 @@ var familiars: Array = []   # ids des familiers possédés (uniques)
 var dev_jump := 0           # outil de dev : prochaine vague forcée (0 = non)
 var enemy_art := {}         # type -> {image, effect, a, mods}
 var elite_art := {}         # type -> version élite redessinée (difficultés hautes)
+var enemy_colors := {}      # Aquarelle et plus : type d'ennemi -> élément imposé à son dessin
+var run_damage := 0.0       # statistiques de la partie : dégâts infligés, or ramassé, ennemi fatal
+var run_gold := 0
+var killer := ""
+var seed_v := 0             # seed de la partie (boss, boutiques, niveaux, événements)
+var seeded := false         # partie lancée AVEC une seed : elle ne débloque rien
+var endless := false        # mode infini : la partie continue après la victoire (vague 15)
+var endless_base := {}      # ce qui a déjà été compté à la victoire {kills, elites, pigments, bosses}
 var eproj_art := {}         # type -> {image, a, mods}
 var gold := 0
 const START_GOLD := 20      # or au début de chaque partie (+10 par niveau de l'amélioration d'Atelier)
@@ -109,17 +117,21 @@ var elite_kills := 0        # élites effacées dans la partie
 var boss_ids := {}          # boss vaincus dans la partie (id -> true)
 
 
-func start(d: int, map_id := 1) -> void:
+func start(d: int, map_id := 1, with_seed := -1) -> void:
 	active = true
 	map = map_id
 	difficulty = d
+	seeded = with_seed >= 0
+	seed_v = with_seed if seeded else randi() % SEED_MAX
 	wave = 0
 	hp = 0.0
 	character = null
 	char_effect = ""
 	char_a = {}
 	weapon_art = {}
+	rseed("boss")
 	boss_plan = MapDB.boss_plan(map)
+	unseed()
 	weapons = []
 	amulet_art = {}
 	amulets = []
@@ -128,6 +140,7 @@ func start(d: int, map_id := 1) -> void:
 	dev_jump = 0
 	enemy_art = {}
 	elite_art = {}
+	enemy_colors = {}
 	eproj_art = {}
 	gold = START_GOLD + 10 * Meta.level("start_gold")
 	xp = 0
@@ -159,6 +172,11 @@ func start(d: int, map_id := 1) -> void:
 	boss_crit = false
 	wave_kills_best = 0
 	play_time = 0.0
+	endless = false
+	endless_base = {}
+	run_damage = 0.0
+	run_gold = 0
+	killer = ""
 
 
 func diff() -> Dictionary:
@@ -486,7 +504,7 @@ func achievement_ctx(cleared := -1, clean := false, win := false) -> Dictionary:
 		"cleared": wave - 1 if cleared < 0 else cleared, "kills": kills, "level": level,
 		"legend": legend, "clean": clean, "win": win, "diff": difficulty, "map": map,
 		"stats": stats, "gold": gold, "colors": int(char_a.get("elements", 0)), "pixels": int(char_a.get("pixels", 0)),
-		"weapons": weapons.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
+		"weapons": weapons.size(), "pets": familiars.size(), "elites": elite_kills, "bosses": boss_ids, "syn": active_synergies()}
 
 
 # ------------------------------------------------------------------ Sauvegarde de la partie en cours
@@ -505,7 +523,9 @@ func to_save(stage: String) -> Dictionary:
 		"star_buff": star_buff, "patron": patron, "event_used": event_used,
 		"journal": journal.duplicate(true), "char_ink_bonus": char_ink_bonus, "wave_stats": wave_stats.duplicate(),
 		"order": order.duplicate(), "legend_buys": legend_buys, "boss_clean": boss_clean, "boss_crit": boss_crit,
-		"wave_kills_best": wave_kills_best, "play_time": play_time}
+		"wave_kills_best": wave_kills_best, "play_time": play_time, "enemy_colors": enemy_colors.duplicate(),
+		"endless": endless, "endless_base": endless_base.duplicate(), "seed": seed_v, "seeded": seeded,
+		"run_damage": run_damage, "run_gold": run_gold}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -540,6 +560,8 @@ func from_save(d: Dictionary) -> bool:
 		return false
 	start(int(d.difficulty), int(d.get("map", 1)))
 	boss_plan = d.boss_plan
+	for k in d.get("enemy_colors", {}):
+		enemy_colors[k] = int(d.enemy_colors[k])
 	set_character(_img(d.character), d.char_effect, d.char_outline)
 	for k in d.weapon_art:
 		var e: Dictionary = d.weapon_art[k]
@@ -595,6 +617,17 @@ func from_save(d: Dictionary) -> bool:
 	boss_crit = bool(d.get("boss_crit", false))
 	wave_kills_best = int(d.get("wave_kills_best", 0))
 	play_time = float(d.get("play_time", 0.0))
+	endless = bool(d.get("endless", false))
+	seed_v = int(d.get("seed", seed_v))
+	run_damage = float(d.get("run_damage", 0.0))
+	run_gold = int(d.get("run_gold", 0))
+	seeded = bool(d.get("seeded", false))
+	endless_base = d.get("endless_base", {})
+	# (les clés de boss_plan relues du JSON sont des textes : on les remet en nombres)
+	var bp := {}
+	for k in boss_plan:
+		bp[int(k)] = boss_plan[k]
+	boss_plan = bp
 	wave_stats = d.get("wave_stats", {})
 	boss_ids = d.get("boss_ids", {})
 	recompute()
@@ -638,8 +671,15 @@ func add_xp(n: int) -> int:
 	return gained
 
 
-## 3 bonus différents, de rareté tirée comme en boutique.
+## 3 bonus différents, de rareté tirée comme en boutique (fixés par la seed).
 func roll_upgrades() -> Array:
+	rseed("lvl", wave, level + pending_levels)
+	var out := _roll_upgrades()
+	unseed()
+	return out
+
+
+func _roll_upgrades() -> Array:
 	var pool := UPGRADES.duplicate()
 	pool.shuffle()
 	var out := []
@@ -734,6 +774,15 @@ func pigments_earned(win: bool) -> int:
 	if win:
 		p += 30.0
 	return maxi(Meta.MIN_PIGMENTS, roundi(p * diff().reward))
+
+
+## Mode infini : pigments des vagues finies APRÈS la victoire (même barème), et des boss en plus.
+func pigments_endless() -> int:
+	var p := 0.0
+	for w in range(WAVES + 1, wave):
+		p += (2.0 + (1.0 + (w - 1) * 19.0 / (WAVES - 1)) * 0.5) * 20.0 / WAVES
+	p += (bosses - int(endless_base.get("bosses", bosses))) * 10.0
+	return roundi(p * diff().reward)
 
 
 # ------------------------------------------------------------------ Boutique
@@ -839,8 +888,14 @@ func new_shop() -> void:
 
 ## Carnet de commandes : une commande au hasard pour la vague suivante (récompense : de l'or).
 func new_order() -> void:
+	rseed("order", wave)
+	_new_order()
+	unseed()
+
+
+func _new_order() -> void:
 	order = {}
-	if amulet_count("carnet_commandes") == 0 or wave >= WAVES:
+	if amulet_count("carnet_commandes") == 0 or (wave >= WAVES and not endless):
 		return
 	var reward := 20 + 5 * wave
 	var w := wave + 1
@@ -874,6 +929,12 @@ func _process(delta: float) -> void:
 
 
 func roll_shop() -> void:
+	rseed("shop", wave, rerolls)
+	_roll_shop()
+	unseed()
+
+
+func _roll_shop() -> void:
 	# Un événement déjà joué dans cette boutique : plus d'autre événement, même en relançant
 	for o in shop_offers:
 		if o.type in EVENTS and o.sold:
@@ -889,7 +950,7 @@ func roll_shop() -> void:
 			rar = mini(3, rar + 1)
 		# Familiers : de temps en temps (uniques : jamais un déjà possédé ni deux fois le même)
 		if randf() < 0.025:   # 2,5 % par emplacement
-			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id))
+			var fpool := FamiliarDB.of_rarity(rar).filter(func(d): return not d.id in familiars and not offered.has("f:" + d.id) and Meta.item_open(ItemUnlockDB.key_familiar(d.id)))
 			if not fpool.is_empty():
 				var fd: Dictionary = fpool.pick_random()
 				offered["f:" + fd.id] = true
@@ -902,22 +963,31 @@ func roll_shop() -> void:
 			continue
 		if randf() < 0.4:
 			# Les armes spéciales n'apparaissent qu'à partir de leur rareté minimum.
-			var type: String = WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t))).pick_random()
+			# Jamais deux fois la même arme à la même rareté dans un tirage
+			var wpool := WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t)) and not offered.has("w:%s#%d" % [t, rar]))
+			if wpool.is_empty():
+				wpool = WeaponDB.allowed_for(rar).filter(func(t): return Meta.item_open(ItemUnlockDB.key_weapon(t)))
+			var type: String = wpool.pick_random()
+			offered["w:%s#%d" % [type, rar]] = true
 			shop_offers.append({"type": "weapon", "wtype": type, "rar": rar,
 				"price": roundi(WeaponDB.PRICE[rar] * price_mult()), "sold": false})
 		else:
-			# Légendaires = uniques : jamais une déjà possédée, ni deux fois la même en vitrine.
+			# Jamais deux fois la même amulette dans un tirage ; légendaires = uniques (jamais une déjà possédée).
 			# Limite d'achat : légendaires uniques, Étiquette de prix 5 max...
 			var ok := func(d: Dictionary) -> bool:
 				if not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
 					return false   # verrouillée (succès du Codex)
+				if offered.has(d.id):
+					return false
 				var lim := int(d.get("limit", 1 if int(d.rar) == 3 else 0))
-				return lim == 0 or (amulet_count(d.id) < lim and not (lim == 1 and offered.has(d.id)))
+				return lim == 0 or amulet_count(d.id) < lim
 			var pool := AmuletDB.of_rarity(rar).filter(ok)
 			if pool.is_empty():
 				# Plus de légendaire disponible : une épique (mêmes règles : pas une unique déjà achetée)
 				rar = 2
 				pool = AmuletDB.of_rarity(2).filter(ok)
+			if pool.is_empty():
+				continue   # (presque impossible : tout est déjà en vitrine)
 			var def: Dictionary = pool.pick_random()
 			offered[def.id] = true
 			shop_offers.append({"type": "amulet", "id": def.id, "rar": rar,
@@ -949,6 +1019,107 @@ func roll_shop() -> void:
 	if wave >= 2 and not event_used and randf() < EVENT_CHANCE:
 		var evs := EVENTS.filter(func(e): return e != "restorer" or not restorable().is_empty())
 		shop_offers.append(make_event(evs.pick_random()))
+
+
+## Aquarelle et plus : la couleur (élément) imposée au dessin de ce type d'ennemi, tirée une fois
+## par partie parmi les couleurs débloquées. -1 = pas de contrainte.
+const COLOR_DIFF := 2
+func enemy_color(id: String) -> int:
+	if difficulty < COLOR_DIFF:
+		return -1
+	if not enemy_colors.has(id):
+		var pool := range(1, Pal.COUNT).filter(func(e): return Meta.has(Pal.UNLOCK[e]))
+		enemy_colors[id] = pool.pick_random() if not pool.is_empty() else -1
+	return int(enemy_colors[id])
+
+
+## Fiche de la partie pour l'historique (menu Statistiques).
+func history_entry(win: bool) -> Dictionary:
+	var ws := {}
+	for w in weapons:
+		ws[w.type] = true
+	var ams := {}
+	for a in amulets:
+		ams[a.id] = true
+	return {"t": int(Time.get_unix_time_from_system()), "map": map, "diff": difficulty, "wave": wave,
+		"win": win, "endless": endless, "kills": kills, "damage": roundi(run_damage), "gold": run_gold,
+		"time": roundi(play_time), "level": level, "weapons": ws.keys(), "amulets": ams.keys(),
+		"familiars": familiars.duplicate(), "killer": "" if win else killer,
+		"colors": (char_a.get("frac", []) as Array).duplicate()}
+
+
+# ------------------------------------------------------------------ Seed
+## Chaque partie a une seed. Elle fixe les tirages des boss, des boutiques (et relances), des choix
+## de niveau, des événements et de la 1re arme : on reseed le hasard global juste pour ces tirages,
+## puis on le remet au hasard (les vagues elles-mêmes restent imprévisibles).
+## Code partageable : « <carte><difficulté>-<seed en base 32> » (ex. 12-3KQ7M).
+const SEED_MAX := 33554432   # 32^5 : 5 caractères
+const SEED_DIGITS := "0123456789ABCDEFGHJKMNPQRSTVWXYZ"   # (pas de I, L, O, U : pas de confusion)
+
+
+func rseed(tag: String, a := 0, b := 0) -> void:
+	seed(hash([seed_v, map, difficulty, tag, a, b]))
+
+
+func unseed() -> void:
+	randomize()
+
+
+func seed_code() -> String:
+	var s := ""
+	var v := seed_v
+	for i in 5:
+		s = SEED_DIGITS[v % 32] + s
+		v /= 32
+	return "%d%d-%s" % [map, difficulty, s]
+
+
+## Lit un code de seed. Retourne {map, diff, seed} ou {} s'il est mal écrit.
+static func parse_seed(code: String) -> Dictionary:
+	var c := code.strip_edges().to_upper().replace(" ", "")
+	var parts := c.split("-")
+	if parts.size() != 2 or parts[0].length() != 2 or parts[1].length() != 5 or not parts[0].is_valid_int():
+		return {}
+	var v := 0
+	for ch in parts[1]:
+		var k := SEED_DIGITS.find(ch)
+		if k < 0:
+			return {}
+		v = v * 32 + k
+	var m := int(parts[0][0])
+	var d := int(parts[0][1])
+	if m < 1 or m > 2 or d < 0 or d >= Meta.DIFFICULTIES.size():
+		return {}
+	return {"map": m, "diff": d, "seed": v}
+
+
+## Mode infini : après la vague 15, chaque vague rend les ennemis 15 % plus solides et plus forts
+## (cumulé), et un boss au hasard revient toutes les 5 vagues.
+const ENDLESS_STEP := 1.15
+func endless_mult() -> float:
+	return pow(ENDLESS_STEP, maxi(0, wave - WAVES)) if endless else 1.0
+
+
+## Mode infini : boss au hasard (parmi ceux de la carte) pour les vagues 20, 25, 30...
+func plan_endless_boss(w: int) -> void:
+	if not endless or w <= WAVES or w % 5 != 0 or boss_plan.has(w):
+		return
+	var all := []
+	var b: Dictionary = MapDB.get_def(map).bosses
+	for k in b:
+		all.append_array(b[k])
+	rseed("eboss", w)
+	boss_plan[w] = all.pick_random()
+	unseed()
+
+
+## Vague « normale » d'un boss sur sa carte (5, 10 ou 15) : en infini, ses PV sont ramenés à la vague 15.
+func boss_home_wave(id: String) -> int:
+	var b: Dictionary = MapDB.get_def(map).bosses
+	for k in b:
+		if id in b[k]:
+			return int(k)
+	return WAVES
 
 
 ## Mécène : or reçu pour un contrat (grandit avec la vague).
