@@ -5,6 +5,7 @@ extends Node
 ## Godot --headless --path . res://tests/goldsim.tscn [-- <difficulté>]
 
 const DT := 1.0 / 30.0
+var price := 1.0   # multiplicateur de prix de la boutique qui suit la vague
 
 
 func _ready() -> void:
@@ -16,11 +17,11 @@ func _ready() -> void:
 	var diff := int(args[0]) if args.size() > 0 else 0
 	seed(4321)
 	var total := 0
-	print("vague | or de la vague | cumul (sans l'or de départ)")
-	for w in range(1, 13):
+	print("vague | or de la vague | cumul (sans l'or de départ) | prix ×")
+	for w in range(1, 16):
 		var g := await _wave(w, diff)
 		total += g
-		print("%5d | %5d | %5d" % [w, g, total])
+		print("%5d | %5d | %5d | ×%.2f" % [w, g, total, price])
 	get_tree().quit()
 
 
@@ -43,6 +44,7 @@ func _wave(w: int, diff: int) -> int:
 		if d.get("shoots", false):
 			Run.auto_eproj(id)
 	Run.recompute()
+	price = Run.price_mult()
 	Run.stats.pickup = 5000.0   # (ramasse tout)
 	Run.hp = Run.stats.max_hp
 	var arena := Arena.new()

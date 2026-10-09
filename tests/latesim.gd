@@ -30,15 +30,15 @@ func _ready() -> void:
 	for late in [false, true]:
 		for w in range(8, 16):
 			if only_boss and not w in [10, 15]:
-				rows.append({"kills": 0, "alive": 0, "taken": 0, "boss": false, "boss_t": -1.0, "price": 0.0, "gold": 0.0})
+				rows.append({"kills": 0, "alive": 0, "taken": 0, "boss": false, "boss_t": -1.0})
 				continue
 			rows.append(await _wave(w, late))
 	print("")
-	print("vague | sans : tués / restants / dégâts reçus (boss : s pour le tuer) | avec : idem | prix  | or")
+	print("vague | sans : tués / restants / dégâts reçus (boss : s pour le tuer) | avec : idem")
 	for w in range(8, 16):
 		var a: Dictionary = rows[w - 8]
 		var b: Dictionary = rows[w - 8 + 8]
-		print("%5d | %s | %s | ×%.2f→×%.2f | ×%.2f" % [w, _fmt(a), _fmt(b), a.price, b.price, b.gold])
+		print("%5d | %s | %s" % [w, _fmt(a), _fmt(b)])
 	get_tree().quit()
 
 
@@ -74,8 +74,6 @@ func _wave(w: int, late: bool) -> Dictionary:
 			Run.auto_eproj(id)
 	Run.recompute()
 	Run.hp = Run.stats.max_hp
-	var price := Run.price_mult()
-	var gold := pow(Run.LATE_GOLD, Run.late_waves())
 	var arena := Arena.new()
 	add_child(arena)
 	await get_tree().process_frame
@@ -101,7 +99,7 @@ func _wave(w: int, late: bool) -> Dictionary:
 			boss_t = t
 			break
 	var r := {"kills": Run.kills - k0, "alive": arena.enemies.size(), "taken": roundi(taken), "boss": boss,
-		"boss_t": boss_t, "price": price, "gold": gold}
+		"boss_t": boss_t}
 	print("vague %d %s : %s" % [w, "avec" if late else "sans", r])
 	arena.ended = true
 	arena.queue_free()

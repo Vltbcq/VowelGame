@@ -236,8 +236,6 @@ func amulet_count(id: String) -> int:
 const LATE_FROM := 8
 const LATE_HP := 1.12
 const LATE_DMG := 1.06
-const LATE_PRICE := 1.05
-const LATE_GOLD := 0.96
 const LEVEL_DECAY := 0.97
 const LEVEL_DECAY_FROM := 10
 var late_on := true   # (les tests de réglage comparent avec / sans)
@@ -844,8 +842,7 @@ func pigments_endless() -> int:
 func price_mult() -> float:
 	var w := eff_wave() - 1.0
 	# Étiquette de prix : -8 % par exemplaire (5 au plus)
-	return (1.0 + 0.12 * w + 0.004 * w * w) * pow(0.92, amulet_count("etiquette_prix")) \
-		* pow(LATE_PRICE if late_on else 1.0, late_waves())   # (fin de partie : +5 % par vague après la 8e)
+	return (1.0 + 0.12 * w + 0.004 * w * w) * pow(0.92, amulet_count("etiquette_prix"))
 
 
 ## Chances (en %) de [rare, épique, légendaire] pour une offre ou un bonus, selon la vague qui
