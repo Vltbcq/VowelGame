@@ -266,7 +266,8 @@ func _build_ui() -> void:
 		_build_body_preview()
 
 	var bx := 426.0
-	if cfg.get("gallery", "") != "":
+	if cfg.get("gallery", "") != "" and cfg.get("cancel_label", "") != "< Choix":
+		# (avec « < Choix », l'écran de choix montre déjà la galerie : pas de doublon ici)
 		UI.put(self, UI.button("Galerie", _open_gallery), Vector2(bx, 318), Vector2(66, 16))
 		bx += 70
 	if cfg.get("random", false):
@@ -1094,9 +1095,10 @@ func _open_gallery() -> void:
 		var th := UI.thumb(gi, Vector2(44, 44))
 		th.position = Vector2(4, 4)
 		b.add_child(th)
-		if not ok or not fits:
+		var block := DrawCfg.gallery_block(cfg, gi)
+		if not ok or not fits or block != "":
 			b.disabled = true
-			b.tooltip_text = "Trop grand ou trop d'encre (%d)" % cost
+			b.tooltip_text = block if block != "" else "Trop d'encre (%d)" % cost
 			th.modulate = Color(1, 1, 1, 0.3)
 		else:
 			b.tooltip_text = "Encre : %d" % cost

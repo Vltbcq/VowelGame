@@ -138,6 +138,8 @@ func _atk_mult() -> float:
 		m += 0.6 * Run.amulet_count("croquis_rapide")
 	m += 0.03 * player.arena.fly_n * Run.amulet_count("papillon")   # Effet papillon
 	m += player.arena.dynamo_bonus()   # Dynamo
+	if player.arena.stream:
+		m += player.arena.stream.atk_bonus()   # Le Stream : HYPE TRAIN
 	return maxf(0.2, m)
 
 

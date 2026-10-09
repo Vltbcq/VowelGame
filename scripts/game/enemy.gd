@@ -150,7 +150,7 @@ func setup(a: Arena, type_id: String, is_small := false, is_elite := false) -> v
 		var ease := BOSS_EASE_FIRST if Run.wave <= 5 else BOSS_EASE
 		max_hp *= ease
 		hp = max_hp
-		dmg *= ease
+		dmg *= 1.0 if Run.wave <= 5 else ease   # le 1er boss garde des PV réduits, mais frappe à pleine force (+33 %)
 		speed *= pow(0.8, Run.amulet_count("colle_forte"))   # Colle forte : boss 20 % plus lents
 		if Run.endless and Run.wave > Run.WAVES:
 			# Infini : un boss de la vague 5 ou 10 revient avec des PV de boss final

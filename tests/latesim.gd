@@ -2,7 +2,7 @@ extends Node
 ## Simulation de réglage (pas un test pass/fail) : un perso « bien équipé » typique joue les vagues
 ## 8 à 15 en Croquis, SANS puis AVEC la difficulté de fin de partie (Run.late_on).
 ## Il reste au centre sans bouger (pire cas) ; ses PV sont remis au max à chaque image, on compte
-## les dégâts reçus. Vagues normales : ennemis effacés et encore en vie à la fin ; boss : temps pour le tuer.
+## les dégâts reçus. Vagues normales : ennemis tués et encore en vie à la fin ; boss : temps pour le tuer.
 ## Godot --headless --path . res://tests/latesim.tscn [-- boss]
 
 const DT := 1.0 / 30.0
@@ -34,7 +34,7 @@ func _ready() -> void:
 				continue
 			rows.append(await _wave(w, late))
 	print("")
-	print("vague | sans : effacés / restants / dégâts reçus (boss : s pour le tuer) | avec : idem | prix  | or")
+	print("vague | sans : tués / restants / dégâts reçus (boss : s pour le tuer) | avec : idem | prix  | or")
 	for w in range(8, 16):
 		var a: Dictionary = rows[w - 8]
 		var b: Dictionary = rows[w - 8 + 8]
@@ -45,7 +45,7 @@ func _ready() -> void:
 func _fmt(r: Dictionary) -> String:
 	if r.boss:
 		return "boss %s, %4d dégâts reçus" % [("%5.1f s" % r.boss_t) if r.boss_t > 0.0 else "  >120 s", r.taken]
-	return "%4d effacés / %3d restants / %4d dégâts" % [r.kills, r.alive, r.taken]
+	return "%4d tués / %3d restants / %4d dégâts" % [r.kills, r.alive, r.taken]
 
 
 func _wave(w: int, late: bool) -> Dictionary:

@@ -43,14 +43,15 @@ func _ready() -> void:
 	ps.done.connect(func(r): result = r)
 	await get_tree().process_frame
 	var old0: Vector2i = Run.amulets[0].pos
-	# 1) on attrape l'ancienne amulette (la Plume) et on la décale
-	_click(ps, old0 + Vector2i(2, 2))
+	# 1) on tient la nouvelle : cliquer SUR l'ancienne pose la nouvelle par-dessus (n'attrape pas l'ancienne)
+	_click(ps, old0 + Vector2i(5, 5))   # (sur le coin de l'ancienne : la nouvelle la recouvre en partie)
+	_check(ps.placed and ps.held == -1 and ps.olds[0].pos == old0, "la nouvelle se pose par-dessus l'ancienne (qui ne bouge pas)")
+	# 2) une fois la nouvelle posée, on attrape l'ancienne (hors de la nouvelle) et on la décale
+	_click(ps, old0)   # le coin de l'ancienne qui dépasse
 	_check(ps.held == 0, "clic sur l'ancienne amulette : elle est attrapée")
-	_click(ps, old0 + Vector2i(12, 2))
-	_check(ps.held == -1 and ps.olds[0].pos == old0 + Vector2i(10, 0), "elle est reposée 10 px plus loin")
-	# 2) on pose la nouvelle là où était l'ancienne
-	_click(ps, old0 + Vector2i(3, 3))
-	_check(ps.placed and not ps.ok_btn.disabled, "la nouvelle amulette est posée à l'ancienne place")
+	_click(ps, old0 + Vector2i(10, 0))
+	_check(ps.held == -2 and ps.olds[0].pos == old0 + Vector2i(10, 0), "elle est reposée 10 px plus loin")
+	_check(not ps.ok_btn.disabled, "la nouvelle amulette reste posée")
 	if args.size() > 0:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png(args[0])

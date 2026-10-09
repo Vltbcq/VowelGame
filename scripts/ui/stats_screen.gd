@@ -58,8 +58,8 @@ func _resume() -> void:
 		["Parties jouées", str(runs)],
 		["Victoires", "%d  (%d %%)" % [wins, roundi(100.0 * wins / maxf(1.0, runs))]],
 		["Temps de jeu", _duration(float(d.get("play_time", 0.0)))],
-		["Ennemis effacés", _big(int(d.get("total_kills", 0)))],
-		["Élites effacées", _big(int(d.get("total_elites", 0)))],
+		["Ennemis tués", _big(int(d.get("total_kills", 0)))],
+		["Élites tuées", _big(int(d.get("total_elites", 0)))],
 		["Boss vaincus", _big(int(c.get("bosses", 0)))],
 		["Dégâts infligés", _big(int(c.get("damage", 0)))],
 		["Or ramassé", _big(int(c.get("gold_earned", 0)))],
@@ -103,7 +103,7 @@ func _parties() -> void:
 	var last := history.slice(maxi(0, history.size() - LAST))
 	var specs := [
 		["VAGUE ATTEINTE (%d dernières parties)" % LAST, "wave", "line"],
-		["ENNEMIS EFFACÉS PAR PARTIE", "kills", "bars"],
+		["ENNEMIS TUÉS PAR PARTIE", "kills", "bars"],
 		["DÉGÂTS INFLIGÉS PAR PARTIE", "damage", "bars"],
 	]
 	for i in specs.size():

@@ -156,7 +156,7 @@ func _ready() -> void:
 	Run.wave = 3
 	Run.new_shop()
 	_check(not Run.order.is_empty() and int(Run.order.reward) == 35, "Carnet : une commande (+● %d) : %s" % [int(Run.order.get("reward", 0)), Run.order.get("text", "")])
-	Run.order = {"kind": "kills", "n": 3, "progress": 0.0, "reward": 35, "done": false, "text": "Efface 3 ennemis"}
+	Run.order = {"kind": "kills", "n": 3, "progress": 0.0, "reward": 35, "done": false, "text": "Tue 3 ennemis"}
 	Run.wave = 4
 	a = _arena()
 	await get_tree().process_frame

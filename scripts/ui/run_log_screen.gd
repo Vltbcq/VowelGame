@@ -54,7 +54,7 @@ func _ready() -> void:
 			ay += 20
 
 	# --- Milieu : la partie + stats au début de la dernière vague
-	var info := "%s · %s\nVague %d / %d · Niveau %d\nOr : ● %d · PV %d / %d\nEnnemis effacés : %d" % [
+	var info := "%s · %s\nVague %d / %d · Niveau %d\nOr : ● %d · PV %d / %d\nEnnemis tués : %d" % [
 		MapDB.get_def(Run.map).name, Meta.DIFFICULTIES[Run.difficulty].name, Run.wave, Run.WAVES, Run.level,
 		Run.gold, ceili(Run.hp), int(Run.stats.get("max_hp", 0)), Run.kills]
 	var il := UI.label(info, 10, Pal.TEXT)

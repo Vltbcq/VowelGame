@@ -3,7 +3,8 @@ extends Control
 ## Pose une amulette ou une arme où tu veux sur ton perso.
 ## On peut tourner (R) et retourner en miroir (M) l'objet. Pour une amulette, la zone donne un bonus.
 ## Pour une arme, sa pointe (le côté droit du dessin après rotation) vise les ennemis.
-## Amulette : on peut aussi attraper et DÉCALER les amulettes déjà posées (pour faire de la place).
+## Amulette : une fois la nouvelle posée, on peut attraper et DÉCALER les amulettes déjà posées
+## (elles peuvent se chevaucher). Tant qu'on tient la nouvelle, les anciennes sont pâlies et figées.
 ## done({"pos": Vector2i, "image": Image, "rot": int, "flip": bool, "moves": [{pos, image}...]}) pour une amulette,
 ## done({"anchor": Vector2, "rot": int, "flip": bool}) pour une arme (position relative au centre du perso).
 
@@ -69,7 +70,7 @@ func _ready() -> void:
 	UI.put(self, UI.label("Pose " + what, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(640, 24))
 	var hint := "Clique pour poser (clic droit pour reprendre).  R : tourner · M : miroir"
 	if mode == "amulet" and not olds.is_empty():
-		hint = "Clique pour poser · clique sur une amulette posée pour la décaler · R : tourner · M : miroir"
+		hint = "Clique pour poser · une fois posée, clique une ancienne amulette pour la décaler · R : tourner · M : miroir"
 	UI.put(self, UI.label(hint, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 32), Vector2(640, 14))
 
 	var s := base.get_size()
@@ -215,6 +216,10 @@ func _amulet_input(ev: InputEvent) -> bool:
 		view.queue_redraw()
 		return ev is InputEventMouseMotion or ev is InputEventMouseButton
 	if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+		# Tant que la nouvelle n'est pas posée, le clic la POSE (même par-dessus une ancienne) :
+		# les anciennes ne s'attrapent qu'après (sinon on décalait celle du dessous par accident)
+		if not placed:
+			return false
 		# la nouvelle (posée) passe devant : on l'attrape d'abord avec le comportement normal
 		var on_new := placed and Rect2i(cell, item.get_size()).has_point(c)
 		var i := _old_at(c)
@@ -251,7 +256,9 @@ func _draw_view() -> void:
 		var o: Dictionary = olds[i]
 		var oo := 1.0 if o.outline else 0.0
 		var orc := Rect2(Vector2(o.pos) * px, Vector2(o.image.get_size()) * px)
-		view.draw_texture_rect(o.tex, orc.grow(oo * px), false)
+		# pendant qu'on tient la nouvelle, les anciennes pâlissent : on voit où on pose
+		var fade := 0.4 if (mode == "amulet" and not placed and i != held) else 1.0
+		view.draw_texture_rect(o.tex, orc.grow(oo * px), false, Color(1, 1, 1, fade))
 		if i == held:
 			view.draw_rect(orc.grow(oo * px + 1.0), Pal.ACCENT, false, 1.0)
 	for g in weapon_ghosts:

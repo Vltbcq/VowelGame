@@ -32,13 +32,26 @@ func _ready() -> void:
 		y += 26
 
 	y += 10
-	UI.put(self, UI.label("Plein écran", 10, Pal.TEXT), Vector2(150, y + 2))
-	var fs := UI.button("", func(): pass)
-	fs.pressed.connect(func():
-		Meta.set_setting("fullscreen", not bool(Meta.setting("fullscreen")))
-		fs.text = "Oui" if Meta.setting("fullscreen") else "Non")
-	fs.text = "Oui" if Meta.setting("fullscreen") else "Non"
-	UI.put(self, fs, Vector2(280, y), Vector2(80, 16))
+	UI.put(self, UI.label("Affichage", 10, Pal.TEXT), Vector2(150, y + 2))
+	var wrow := HBoxContainer.new()
+	wrow.add_theme_constant_override("separation", 3)
+	UI.put(self, wrow, Vector2(280, y), Vector2(300, 16))
+	var wbtns := []
+	for m in [["fenetre", "Fenêtre"], ["plein", "Plein écran"], ["sans_bord", "Sans bord"]]:
+		var mid: String = m[0]
+		var b := UI.button(m[1], func():
+			Meta.set_setting("window_mode", mid)
+			for o in wbtns:
+				o.remove_theme_stylebox_override("normal")
+				o.remove_theme_color_override("font_color")
+				if o.get_meta("mode") == mid:
+					UI.selected(o))
+		b.set_meta("mode", mid)
+		if String(Meta.setting("window_mode")) == mid:
+			UI.selected(b)
+		wrow.add_child(b)
+		wbtns.append(b)
+	wrow.get_child(2).tooltip_text = "Plein écran sans bord : Alt+Tab instantané"
 
 	y += 34
 	UI.put(self, UI.label("Zoom par défaut", 10, Pal.TEXT), Vector2(150, y + 2))

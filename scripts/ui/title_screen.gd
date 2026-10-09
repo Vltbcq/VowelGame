@@ -88,7 +88,7 @@ func _ready() -> void:
 	else:
 		vb.add_child(UI.hotkey(UI.button("Nouvelle partie", func(): done.emit("play"), 20), [KEY_ENTER, KEY_KP_ENTER, KEY_N]))
 	vb.add_child(UI.hotkey(UI.button("Atelier  ◆ %d" % Meta.pigments(), func(): done.emit("atelier")), [KEY_A]))
-	vb.add_child(UI.hotkey(UI.button("Galerie (%d dessins)" % entries.size(), func(): done.emit("gallery")), [KEY_G]))
+	vb.add_child(UI.hotkey(UI.button("Galerie", func(): done.emit("gallery")), [KEY_G]))
 	# Codex et Statistiques sur la même ligne (le menu tient dans son panneau)
 	var cs := HBoxContainer.new()
 	cs.add_theme_constant_override("separation", 4)

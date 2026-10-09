@@ -40,7 +40,7 @@ func refresh_edges() -> void:
 func _process(delta: float) -> void:
 	# les points des contours pulsent doucement (on redessine ~20 fois par seconde)
 	pulse_t += delta
-	if not edges.is_empty() and int(pulse_t * 20.0) != int((pulse_t - delta) * 20.0):
+	if edge_style == "dots" and not edges.is_empty() and int(pulse_t * 20.0) != int((pulse_t - delta) * 20.0):
 		queue_redraw()
 
 
@@ -149,7 +149,52 @@ func _draw() -> void:
 
 
 ## Contours qui coûtent de l'encre : un petit point clair qui pulse au centre de chaque pixel.
+## Style d'affichage des bords (ce qui coûte de l'encre) : "line" (liseré fixe autour des formes),
+## "line_gold", "line_tint" (liseré + bords légèrement teintés) ou "dots" (les points qui pulsent).
+var edge_style := "dots"   # (les autres styles existent, pas encore choisis : voir tests/edgeshot)
+
+
 func _draw_edges() -> void:
+	if edge_style == "dots":
+		_draw_edge_dots()
+		return
+	var img := screen.img
+	var w := img.get_width()
+	var h := img.get_height()
+	var col := Color(1, 1, 1, 0.95)
+	var shade := Color(Pal.INK, 0.55)
+	var th := 1.0 if px < 6 else 2.0
+	if edge_style == "line_gold":
+		col = Pal.ACCENT
+		shade = Color(Pal.INK, 0.7)
+	for i in edges.size():
+		var e := edges[i]
+		var x := int(e.x)
+		var y := int(e.y)
+		var o := Vector2(e.x * px, e.y * px)
+		if edge_style == "line_tint":
+			draw_rect(Rect2(o, Vector2(px, px)), Color(1, 1, 1, 0.22))
+		# un trait sur chaque côté du pixel qui touche le vide : le liseré suit le contour des formes
+		for side in 4:
+			var n: Vector2i = Vector2i(x, y) + [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN][side]
+			if n.x >= 0 and n.y >= 0 and n.x < w and n.y < h and img.get_pixelv(n).a > 0.5:
+				continue
+			var r: Rect2
+			match side:
+				0:
+					r = Rect2(o.x, o.y, th, px)
+				1:
+					r = Rect2(o.x + px - th, o.y, th, px)
+				2:
+					r = Rect2(o.x, o.y, px, th)
+				_:
+					r = Rect2(o.x, o.y + px - th, px, th)
+			draw_rect(Rect2(r.position + Vector2(1, 1), r.size), shade)
+			draw_rect(r, col)
+
+
+## Ancien affichage : un point clair qui pulse au centre de chaque pixel de contour.
+func _draw_edge_dots() -> void:
 	var a := 0.45 + 0.35 * sin(pulse_t * 4.0)
 	var d := maxf(1.0 if px < 4 else 2.0, roundf(px * 0.34))
 	var o := (px - d) / 2.0

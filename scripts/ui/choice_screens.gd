@@ -115,7 +115,7 @@ static func difficulty(map_id := 1) -> Control:
 				root.done.emit(p)
 		le.text_submitted.connect(func(_t): go.call())
 		var sb := UI.button("Jouer la seed", go)
-		sb.tooltip_text = "Même boss, mêmes boutiques, mêmes choix de niveau que la partie partagée.\nUne partie avec seed ne débloque rien (ni succès, ni objets, ni pigments)."
+		sb.tooltip_text = "Même boss, mêmes boutiques, mêmes choix de niveau que la partie partagée.\nUne partie avec seed ne débloque rien (ni défis, ni objets, ni pigments)."
 		UI.put(root, sb, Vector2(516, 330), Vector2(104, 18))
 	return s
 
@@ -172,7 +172,7 @@ static func end_run(win: bool, earned: int, unlocked: Array = [], can_endless :=
 		var lines := [
 			"Difficulté : %s" % Meta.DIFFICULTIES[Run.difficulty].name,
 			wave_line,
-			"Ennemis effacés : %d" % Run.kills,
+			"Ennemis tués : %d" % Run.kills,
 			"Boss vaincus : %d" % Run.bosses,
 			"Niveau : %d" % Run.level,
 		]

@@ -24,6 +24,8 @@ var invis_t := 0.0          # Encre invisible : les ennemis te perdent de vue
 var shadow_ready := false   # Ombre portée : prochain coup ×2 après une esquive
 var paper := 0              # Bouclier de papier : coups ignorés restants dans la vague
 var shield := 0.0           # Encre carmin : bouclier d'encre (soin en trop)
+var shield_cd := 0.0        # Encre carmin : après une casse, pas de recharge pendant SHIELD_CD s
+const SHIELD_CD := 4.0
 var spike_acc := 0.0        # Hérisson
 var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
 var sap_t := 0.0            # Élixir de sève
@@ -75,6 +77,10 @@ func _draw() -> void:
 	if shield > 0.5:
 		# Encre carmin : anneau du bouclier d'encre
 		draw_arc(Vector2(0, -2), radius + 7.0, 0.0, TAU, 28, Color(0.75, 0.1, 0.2, 0.7), 2.0)
+	elif shield_cd > 0.0:
+		# bouclier cassé : un arc fin se remplit pendant la recharge
+		var k := 1.0 - shield_cd / SHIELD_CD
+		draw_arc(Vector2(0, -2), radius + 7.0, -PI / 2.0, -PI / 2.0 + TAU * k, 28, Color(0.75, 0.1, 0.2, 0.35), 1.0)
 	draw_set_transform(Vector2(0, radius + 2), 0.0, Vector2(1.0, 0.4))
 	draw_circle(Vector2.ZERO, radius + 3, Color(0, 0, 0, 0.18))
 
@@ -93,6 +99,8 @@ func input_dir() -> Vector2:
 	var joy := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
 	if joy.length() > 0.25:
 		d += joy
+	if arena and arena.stream and arena.stream.flip_t > 0.0:
+		d = -d   # Le Stream : « !flip », commandes inversées
 	return d.limit_length(1.0) if d.length() > 1.0 else d
 
 
@@ -108,6 +116,8 @@ func tick(delta: float) -> void:
 	# Correcteur : insensible aux flaques d'encre
 	var hz: Array = [1.0, 0.0] if Run.amulet_count("correcteur") > 0 else arena.hazard_effect(position, radius)
 	var boost := 1.2 if Run.amulet_count("derniere_touche") > 0 and hp < max_hp * 0.25 else 1.0
+	if arena.stream:
+		boost *= arena.stream.speed_mult()   # Le Stream : sondage « vitesse »
 	if yuki_t > 0.0:
 		yuki_t -= delta
 		boost *= 1.3   # Yuki
@@ -147,6 +157,9 @@ func tick(delta: float) -> void:
 			for e in arena.near(position, radius + 8.0):
 				e.hurt(st.thorns, false, (e.position - position).normalized() * 30.0)
 	if shield > 0.0:
+		queue_redraw()
+	if shield_cd > 0.0:
+		shield_cd -= delta
 		queue_redraw()
 	inv -= delta
 	invis_t -= delta
@@ -211,6 +224,10 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 		var ab := minf(shield, d)
 		shield -= ab
 		d -= ab
+		if shield <= 0.0:
+			shield = 0.0
+			shield_cd = SHIELD_CD   # il a cassé : pas de nouveau bouclier pendant 4 s
+			arena.float_text(position + Vector2(0, -22), "BOUCLIER CASSÉ", Color(0.85, 0.3, 0.35))
 		queue_redraw()
 		if d < 1.0:
 			inv = 0.5
@@ -218,6 +235,8 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 			return
 	hp -= d
 	was_hurt = true
+	if arena.stream:
+		arena.stream.on_hurt()
 	# Statistiques : qui t'a effacé (le dernier coup avant la fin)
 	if src is Enemy:
 		Run.killer = (src as Enemy).id
@@ -383,7 +402,7 @@ func heal(n: float, show := true, from_steal := false) -> void:
 	# Encre carmin : le soin du vol de vie en trop devient un bouclier (20 % des PV max au plus)
 	if from_steal and Run.amulet_count("encre_carmin") > 0:
 		var extra := hp + n - max_hp
-		if extra > 0.0:
+		if extra > 0.0 and shield_cd <= 0.0:
 			shield = minf(shield + extra, max_hp * 0.2 * Run.amulet_count("encre_carmin"))
 			queue_redraw()
 	hp = minf(max_hp, hp + n)

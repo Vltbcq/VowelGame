@@ -130,6 +130,11 @@ static func player(run: Node) -> Dictionary:
 	s.atk_speed += 40.0 * n
 	n = run.amulet_count("encrier")
 	s.max_hp *= pow(0.85, n)
+	# Lunettes de l'oculiste : test de vision réussi = +8 % partout, raté (ou pas encore fait) = la moitié
+	if run.amulet_count("oculiste") > 0:
+		var ov := 8.0 if run.oculist_ok == 1 else 4.0
+		for k in ["dmg", "atk_speed", "crit", "range", "dodge", "speed", "lifesteal"]:
+			s[k] += ov
 	n = run.amulet_count("perspective")
 	s.range += 30.0 * n
 	n = run.amulet_count("tache")

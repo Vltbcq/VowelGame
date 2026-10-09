@@ -22,7 +22,7 @@ func _ready() -> void:
 	Run.set_amulet_art("carnet_commandes", dot, "")
 	Run.add_amulet("carnet_commandes", dot, Vector2i(2, 2))
 	Run.recompute()
-	Run.order = {"kind": "elem", "n": 10, "progress": 0.0, "reward": 35, "done": false, "text": "Efface 10 ennemis touchés par un élément (brûlés, gelés...)"}
+	Run.order = {"kind": "elem", "n": 10, "progress": 0.0, "reward": 35, "done": false, "text": "Tue 10 ennemis touchés par un élément (brûlés, gelés...)"}
 	var a := Arena.new()
 	add_child(a)
 	await get_tree().create_timer(2.2).timeout

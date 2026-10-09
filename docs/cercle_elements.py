@@ -24,7 +24,7 @@ SH = {   # sombre, normale, claire
 ICON = {   # 7×7 : '#' = blanc (ou encre sur fond clair), 'o' = teinte claire
 	'feu': ["...#...", "..##...", "..###..", ".#####.", ".##o##.", "##ooo##", ".#####."],
 	'foudre': ["...###.", "..###..", ".###...", "#######", "...###.", "..###..", ".##...."],
-	'poison': ["...#...", "..###..", ".#####.", ".#####.", "#######", "#######", ".#####."],
+	'poison': [".#####.", "#######", "#..#..#", "#######", ".##.##.", "..###..", "..#.#.."],   # crâne
 	'glace': ["#..#..#", ".#.#.#.", "..###..", "#######", "..###..", ".#.#.#.", "#..#..#"],
 	'arcane': ["...#...", "...#...", ".#####.", "#######", ".#####.", "...#...", "...#..."],
 	'lumiere': ["#..#..#", ".#...#.", "...#...", "#.###.#", "...#...", ".#...#.", "#..#..#"],
@@ -36,6 +36,7 @@ CYCLE = ['feu', 'foudre', 'poison', 'glace', 'arcane']
 
 
 def build(with_names: bool):
+	"""Arcs d'épaisseur constante (anneau exact) et pointes pleines symétriques, au pixel près."""
 	R, r = (44, 10) if with_names else (31, 7)
 	W, H = (236, 168) if with_names else (84, 98)
 	cx, cy = W // 2, (72 if with_names else 40)
@@ -71,35 +72,48 @@ def build(with_names: bool):
 				elif ch == 'o':
 					put(x0 - 3 + i, y0 - 3 + j, SH[el][2])
 
-	def head(tx, ty, ang, size):
-		"""Pointe de flèche pleine (triangle), sans anticrénelage."""
-		pts = [(tx, ty)]
-		for s in (-1, 1):
-			pts.append((tx - size * math.cos(ang + s * 0.62), ty - size * math.sin(ang + s * 0.62)))
-		d.polygon([(round(x), round(y)) for x, y in pts], fill=GOLD, outline=GOLD_DARK)
+	def tri(pts):
+		"""Triangle rempli au pixel près (test de demi-plans, pas d'anticrénelage)."""
+		xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
+		def side(a, b, p):
+			return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+		out = []
+		for y in range(math.floor(min(ys)), math.ceil(max(ys)) + 1):
+			for x in range(math.floor(min(xs)), math.ceil(max(xs)) + 1):
+				p = (x + 0.5, y + 0.5)
+				s1, s2, s3 = side(pts[0], pts[1], p), side(pts[1], pts[2], p), side(pts[2], pts[0], p)
+				if (s1 >= 0 and s2 >= 0 and s3 >= 0) or (s1 <= 0 and s2 <= 0 and s3 <= 0):
+					out.append((x, y))
+		return out
 
-	def arc(a0, a1, rad):
-		"""Arc de cercle épais de 2 pixels, d'un angle à l'autre (sens horaire), pointe au bout."""
-		steps = int(abs(a1 - a0) * rad * 3) + 2
-		pts = set()
-		for k in range(steps + 1):
-			a = a0 + (a1 - a0) * k / steps
-			x, y = cx + rad * math.cos(a), cy + rad * math.sin(a)
-			for ox, oy in ((0, 0), (1, 0), (0, 1), (1, 1)):
-				pts.add((math.floor(x - 0.5) + ox, math.floor(y - 0.5) + oy))
-		for p in pts:   # ombre
-			put(p[0] + 1, p[1] + 1, GOLD_DARK)
-		for p in pts:
-			put(p[0], p[1], GOLD)
+	def arc(a0, a1, rad, thick, hl):
+		"""Anneau exact (épaisseur constante) de a0 à a1 (sens horaire), pointe pleine dans l'axe."""
+		pts = []
+		for y in range(cy - rad - 4, cy + rad + 5):
+			for x in range(cx - rad - 4, cx + rad + 5):
+				dd = math.hypot(x + 0.5 - cx, y + 0.5 - cy)
+				if rad - thick / 2.0 <= dd < rad + thick / 2.0:
+					a = math.atan2(y + 0.5 - cy, x + 0.5 - cx)
+					rel = (a - a0) % (2 * math.pi)
+					if rel <= (a1 - a0):
+						pts.append((x, y))
 		tang = a1 + math.pi / 2
 		ex, ey = cx + rad * math.cos(a1), cy + rad * math.sin(a1)
-		head(ex + math.cos(tang) * (3 if with_names else 2), ey + math.sin(tang) * (3 if with_names else 2), tang, 6 if with_names else 4)
+		tip = (ex + math.cos(tang) * hl, ey + math.sin(tang) * hl)
+		wn = hl * 0.75
+		base = [(ex + math.cos(tang + math.pi / 2) * wn, ey + math.sin(tang + math.pi / 2) * wn),
+			(ex - math.cos(tang + math.pi / 2) * wn, ey - math.sin(tang + math.pi / 2) * wn)]
+		head = tri([tip] + base)
+		for p in pts + head:   # ombre
+			put(p[0] + 1, p[1] + 1, GOLD_DARK)
+		for p in pts + head:
+			put(p[0], p[1], GOLD)
 
-	# angles des 5 couleurs (Feu en haut, sens horaire)
 	angs = [-math.pi / 2 + k * 2 * math.pi / 5 for k in range(5)]
-	gap = (r + (6 if with_names else 4)) / R   # on laisse de la place autour des pastilles
+	hl = 6 if with_names else 4
+	gap = (r + (6 if with_names else 4)) / R
 	for k in range(5):
-		arc(angs[k] + gap, angs[k] + 2 * math.pi / 5 - gap - 3.5 / R, R)
+		arc(angs[k] + gap, angs[k] + 2 * math.pi / 5 - gap - hl / R, R, 2.2 if with_names else 2.0, hl)
 	for k, el in enumerate(CYCLE):
 		x, y = round(cx + R * math.cos(angs[k])), round(cy + R * math.sin(angs[k]))
 		disc(x, y, r, SH[el])
@@ -107,27 +121,30 @@ def build(with_names: bool):
 		if with_names:
 			tw = d.textlength(NAMES[el], font=font)
 			c, s = math.cos(angs[k]), math.sin(angs[k])
-			if s > 0.5:            # en bas : sous la pastille
+			if s > 0.5:
 				tx, ty = x - tw / 2, y + r + 3
-			elif c > 0.3:          # à droite
+			elif c > 0.3:
 				tx, ty = x + r + 5, y - 7
-			elif c < -0.3:         # à gauche
+			elif c < -0.3:
 				tx, ty = x - r - 5 - tw, y - 7
-			else:                  # en haut
+			else:
 				tx, ty = x - tw / 2, y - r - 15
 			d.text((round(tx) + 1, ty + 1), NAMES[el], font=font, fill=INK)
 			d.text((round(tx), ty), NAMES[el], font=font, fill=SH[el][2])
-
-	# Lumière ⇄ Noir, en bas : deux flèches droites
+	# Lumière ⇄ Ombre : deux flèches droites de 2 px, pointes pleines
 	y = H - (16 if with_names else 10)
 	rr = 8 if with_names else 6
 	lx, nx = cx - (26 if with_names else 17), cx + (26 if with_names else 17)
-	for (x0, x1, yy) in ((lx + rr + 3, nx - rr - 4, y - 2), (nx - rr - 3, lx + rr + 4, y + 2)):
+	hh = 4 if with_names else 3
+	for (x0, x1, yy) in ((lx + rr + 3, nx - rr - 3 - hh, y - 3), (nx - rr - 3, lx + rr + 3 + hh, y + 2)):
 		step = 1 if x1 > x0 else -1
-		for x in range(x0, x1, step):
-			put(x + 1, yy + 1, GOLD_DARK)
-			put(x, yy, GOLD)
-		head(x1, yy, 0 if step > 0 else math.pi, 4 if with_names else 3)
+		line = [(x, yy + t) for x in range(x0, x1, step) for t in (0, 1)]
+		tip_x = x1 + step * hh
+		head = tri([(tip_x, yy + 1), (x1, yy + 1 - hh * 0.9), (x1, yy + 1 + hh * 0.9)])
+		for p in line + head:
+			put(p[0] + 1, p[1] + 1, GOLD_DARK)
+		for p in line + head:
+			put(p[0], p[1], GOLD)
 	disc(lx, y, rr, SH['lumiere']); icon(lx, y, 'lumiere')
 	disc(nx, y, rr, SH['noir']); icon(nx, y, 'noir')
 	if with_names:

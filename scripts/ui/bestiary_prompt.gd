@@ -99,6 +99,7 @@ func _ready() -> void:
 	for f in fits:
 		var e: Dictionary = f[0]
 		var gi: Image = f[1]
+		var block: String = f[2]
 		var b := Button.new()
 		b.focus_mode = Control.FOCUS_NONE
 		b.custom_minimum_size = Vector2(58, 58)
@@ -107,6 +108,13 @@ func _ready() -> void:
 		th.position = Vector2(4, 4)
 		b.add_child(th)
 		b.tooltip_text = "Encre : %d" % Analyzer.ink_cost(gi)
+		if block != "":
+			# grisé, avec la raison au survol (rien n'est caché en silence)
+			b.disabled = true
+			th.modulate = Color(1, 1, 1, 0.3)
+			b.tooltip_text = block
+			grid.add_child(b)
+			continue
 		b.pressed.connect(func():
 			Sfx.play("click")
 			from_carnet = false
@@ -190,24 +198,25 @@ func _usable(img: Image) -> String:
 		return "Trop d'encre (%d / %d)" % [cost, int(cfg.ink)]
 	if cost < int(cfg.get("min_ink", 0)):
 		return "Pas assez d'encre (%d / %d min)" % [cost, int(cfg.min_ink)]
+	var lc := Meta.locked_colors(img)
+	if not lc.is_empty():
+		return "Couleurs pas encore débloquées : " + ", ".join(lc)
 	return DrawCfg.color_issue(cfg, img)
 
 
 ## Dessins de la galerie compatibles (taille). L'encre est vérifiée sur le dessin choisi :
 ## un dessin trop gourmand peut quand même être pris puis modifié.
+## TOUS les dessins de la galerie de ce type : [entrée, image, raison du blocage ou ""].
+## (Avant, les trop grands étaient cachés et la liste s'arrêtait à 48 : des dessins « disparaissaient ».)
 func _fitting() -> Array:
 	var out := []
-	var s: Vector2i = cfg.size
 	for e in Meta.gallery(cfg.gallery):
 		var gi := Meta.gallery_image(e)
 		if gi == null:
 			continue
-		var r := gi.get_used_rect()
-		if r.size.x > s.x or r.size.y > s.y:
-			continue
-		out.append([e, gi])
-		if out.size() >= 48:
-			break
+		out.append([e, gi, DrawCfg.gallery_block(cfg, gi)])
+	# les utilisables d'abord, puis les grisés
+	out.sort_custom(func(a, b): return a[2] == "" and b[2] != "")
 	return out
 
 

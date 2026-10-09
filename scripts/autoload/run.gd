@@ -7,6 +7,11 @@ extends Node
 const WAVES := 15          # une partie = 15 vagues, un boss toutes les 5 vagues
 const XP_MULT := 0.7        # expérience gagnée (-30%)
 const GOLD_MULT := 0.625    # or gagné : 62,5% de la valeur de chaque goutte (0.5 × 1.25)
+## Or dégressif : les vagues tardives ont bien plus d'ennemis (et durent plus longtemps), l'or ramassé
+## grimpait presque au carré. Chaque pièce vaut ÷ (1 + 0,15 × (vague − 1)) : ×0,49 en v8 ; mais pleine
+## valeur jusqu'à la vague 3, puis transition douce jusqu'à la vague 8 (début de partie plus généreux).
+## (Seules les pièces ramassées : pas l'XP, ni le pourboire, les commandes, le Mécène, les ventes...)
+const GOLD_DECAY := 0.15
 const PAD := 22         # marge autour du perso pour poser amulettes et marques (zone "aura" large)
 const MAX_WEAPONS := 6
 
@@ -74,6 +79,7 @@ var dev_jump := 0           # outil de dev : prochaine vague forcée (0 = non)
 var enemy_art := {}         # type -> {image, effect, a, mods}
 var elite_art := {}         # type -> version élite redessinée (difficultés hautes)
 var enemy_colors := {}      # Aquarelle et plus : type d'ennemi -> élément imposé à son dessin
+var oculist_ok := -1        # Lunettes de l'oculiste : -1 pas encore testé, 0 raté, 1 réussi
 var run_damage := 0.0       # statistiques de la partie : dégâts infligés, or ramassé, ennemi fatal
 var run_gold := 0
 var killer := ""
@@ -176,6 +182,7 @@ func start(d: int, map_id := 1, with_seed := -1) -> void:
 	endless_base = {}
 	run_damage = 0.0
 	run_gold = 0
+	oculist_ok = -1
 	killer = ""
 
 
@@ -234,6 +241,18 @@ const LATE_GOLD := 0.96
 const LEVEL_DECAY := 0.97
 const LEVEL_DECAY_FROM := 10
 var late_on := true   # (les tests de réglage comparent avec / sans)
+
+
+func gold_decay() -> float:
+	var w := mini(wave, WAVES)
+	var d := 1.0 / (1.0 + GOLD_DECAY * maxi(0, w - 1))
+	# Début de partie un peu plus généreux : pleine valeur jusqu'à la vague 3, puis on rejoint
+	# la courbe en douceur (vague 8 et après : inchangé)
+	if w <= 3:
+		return 1.0
+	if w < 8:
+		return lerpf(1.0, d, (w - 3) / 5.0)
+	return d
 
 
 func late_waves() -> int:
@@ -558,7 +577,7 @@ func to_save(stage: String) -> Dictionary:
 		"order": order.duplicate(), "legend_buys": legend_buys, "boss_clean": boss_clean, "boss_crit": boss_crit,
 		"wave_kills_best": wave_kills_best, "play_time": play_time, "enemy_colors": enemy_colors.duplicate(),
 		"endless": endless, "endless_base": endless_base.duplicate(), "seed": seed_v, "seeded": seeded,
-		"run_damage": run_damage, "run_gold": run_gold}
+		"run_damage": run_damage, "run_gold": run_gold, "oculist_ok": oculist_ok}
 	var wa := {}
 	for k in weapon_art:
 		var e: Dictionary = weapon_art[k]
@@ -654,6 +673,7 @@ func from_save(d: Dictionary) -> bool:
 	seed_v = int(d.get("seed", seed_v))
 	run_damage = float(d.get("run_damage", 0.0))
 	run_gold = int(d.get("run_gold", 0))
+	oculist_ok = int(d.get("oculist_ok", -1))
 	seeded = bool(d.get("seeded", false))
 	endless_base = d.get("endless_base", {})
 	# (les clés de boss_plan relues du JSON sont des textes : on les remet en nombres)
@@ -761,7 +781,7 @@ func item_label(type: String, id: String, rar: int) -> String:
 func write_journal() -> void:
 	var L := ["PAINT IT UNTIL YOU MAKE IT — Journal de la dernière partie", "",
 		"Carte : %s · Difficulté : %s" % [MapDB.get_def(map).name, Meta.DIFFICULTIES[difficulty].name],
-		"Vague %d / %d · Niveau %d · Or %d · Ennemis effacés %d" % [wave, WAVES, level, gold, kills], ""]
+		"Vague %d / %d · Niveau %d · Or %d · Ennemis tués %d" % [wave, WAVES, level, gold, kills], ""]
 	if not wave_stats.is_empty():
 		L.append("== Stats au début de la vague %d ==" % int(wave_stats.wave))
 		L.append(String(wave_stats.text))
@@ -934,8 +954,8 @@ func _new_order() -> void:
 	var reward := 20 + 5 * wave
 	var w := wave + 1
 	var kinds := [
-		{"kind": "kills", "n": 20 + 3 * w, "text": "Efface %d ennemis"},
-		{"kind": "elem", "n": 6 + w, "text": "Efface %d ennemis touchés par un élément (brûlés, gelés...)"},
+		{"kind": "kills", "n": 20 + 3 * w, "text": "Tue %d ennemis"},
+		{"kind": "elem", "n": 6 + w, "text": "Tue %d ennemis touchés par un élément (brûlés, gelés...)"},
 		{"kind": "gold", "n": 10 + 3 * w, "text": "Ramasse %d or pendant la vague"},
 		{"kind": "nohit", "n": 20, "text": "Tiens %d s d'affilée sans perdre de PV"},
 		{"kind": "hp", "n": 60, "text": "Termine la vague avec au moins %d%% de tes PV"},

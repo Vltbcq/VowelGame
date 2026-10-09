@@ -245,6 +245,12 @@ func _get_amulet(id: String) -> bool:
 	var p = await _ask(PlaceScreen.new("amulet", Run.amulet_art[id].image, def, Run.amulet_art[id].outline))
 	Run.apply_amulet_moves(p.get("moves", []))   # amulettes déjà posées, éventuellement décalées
 	Run.add_amulet(id, p.image, p.pos)
+	if id == "oculiste" and Run.oculist_ok < 0:
+		# Lunettes de l'oculiste : le test de vision, tout de suite
+		var ok = await _ask(OculistTest.new())
+		Run.oculist_ok = 1 if ok else 0
+		Run.log_event("event", "Test de vision : %s" % ("réussi" if ok else "raté"))
+		Run.recompute()
 	return true
 
 

@@ -77,6 +77,7 @@ const THEMES := {"geants": "ENNEMIS GÉANTS", "minus": "ENNEMIS MINUSCULES", "ra
 var blotters: Array = []  # Encrier renversé : buvards qui nettoient tes taches {pos, t}
 var telegraphs_fx: Array = []   # repères visuels (copie de la Photocopieuse) {pos, t}
 # Armes épiques / légendaires et Horloge
+var stream: StreamLive = null   # amulette « Le Stream » : le tchat (null sans elle)
 var last_shot_by := ""    # statistiques : l'ennemi dont le tir va toucher le joueur
 var allies: Array = []    # Retouche : ennemis redessinés dans ton camp
 var wells: Array = []     # Point final {pos, t, dur, r, dmg, wst}
@@ -207,8 +208,13 @@ func _ready() -> void:
 	cam.make_current()
 
 	hud = Hud.new()
+	if Run.amulet_count("stream") > 0:
+		stream = StreamLive.new()
+		stream.arena = self
 	hud.arena = self
 	add_child(hud)
+	if stream:
+		hud.add_child(stream)   # le tchat, à droite de l'écran
 	# Extasie : la vision se trouble (le jeu ondule et change de couleur ; le HUD reste lisible)
 	if Run.amulet_count("extasie") > 0:
 		var fx_layer := CanvasLayer.new()
@@ -431,7 +437,7 @@ func nearest(p: Vector2, max_r: float) -> Enemy:
 # ------------------------------------------------------------------ Apparitions
 
 ## Réglage global du nombre d'ennemis par vague (0,75 = 25 % de moins qu'à l'origine).
-const SPAWN_MULT := 0.75
+const SPAWN_MULT := 0.9375   # (×1,25 d'ennemis depuis la v0.10 ; chacun lâche moins : même or et même XP par vague)
 
 
 func _spawn(delta: float) -> void:
@@ -673,6 +679,8 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	var dmg: float = base * (1.0 + s.dmg / 100.0)
 	if stop_t > 0.0:
 		dmg *= 2.0   # Horloge : pendant l'arrêt du temps
+	if stream:
+		dmg *= stream.dmg_mult()   # Le Stream : HYPE TRAIN, sondage « dégâts »
 	dmg *= _amulet_dmg_mult(e, wst)
 	# Cercle des faiblesses : couleur principale de l'arme contre celle de l'ennemi
 	var wcol := Pal.color_of(wst.get("frac", []), 0.3)
@@ -851,6 +859,8 @@ func kill_enemy(e: Enemy) -> void:
 	if e.dead:
 		return
 	e.dead = true
+	if stream:
+		stream.on_kill(e)
 	Run.kills += 1
 	wave_kills += 1
 	Run.wave_kills_best = maxi(Run.wave_kills_best, wave_kills)
@@ -913,9 +923,11 @@ func kill_enemy(e: Enemy) -> void:
 		var pk := Pickup.new()
 		pk.xp = v
 		# Arrondi au hasard : 0.6 or = 60% de chances d'avoir 1 pièce (jamais bloqué à 0)
-		var g: float = v * Run.GOLD_MULT * pow(0.85, Run.amulet_count("restauration"))
+		var g: float = v * Run.GOLD_MULT * Run.gold_decay() * pow(0.85, Run.amulet_count("restauration"))
 		g *= 1.0 + 0.15 * Run.amulet_count("aimant_pepites") + 0.02 * Meta.level("mecenat_or")   # (Mécène de l'or)
 		g *= pow(Run.LATE_GOLD, Run.late_waves())   # fin de partie : -4 % d'or par vague après la 8e
+		if stream:
+			g *= stream.gold_mult()   # Le Stream : sondage « pluie d'or »
 		if e.elite:
 			g *= 1.0 + Run.amulet_count("cachet_cire")
 		pk.value = floori(g) + (1 if randf() < g - floorf(g) else 0)

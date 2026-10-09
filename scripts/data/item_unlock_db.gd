@@ -181,9 +181,9 @@ static func text(c: Dictionary) -> String:
 		"win2":
 			return "Gagne une partie sur Le Tableau noir."
 		"kills":
-			return "Efface %d ennemis (toutes parties)." % int(c.v)
+			return "Tue %d ennemis (toutes parties)." % int(c.v)
 		"elites":
-			return "Efface %d élites (toutes parties)." % int(c.v)
+			return "Tue %d élites (toutes parties)." % int(c.v)
 		"level":
 			return "Atteins le niveau %d dans une partie." % int(c.v)
 		"boss":
@@ -218,7 +218,7 @@ static func text(c: Dictionary) -> String:
 		"roulette":
 			return "Gagne %d fois à la roulette (toutes parties)." % int(c.v)
 		"wave_kills":
-			return "Efface %d ennemis en une seule vague." % int(c.v)
+			return "Tue %d ennemis en une seule vague." % int(c.v)
 		"maps":
 			return "Termine une vague sur chacune des deux cartes."
 		"fast_win":

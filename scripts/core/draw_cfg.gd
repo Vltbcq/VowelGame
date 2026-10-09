@@ -66,6 +66,19 @@ static func _need_color(cfg: Dictionary, id: String) -> void:
 	cfg.sub = ("COULEUR IMPOSÉE : %s (au moins la moitié de la couleur).  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]).strip_edges()
 
 
+## Un dessin de la galerie peut-il servir sur cette toile ? "" si oui, sinon la raison.
+## (L'encre n'en fait pas partie : un dessin trop gourmand peut être pris puis modifié.)
+static func gallery_block(cfg: Dictionary, img: Image) -> String:
+	var s: Vector2i = cfg.size
+	var r := img.get_used_rect()
+	if r.size.x > s.x or r.size.y > s.y:
+		return "Trop grand pour ta toile (%d px, toile %d px)" % [maxi(r.size.x, r.size.y), maxi(s.x, s.y)]
+	var lc := Meta.locked_colors(img)
+	if not lc.is_empty():
+		return "Couleurs pas encore débloquées : " + ", ".join(lc)
+	return ""
+
+
 ## "" si le dessin respecte la couleur imposée (cfg.need_el), sinon la raison.
 static func color_issue(cfg: Dictionary, img: Image) -> String:
 	if not cfg.has("need_el") or img == null:

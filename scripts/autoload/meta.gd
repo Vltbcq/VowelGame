@@ -15,7 +15,7 @@ const DIFFICULTIES := [
 	{"name": "Chef-d'œuvre", "desc": "Seuls les vrais artistes survivent. Les boss entrent en fureur.", "hp": 2.9, "dmg": 2.1, "spawn": 1.6, "reward": 2.5},
 ]
 
-const DEFAULT_SETTINGS := {"volume": 0.8, "fullscreen": false, "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
+const DEFAULT_SETTINGS := {"volume": 0.8, "window_mode": "fenetre", "zoom": 1.5, "tips": true, "show_amulets": true, "music_volume": 0.8, "sfx_volume": 0.8}
 
 var data := {}
 var settings := {}
@@ -239,13 +239,21 @@ func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(_bus(BUS_SFX), linear_to_db(maxf(0.0001, float(setting("sfx_volume")))))
 	# On ne touche à la fenêtre que si le plein écran change : une fenêtre agrandie (maximisée)
 	# n'est pas « fenêtrée », et la repasser en fenêtré la rétrécissait (ex. à chaque cran de zoom).
-	var fs := bool(setting("fullscreen"))
+	# Fenêtre : « fenetre », « plein » (plein écran exclusif) ou « sans_bord » (plein écran sans bord :
+	# Alt+Tab instantané). Les anciens réglages « fullscreen » deviennent « sans_bord » (même rendu).
+	if settings.has("fullscreen"):
+		settings.window_mode = "sans_bord" if bool(settings.fullscreen) else "fenetre"
+		settings.erase("fullscreen")
+	var want := DisplayServer.WINDOW_MODE_WINDOWED
+	match String(setting("window_mode")):
+		"plein":
+			want = DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+		"sans_bord":
+			want = DisplayServer.WINDOW_MODE_FULLSCREEN
 	var cur := DisplayServer.window_get_mode()
-	var is_fs := cur == DisplayServer.WINDOW_MODE_FULLSCREEN or cur == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
-	if fs and not is_fs:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
-	elif not fs and is_fs:
-		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	var cur_fs := cur == DisplayServer.WINDOW_MODE_FULLSCREEN or cur == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
+	if want != cur and (want != DisplayServer.WINDOW_MODE_WINDOWED or cur_fs):
+		DisplayServer.window_set_mode(want)
 
 
 func save() -> void:
@@ -505,11 +513,11 @@ func check_achievements(ctx: Dictionary) -> void:
 		var reward: String = UnlockDB.get_def(a.unlock).name
 		if Run.active:
 			data.pending_unlocks.append(a.id)
-			UI.toast("SUCCÈS : %s\n%s : débloqué à la fin de la partie" % [a.name, reward])
+			UI.toast("DÉFI RÉUSSI : %s\n%s : débloqué à la fin de la partie" % [a.name, reward])
 		else:
 			if level(a.unlock) == 0:
 				data.unlocks[a.unlock] = 1
-			UI.toast("SUCCÈS : %s\nDébloque : %s" % [a.name, reward])
+			UI.toast("DÉFI RÉUSSI : %s\nDébloque : %s" % [a.name, reward])
 		changed = true
 		Sfx.play("level")
 	if changed:
@@ -553,6 +561,17 @@ func add_to_gallery(kind: String, img: Image, effect: String, imported := false,
 ## Nombre de dessins de la galerie faits par TOI (pour les succès : les dessins importés ne comptent pas).
 func own_gallery_size() -> int:
 	return (data.gallery as Array).filter(func(e): return not e.get("imported", false)).size()
+
+
+## Couleurs (éléments) de ce dessin que tu n'as pas encore débloquées (pack primaire / secondaire).
+## Un dessin importé peut en contenir : il reste dans la galerie, mais inutilisable jusque-là.
+func locked_colors(img: Image) -> Array:
+	var out := []
+	var frac: Array = Analyzer.analyze(img).get("frac", [])
+	for e in range(1, mini(frac.size(), Pal.COUNT)):
+		if float(frac[e]) > 0.0 and not has(Pal.UNLOCK[e]):
+			out.append(Pal.COLOR_NAMES[e])
+	return out
 
 
 ## Ce dessin (même type, mêmes pixels) est-il déjà dans la galerie ?

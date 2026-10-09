@@ -67,7 +67,7 @@ const LIST := [
 	{"id": "elastique", "ink": 26, "name": "Élastique", "rar": 1, "flag": true, "desc": "Tes projectiles rebondissent 1 fois sur les bords · {m}% dégâts", "malus": ["dmg", -5.0]},
 	{"id": "correcteur", "ink": 28, "name": "Correcteur", "rar": 1, "flag": true, "limit": 1, "desc": "Insensible aux flaques d'encre ennemies · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "cachet_cire", "ink": 32, "name": "Cachet de cire", "rar": 1, "flag": true, "desc": "Les élites lâchent ×2 d'or · {m} chance", "malus": ["luck", -4.0]},
-	{"id": "encre_carmin", "ink": 32, "name": "Encre carmin", "rar": 1, "flag": true, "desc": "Le soin du vol de vie EN TROP devient un bouclier d'encre (jusqu'à 20% PV max) · {m}% dégâts", "malus": ["dmg", -3.0]},
+	{"id": "encre_carmin", "ink": 32, "name": "Encre carmin", "rar": 1, "flag": true, "desc": "Le soin du vol de vie EN TROP devient un bouclier d'encre (jusqu'à 20% PV max ; 4 s sans recharge s'il casse) · {m}% dégâts", "malus": ["dmg", -3.0]},
 	{"id": "carapace", "ink": 36, "name": "Carapace", "rar": 1, "flag": true, "desc": "Épines +25% de ton armure · {m}% vitesse", "malus": ["speed", -4.0]},
 	{"id": "oursin", "ink": 30, "name": "Oursin", "rar": 1, "flag": true, "desc": "Touché : tu lances 6 épines d'encre tout autour (dégâts = épines ×2, min 4) · {m} PV max", "malus": ["max_hp", -3.0]},
 	{"id": "allumette", "ink": 18, "name": "Allumette", "rar": 1, "flag": true, "limit": 1, "desc": "FEU : les brûlures durent 2× plus longtemps · {m} PV max", "malus": ["max_hp", -3.0]},
@@ -156,6 +156,11 @@ const LIST := [
 	{"id": "salle_thematique", "ink": 40, "name": "Salle thématique", "rar": 2, "flag": true, "limit": 1, "desc": "Chaque vague a une règle au HASARD (ennemis géants ou minuscules, tout va plus vite, sol glissant, nuit d'encre), butin +25%"},
 	{"id": "speed_painting", "ink": 36, "name": "Speed painting", "rar": 2, "flag": true, "limit": 1, "desc": "Tout le jeu va 25% plus vite (toi et les ennemis), butin +30%"},
 	{"id": "vernissage", "ink": 70, "name": "Scalper", "rar": 3, "flag": true, "desc": "La boutique n'a plus que 2 œuvres, mais toutes d'une rareté au-dessus"},
+	# --- v0.10
+	{"id": "oculiste", "ink": 40, "name": "Lunettes de l'oculiste", "rar": 2, "flag": true, "limit": 1,
+		"desc": "À l'achat, un TEST DE VISION des couleurs : réussi = +8% dégâts, vit. d'attaque, critique, portée, esquive, vitesse et vol de vie ; raté = la moitié"},
+	{"id": "stream", "ink": 70, "name": "Le Stream", "rar": 3, "flag": true,
+		"desc": "Un tchat te regarde jouer : enchaîne les éliminations pour lancer le HYPE TRAIN (+30% dégâts et vit. d'attaque 8 s), il vote des sondages, s'abonne (de l'or)... et te trolle parfois"},
 	# --- v0.9
 	{"id": "polygunnus", "ink": 60, "name": "Polygunnus", "rar": 3, "flag": true, "desc": "Tes projectiles sont 2× plus GROS (zone de touche ×2, même vitesse) et traversent TOUS les ennemis · {m}% vit. d'attaque", "malus": ["atk_speed", -30.0]},
 	{"id": "infini", "ink": 90, "name": "L'infini", "rar": 3, "stat": "dmg", "v": 8.0,

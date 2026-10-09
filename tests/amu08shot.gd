@@ -25,7 +25,7 @@ func _ready() -> void:
 		Run.set_amulet_art(id, dot, "")
 		Run.add_amulet(id, dot, Vector2i(2, 2))
 	Run.recompute()
-	Run.order = {"kind": "kills", "n": 30, "progress": 12.0, "reward": 35, "done": false, "text": "Efface 30 ennemis"}
+	Run.order = {"kind": "kills", "n": 30, "progress": 12.0, "reward": 35, "done": false, "text": "Tue 30 ennemis"}
 	var a := Arena.new()
 	add_child(a)
 	await get_tree().process_frame

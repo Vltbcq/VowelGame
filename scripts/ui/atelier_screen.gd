@@ -2,7 +2,7 @@ class_name AtelierScreen
 extends Control
 ## L'ATELIER du peintre (améliorations permanentes) :
 ## - à gauche, l'ÉTABLI : encre et boutique, achetés avec les pigments (des pots sur une étagère) ;
-## - à droite, le TABLEAU EN LIÈGE : les succès épinglés, chacun débloque couleurs, outils ou effets.
+## - à droite, le TABLEAU EN LIÈGE : les DÉFIS épinglés (rangés A→Z), chacun débloque couleurs, outils ou effets.
 
 signal done(result)
 
@@ -61,9 +61,7 @@ func _bench() -> void:
 	var shelf := Control.new()
 	sc.add_child(shelf)
 	var y := 0.0
-	for d in UnlockDB.LIST:
-		if not UnlockDB.for_pigments(d):
-			continue
+	for d in _bench_list():
 		# La carte prend la hauteur de sa description (rien ne dépasse)
 		var dh := UI.font.get_multiline_string_size(d.desc, HORIZONTAL_ALIGNMENT_LEFT, 160, UI.fs(10)).y
 		var chh := maxf(50.0, 22.0 + dh)
@@ -112,7 +110,21 @@ func _lock_reason(d: Dictionary) -> String:
 	return "\n".join(why)
 
 
-# ------------------------------------------------------------------ Tableau des succès
+## Ce qui s'achète à l'établi, rangé par catégorie (dans l'ordre du catalogue) puis A→Z.
+func _bench_list() -> Array:
+	var cats := []
+	for d in UnlockDB.LIST:
+		if UnlockDB.for_pigments(d) and not d.cat in cats:
+			cats.append(d.cat)
+	var out := UnlockDB.LIST.filter(func(d): return UnlockDB.for_pigments(d))
+	out.sort_custom(func(a, b):
+		var ca := cats.find(a.cat)
+		var cb := cats.find(b.cat)
+		return ca < cb if ca != cb else CodexScreen._order(0, a.name) < CodexScreen._order(0, b.name))
+	return out
+
+
+# ------------------------------------------------------------------ Tableau des défis
 
 func _board() -> void:
 	var frame := UI.panel(CORK, UI.WOOD, 4)
@@ -125,7 +137,7 @@ func _board() -> void:
 	for a in AchievementDB.LIST:
 		if Meta.achieved(a.id):
 			done_n += 1
-	UI.put(frame, UI.label("SUCCÈS  %d / %d" % [done_n, AchievementDB.LIST.size()], 10, UI.WOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(310, 12))
+	UI.put(frame, UI.label("DÉFIS  %d / %d" % [done_n, AchievementDB.LIST.size()], 10, UI.WOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 6), Vector2(310, 12))
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	UI.put(frame, sc, Vector2(6, 22), Vector2(298, 262))
@@ -136,7 +148,9 @@ func _board() -> void:
 	grid.add_theme_constant_override("v_separation", 6)
 	sc.add_child(grid)
 	var i := 0
-	for a in AchievementDB.LIST:
+	var defis := AchievementDB.LIST.duplicate()
+	defis.sort_custom(func(a, b): return CodexScreen._order(0, a.name) < CodexScreen._order(0, b.name))   # A→Z
+	for a in defis:
 		grid.add_child(_note(a, i))
 		i += 1
 

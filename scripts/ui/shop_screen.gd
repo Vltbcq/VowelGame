@@ -186,7 +186,7 @@ func _build() -> void:
 	# --- Ton portrait + cartel de stats
 	var pf := _frame_panel(FRAME[3], 5)
 	UI.put(self, pf, Vector2(322, 218), Vector2(64, 76))
-	UI.put(pf, UI.thumb(Run.build_player_image(), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
+	UI.put(pf, UI.thumb(Run.build_player_image(bool(Meta.setting("show_amulets"))), Vector2(52, 64)), Vector2(6, 6), Vector2(52, 64))
 	pf.tooltip_text = "Ton perso\n" + Pal.color_line(Run.char_a.get("frac", []))
 	# Sous l'autoportrait : taille du perso (pixels dessinés) et couleurs, utiles pour Silhouette / Nuancier
 	var npx := int(Run.char_a.get("pixels", 0))
