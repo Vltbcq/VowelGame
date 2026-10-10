@@ -125,6 +125,7 @@ const CONDS := {
 	"a:vernissage": {"kind": "legend_buys", "v": 3},
 	# --- Familiers : la moitié à débloquer
 	"f:pie": {"kind": "earned", "v": 3000},
+	"f:pigeon": {"kind": "runs", "v": 5},
 	"f:perroquet": {"kind": "win_pet"},
 	"f:fantome": {"kind": "win", "v": 1},
 	"f:paon": {"kind": "pets_wave", "v": 10, "n": 3},

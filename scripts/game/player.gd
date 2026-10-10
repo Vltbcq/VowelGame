@@ -30,6 +30,7 @@ var spike_acc := 0.0        # Hérisson
 var vel := Vector2.ZERO     # vitesse actuelle (les boss anticipent tes déplacements)
 var sap_t := 0.0            # Élixir de sève
 var weak_t := 0.0   # affichage « FAIBLESSE ! »
+var poop_t := 0.0           # Pigeon : une fiente sur la tête, on avance moins vite
 var yuki_t := 0.0           # Yuki : +30 % de vitesse : régénération boostée restante (s)
 var ghost_of: Player        # Reflet : ce perso est le double en miroir de ghost_of
 
@@ -101,6 +102,8 @@ func input_dir() -> Vector2:
 		d += joy
 	if arena and arena.stream and arena.stream.flip_t > 0.0:
 		d = -d   # Le Stream : « !flip », commandes inversées
+	if Run.amulet_count("envers") > 0:
+		d = -d   # Tête à l'envers : l'écran est retourné, les touches suivent l'écran
 	return d.limit_length(1.0) if d.length() > 1.0 else d
 
 
@@ -118,6 +121,9 @@ func tick(delta: float) -> void:
 	var boost := 1.2 if Run.amulet_count("derniere_touche") > 0 and hp < max_hp * 0.25 else 1.0
 	if arena.stream:
 		boost *= arena.stream.speed_mult()   # Le Stream : sondage « vitesse »
+	if poop_t > 0.0:
+		poop_t -= delta
+		boost *= 0.55   # Pigeon : beurk
 	if yuki_t > 0.0:
 		yuki_t -= delta
 		boost *= 1.3   # Yuki
@@ -211,6 +217,7 @@ func take_hit(dmg: float, element: int, src: Node) -> void:
 		if Run.amulet_count("ombre_portee") > 0:
 			shadow_ready = true
 		return
+	arena.on_player_hit()   # (Rires en boîte : un vrai coup reçu)
 	var d := dmg
 	if st.armor >= 0.0:
 		d /= 1.0 + st.armor / 15.0

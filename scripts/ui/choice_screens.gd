@@ -75,6 +75,26 @@ static func confirm(title: String, text: String, yes: String, no: String, danger
 	return s
 
 
+## Simple message (une liste de lignes) avec un bouton OK : done(true).
+static func info(title: String, text: String) -> Control:
+	var s := _Screen.new()
+	s.build = func(root: _Screen):
+		var n := text.count("\n") + 1
+		var h := clampf(84.0 + n * 13.0, 120.0, 330.0)
+		var p := UI.panel(Pal.PANEL, Pal.ACCENT, 2)
+		UI.put(root, p, Vector2(130, (360.0 - h) / 2.0), Vector2(380, h))
+		UI.put(p, UI.label(title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 12), Vector2(380, 24))
+		var sc := ScrollContainer.new()
+		sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		UI.put(p, sc, Vector2(16, 42), Vector2(348, h - 76))
+		var l := UI.label(text, 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.custom_minimum_size = Vector2(340, 0)
+		sc.add_child(l)
+		UI.put(p, UI.hotkey(UI.button("OK", func(): root.done.emit(true)), [KEY_ENTER, KEY_KP_ENTER, KEY_ESCAPE]), Vector2(130, h - 28), Vector2(120, 20))
+	return s
+
+
 ## Difficultés de cette carte : chaque carte a ses propres difficultés débloquées.
 static func difficulty(map_id := 1) -> Control:
 	var s := _Screen.new()
@@ -247,7 +267,7 @@ static func _recap_panel(root: Control, unlocked: Array, pos: Vector2) -> void:
 		if id.begins_with("map:"):
 			txt = "Salle : " + String(MapDB.get_def(int(id.substr(4))).name)
 			col = Pal.ACCENT
-		elif id.begins_with("w:") or id.begins_with("a:"):
+		elif id.begins_with("w:") or id.begins_with("a:") or id.begins_with("f:"):
 			txt = ItemUnlockDB.label(id)
 		else:
 			var a := AchievementDB.get_def(id)

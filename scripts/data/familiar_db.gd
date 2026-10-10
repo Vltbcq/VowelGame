@@ -12,6 +12,8 @@ const LIST := [
 		"desc": "Surgit sous les ennemis : dégâts de zone, et sa cible est étourdie."},
 	{"id": "pie", "name": "Pie", "rar": 0, "ink": 45,
 		"desc": "Va chercher des pièces d'or bonus et te les rapporte."},
+	{"id": "pigeon", "name": "Pigeon", "rar": 0, "ink": 40,
+		"desc": "Vole au-dessus de toi et lâche une fiente toutes les 3 s sur un ennemi proche (dégâts + ralenti)... et une fois sur 10, sur toi."},
 	# Rares
 	{"id": "herisson_f", "name": "Hérisson", "rar": 1, "ink": 55,
 		"desc": "Roule partout sur la page et blesse les ennemis qu'il percute."},
@@ -40,7 +42,7 @@ const LIST := [
 ]
 
 ## Pouvoirs que la Chimère peut prendre (tous les familiers sauf elle).
-const CHIMERA_FORMS := ["moustique", "taupe", "pie", "herisson_f", "luciole", "perroquet", "corbeau",
+const CHIMERA_FORMS := ["moustique", "taupe", "pie", "pigeon", "herisson_f", "luciole", "perroquet", "corbeau",
 	"grenouille", "fantome", "paon", "yuki", "pavel", "teemeo"]
 
 const PRICE := [16, 30, 52, 88]

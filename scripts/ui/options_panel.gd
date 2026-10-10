@@ -58,23 +58,8 @@ func _ready() -> void:
 	_choices("zoom", ZOOMS, Vector2(280, y))
 	UI.put(self, UI.label("(en jeu : molette ou + / -)", 10, Pal.DIM), Vector2(280, y + 20))
 
-	y += 44
-	UI.put(self, UI.label("Conseils (tutoriel)", 10, Pal.TEXT), Vector2(150, y + 2))
-	var tb := UI.button("", func(): pass)
-	tb.pressed.connect(func():
-		Meta.set_setting("tips", not bool(Meta.setting("tips")))
-		tb.text = "Oui" if Meta.setting("tips") else "Non")
-	tb.text = "Oui" if Meta.setting("tips") else "Non"
-	UI.put(self, tb, Vector2(280, y), Vector2(80, 16))
-	var rb := UI.button("Revoir les conseils", func():
-		Tips.reset()
-		Meta.set_setting("tips", true)
-		tb.text = "Oui")
-	rb.tooltip_text = "Tous les conseils réapparaîtront au bon moment"
-	UI.put(self, rb, Vector2(366, y), Vector2(140, 16))
-
 	# Crédit obligatoire des musiques (licence de soundimage.org)
-	y += 34
+	y += 44
 	UI.put(self, UI.label("Crédits", 10, Pal.TEXT), Vector2(150, y + 2))
 	UI.put(self, UI.label("Musique : Eric Matyas · soundimage.org", 10, Pal.DIM), Vector2(280, y + 2), Vector2(300, 12))
 

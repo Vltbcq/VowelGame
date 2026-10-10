@@ -254,6 +254,8 @@ func tick(delta: float) -> void:
 			_taupe(delta)
 		"pie":
 			_pie(delta)
+		"pigeon":
+			_pigeon(delta)
 		"herisson_f":
 			_herisson(delta)
 		"luciole":
@@ -341,6 +343,51 @@ func _moustique(delta: float) -> void:
 		_action()
 		arena.player.heal(1.0)
 		arena.burst(position, Pal.BAD, 4, 40.0)
+
+
+## Pigeon : vole au-dessus de toi, et toutes les 3 s lâche une fiente sur un ennemi proche
+## (dégâts + ralenti 1,5 s). Une fois sur 10, c'est sur toi : tu es ralenti 1,5 s.
+const PIGEON_CD := 3.0
+
+
+func _pigeon(delta: float) -> void:
+	var a := t * 1.3
+	var to := arena.player.position + Vector2(cos(a) * 20.0, -24.0 + sin(a * 2.0) * 4.0)
+	_sitflip(to.x - position.x)
+	position = position.lerp(to, 1.0 - exp(-6.0 * delta))
+	sprite.position.y -= 10.0   # (il vole : son ombre reste au sol)
+	if cd > 0.0:
+		return
+	cd = fcd(PIGEON_CD)
+	var tgt: Node2D = null
+	if randf() < 0.1:
+		tgt = arena.player   # oups
+	else:
+		tgt = arena.nearest(arena.player.position, 140.0)
+	if tgt == null:
+		return
+	_action()
+	var d := Polygon2D.new()
+	d.polygon = PackedVector2Array([Vector2(0, -2), Vector2(1.5, 0), Vector2(0, 2), Vector2(-1.5, 0)])
+	d.color = Color(0.95, 0.95, 0.9)
+	d.position = position + sprite.position
+	d.z_index = 4
+	arena.world.add_child(d)
+	var dmg := fdmg(4.0, 0.8)
+	var tw := d.create_tween()
+	tw.tween_property(d, "position", tgt.position, 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(func():
+		var at := d.position
+		d.queue_free()
+		arena._splat(at, 3.0, Color(0.92, 0.92, 0.86))
+		if not is_instance_valid(tgt):
+			return
+		if tgt == arena.player:
+			arena.player.poop_t = 1.5
+			arena.float_text(arena.player.position + Vector2(0, -22), "BEURK !", Pal.DIM)
+		elif not (tgt as Enemy).dead:
+			hit(tgt as Enemy, dmg)
+			(tgt as Enemy).slow_t = maxf((tgt as Enemy).slow_t, 1.5))
 
 
 func _taupe(delta: float) -> void:

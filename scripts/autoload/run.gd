@@ -94,6 +94,7 @@ var xp := 0
 var xp_rest := 0.0          # fractions d'XP pas encore comptées
 var level := 0
 var kills := 0
+var party_kills := 0       # Chapeau de fête : ennemis tués depuis la fin de la dernière fête
 var bosses := 0
 var signature := 0
 var bonus := {}             # bonus de stats choisis en montant de niveau
@@ -153,6 +154,7 @@ func start(d: int, map_id := 1, with_seed := -1) -> void:
 	xp_rest = 0.0
 	level = 0
 	kills = 0
+	party_kills = 0
 	bosses = 0
 	signature = 0
 	bonus = {}
@@ -730,6 +732,11 @@ func roll_upgrades() -> Array:
 	return out
 
 
+## Multiplicateur des bonus de niveau : Palimpseste ×2, Stéroïdes ×1,5 chacun.
+func bonus_mult() -> float:
+	return (2.0 if amulet_count("palimpseste") > 0 else 1.0) * pow(1.5, amulet_count("encrier"))
+
+
 func _roll_upgrades() -> Array:
 	var pool := UPGRADES.duplicate()
 	pool.shuffle()
@@ -740,7 +747,9 @@ func _roll_upgrades() -> Array:
 		var rar := roll_rarity()
 		var pact := randf() < PACT_CHANCE
 		var v := maxf(0.5, snappedf(u[1] * UPGRADE_MULT[rar] * (2.0 if pact else 1.0) * level_decay(), 0.5))
-		var up := {"stat": u[0], "v": v, "rar": rar, "text": String(u[2]).replace("{v}", _num(v))}
+		# (le texte montre ce que tu gagnes vraiment : ×2 avec le Palimpseste, ×1,5 par Stéroïdes)
+		var bm := bonus_mult()
+		var up := {"stat": u[0], "v": v, "rar": rar, "text": String(u[2]).replace("{v}", _num(snappedf(v * bm, 0.1)))}
 		if pact:
 			# Pacte : un autre attribut baisse
 			var m: Array = pool[(i + 1 + randi() % (pool.size() - 1)) % pool.size()]
@@ -749,7 +758,7 @@ func _roll_upgrades() -> Array:
 			var mv := -snappedf(m[1] * 1.5, 0.5)
 			up.malus = [m[0], mv]
 			up.pact = true
-			up.text += "\n" + String(m[2]).replace("+{v}", _num(mv))
+			up.text += "\n" + String(m[2]).replace("+{v}", _num(snappedf(mv * bm, 0.1)))
 		out.append(up)
 	return out
 
@@ -1031,7 +1040,7 @@ func _roll_shop() -> void:
 				if offered.has(d.id):
 					return false
 				var lim := int(d.get("limit", 1 if int(d.rar) == 3 else 0))
-				return lim == 0 or amulet_count(d.id) < lim
+				return (lim == 0 or amulet_count(d.id) < lim) and amulet_usable(d)
 			var pool := AmuletDB.of_rarity(rar).filter(ok)
 			if pool.is_empty():
 				# Plus de légendaire disponible : une épique (mêmes règles : pas une unique déjà achetée)
@@ -1209,7 +1218,59 @@ func amulet_candidates(rar: int) -> Array:
 		if d.get("pet", false) and familiars.is_empty():
 			return false
 		var lim := int(d.get("limit", 1 if rar == 3 else 0))
-		return lim == 0 or amulet_count(d.id) < lim)
+		return (lim == 0 or amulet_count(d.id) < lim) and amulet_usable(d))
+
+
+## Objets à effet immédiat : proposés seulement s'ils servent à quelque chose.
+func amulet_usable(d: Dictionary) -> bool:
+	match String(d.id):
+		"pandore":
+			return not amulets.is_empty()
+		"diplome":
+			return weapons.any(func(w): return int(w.rar) < 3)
+	return true
+
+
+## Boîte de Pandore : chaque amulette devient une amulette au hasard de la rareté au-dessus
+## (une légendaire : une autre légendaire). Le dessin et la place restent. Retourne [[avant, après], ...].
+func open_pandora() -> Array:
+	var out := []
+	for am in amulets:
+		var old := AmuletDB.get_def(am.id)
+		if old.is_empty():
+			continue
+		var rar := mini(int(old.rar) + 1, 3)
+		var pool := AmuletDB.of_rarity(rar).filter(func(d):
+			if d.get("consume", false) or d.id == old.id or not Meta.item_open(ItemUnlockDB.key_amulet(d.id)):
+				return false
+			if d.get("pet", false) and familiars.is_empty():
+				return false
+			var lim := int(d.get("limit", 1 if rar == 3 else 0))
+			return lim == 0 or amulet_count(d.id) < lim)
+		if pool.is_empty():
+			continue
+		var nd: Dictionary = pool.pick_random()
+		if not amulet_art.has(nd.id):
+			amulet_art[nd.id] = amulet_art[old.id].duplicate()   # (même dessin pour la nouvelle)
+		am.id = nd.id
+		am.mag = Stats.amulet_mag(am.a, nd)
+		out.append([old.name, nd.name])
+	recompute()
+	return out
+
+
+## Pitcoin : à chaque fin de vague, 1 chance sur 8 de gagner gros, sinon une petite perte.
+## Retourne le gain (négatif = perte) de tous les Pitcoins.
+func pitcoin_roll() -> int:
+	var total := 0
+	for k in amulet_count("pitcoin"):
+		if randf() < 1.0 / 8.0:
+			total += roundi(150 * price_mult())
+		else:
+			total -= roundi(15 * price_mult())
+	total = maxi(total, -gold)
+	gold += total
+	return total
 
 
 ## Restaurateur : indices des amulettes possédées qu'il peut améliorer (pas les légendaires).

@@ -41,7 +41,6 @@ var default_cache := {}
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	_build()
-	(func(): Tips.show(self, "shop")).call_deferred()
 
 
 func _build() -> void:
@@ -272,7 +271,7 @@ Couleur : " + Pal.color_name(wcolor)
 				desc += " · ×%s" % ["", "1,8", "3,2", "6"][o.rar]
 			if def.has("scale"):
 				# Arme à ratio : la valeur ACTUELLE d'abord (le cartel est petit)
-				desc += "\nActuellement : " + Stats.scale_text(def.scale).replace("Ratio : ", "")
+				desc += "\nActuellement : " + Stats.scale_text(def.scale, o.rar).replace("Ratio : ", "")
 			full = Run.weapons.size() >= Run.max_weapons() and Run.fusion_match(o.wtype, o.rar) < 0
 			if Run.weapons.size() >= Run.max_weapons() and not full:
 				desc += "\n→ fusionne !"
@@ -330,7 +329,7 @@ Couleur : " + Pal.color_name(wcolor)
 		"scratch":
 			oname = "Ticket à gratter"
 			kind = "Jeu de hasard"
-			desc = "3 symboles pareils : or, étoile (+15% dégâts) ou diamant (amulette rare) !"
+			desc = "Permet de gagner des prix."
 			frame_cols = FRAME_EVENT
 			icon = _event_icon("scratch")
 		"auction":
@@ -551,7 +550,7 @@ func _weapon_card(ct: Control, o: Dictionary, fw: float) -> void:
 		if int(st.pellets) > 1:
 			shots = " ×%d" % int(st.pellets)
 	if scale != "" and scale != "crit" and scale != "lifesteal":
-		dmg = Stats.scaled_damage(dmg, scale)
+		dmg = Stats.scaled_damage(dmg, scale, o.rar)
 	var ratio := ""
 	if SCALE_SHORT.has(scale):
 		ratio = "(%s)" % SCALE_SHORT[scale]
@@ -915,7 +914,7 @@ func _buy(i: int) -> void:
 func _weapon_tip(w: Dictionary) -> String:
 	var st: Dictionary = w.st
 	var nm: String = WeaponDB.get_def(w.type).name
-	var ratio := ("\n" + Stats.scale_text(st.scale)) if String(st.get("scale", "")) != "" else ""
+	var ratio := ("\n" + Stats.scale_text(st.scale, w.rar)) if String(st.get("scale", "")) != "" else ""
 	ratio += "\n" + Pal.color_line(st.get("frac", []), 0.3)
 	if st.kind == "melee":
 		return "%s %s\nDégâts %.1f · Recharge %.2fs\nAllonge %d%s" % [nm, Pal.RARITY_NAMES_F[w.rar].to_lower(), st.damage, st.cooldown, roundi(st.reach), ratio]
@@ -1176,7 +1175,7 @@ func _item_desc(it: Dictionary) -> String:
 	if it.type == "weapon":
 		var wd := WeaponDB.get_def(it.wtype)
 		var ratio := ("
-" + Stats.scale_text(wd.scale)) if wd.has("scale") else ""
+" + Stats.scale_text(wd.scale, int(it.rar))) if wd.has("scale") else ""
 		return "%s — arme %s (%s)
 %s%s" % [wd.name, r, "mêlée" if wd.kind == "melee" else "distance", wd.desc, ratio]
 	var ad := AmuletDB.get_def(it.id)

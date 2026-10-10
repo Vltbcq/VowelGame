@@ -14,18 +14,21 @@ func _ready() -> void:
 	if Run.levelup_choices.is_empty():
 		Run.levelup_choices = Run.roll_upgrades()
 	choices = Run.levelup_choices
-	(func(): Tips.show(self, "levelup")).call_deferred()
 	UI.put(self, UI.label("NIVEAU %d !" % (Run.level - Run.pending_levels + 1), 40, Pal.GOOD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(640, 48))
-	var sub := "Choisis un bonus parmi les trois."
+	var sub := "Choisis un bonus parmi les %s." % (["", "un", "deux", "trois", "quatre", "cinq", "six"][choices.size()] if choices.size() < 7 else str(choices.size()))
 	UI.put(self, UI.label(sub, 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 80), Vector2(640, 14))
 	if Run.pending_levels > 1:
 		UI.put(self, UI.label("Encore %d niveau(x) après celui-ci" % (Run.pending_levels - 1), 10, Pal.DIM, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 96), Vector2(640, 14))
-	var cw := 140.0
+	# Zone des cartes : de x = 20 à 464 (les stats du perso sont à droite). 2 cartes (Palimpseste)
+	# ou 4 et plus (Stéroïdes) : toujours centrées, et rétrécies si elles ne tiennent pas
+	var n := choices.size()
+	var cw := minf(140.0, (444.0 - 10.0 * (n - 1)) / n)
+	var x0 := 20.0 + (444.0 - (n * cw + (n - 1) * 10.0)) / 2.0
 	for i in choices.size():
 		var u: Dictionary = choices[i]
 		var rc: Color = Pal.RARITY[u.rar]
 		var p := UI.panel(Pal.PANEL, rc, 2)
-		UI.put(self, p, Vector2(20 + i * (cw + 10.0), 130), Vector2(cw, 150))
+		UI.put(self, p, Vector2(x0 + i * (cw + 10.0), 130), Vector2(cw, 150))
 		UI.put(p, UI.label(Pal.RARITY_NAMES[u.rar], 10, rc, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 10), Vector2(cw, 12))
 		if u.get("pact", false):
 			UI.put(p, UI.label("PACTE : bonus doublé, mais...", 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 24), Vector2(cw, 12))
@@ -38,7 +41,8 @@ func _ready() -> void:
 		l.tooltip_text = "%s : %s" % [StatText.KEY_NAMES.get(String(u.stat), ""), u.text]
 		UI.put(p, l, Vector2(8, 44 if big else 40), Vector2(cw - 16, 66))
 		var up: Dictionary = u
-		UI.put(p, UI.button("Choisir", func(): done.emit(up)), Vector2((cw - 100.0) / 2.0, 116), Vector2(100, 20))
+		var bw := minf(100.0, cw - 12.0)
+		UI.put(p, UI.button("Choisir", func(): done.emit(up)), Vector2((cw - bw) / 2.0, 116), Vector2(bw, 20))
 	# Les stats actuelles du perso, pour choisir en connaissance de cause
 	var sp := UI.panel(Pal.PANEL, Pal.BORDER, 2)
 	UI.put(self, sp, Vector2(474, 112), Vector2(150, 236))

@@ -67,6 +67,16 @@ var squares: Array = []   # Tampon encreur {pos, half, t, dur, dmg, col}
 var quizzes: Array = []   # Professeur {cols, safe, answers, question, t, dur, dmg}
 var scans: Array = []     # Photocopieuse {y, t, tele, dur, dmg, hit, gaps}
 var dark_t := 0.0         # Nuit d'encre
+var dark_r := 44.0        # rayon de la lumière autour du joueur dans le noir (Lampe torche : plus grand)
+var knock_t := -1.0       # La Porte : quelqu'un frappe dans knock_t secondes (une fois par vague)
+const PARTY_SEC := 7.0    # ... pendant 7 s (les boss ne dansent pas)
+const PARTY_BEAT := 2.0   # battements par seconde des effets de fête
+var party_t := 0.0        # fête en cours : secondes restantes (effets visuels dans le HUD)
+var party_pulse := 1.0    # zoom de fête appliqué à la caméra (retiré à chaque image avant le suivant)
+const PARTY_EVERY := 150  # Chapeau de fête : la fête tous les 150 tués
+const LAUGH_RATE := 0.02  # Rires en boîte : +2 % de dégâts par seconde sans être touché...
+const LAUGH_MAX := 0.4    # ... jusqu'à +40 %
+var laugh_t := 0.0        # Rires en boîte : secondes sans être touché
 var theme := ""           # Salle thématique : la règle de cette vague
 var ghost: Player         # Reflet : ton double en miroir
 var wave_kills := 0       # ennemis tués pendant cette vague
@@ -206,6 +216,7 @@ func _ready() -> void:
 	cam.limit_bottom = H + 8
 	player.add_child(cam)
 	cam.make_current()
+	sync_amulets()
 
 	hud = Hud.new()
 	if Run.amulet_count("stream") > 0:
@@ -241,6 +252,8 @@ func _ready() -> void:
 		wave_len = time_left
 		hud.announce("VAGUE %d" % Run.wave, Pal.ACCENT)
 		Sfx.play("wave")
+	if Run.amulet_count("porte") > 0:
+		knock_t = randf_range(0.15, 0.85) * wave_len if boss_id == "" else randf_range(8.0, 35.0)
 	if theme != "":
 		_after(1.6, func():
 			if not ended:
@@ -302,6 +315,7 @@ func _tick_spyglass(delta: float) -> void:
 func _process(delta: float) -> void:
 	elapsed += delta
 	_tick_spyglass(delta)
+	_tick_party(delta)
 	numbers.tick(delta)
 	shake_amt = move_toward(shake_amt, 0.0, delta * 25.0)
 	cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * shake_amt
@@ -345,6 +359,18 @@ func _process(delta: float) -> void:
 	_tick_order(delta)
 	if theme == "nuit":
 		dark_t = maxf(dark_t, 3.0)   # Salle thématique : nuit d'encre permanente
+	elif Run.amulet_count("lampe") > 0:
+		dark_t = maxf(dark_t, 3.0)   # Lampe torche : noir permanent, mais un plus grand cercle de lumière
+		dark_r = 85.0
+	if knock_t > 0.0:
+		knock_t -= delta
+		if knock_t <= 0.0:
+			Sfx.knock()   # La Porte (rien ne le dit nulle part)
+	if Run.amulet_count("rires") > 0:
+		var was := laugh_t
+		laugh_t += delta
+		if was * LAUGH_RATE < LAUGH_MAX and laugh_t * LAUGH_RATE >= LAUGH_MAX:
+			float_text(player.position + Vector2(0, -30), "LE PUBLIC EST CONQUIS ! +40 %", Pal.ACCENT)
 	for e in enemies.duplicate():
 		if ended:
 			break
@@ -541,6 +567,8 @@ func _spawn_enemy_raw(id: String, pos: Vector2, small: bool, elite := false) -> 
 	if e.is_boss:
 		boss = e
 		shake(6.0)
+	elif party_t > 0.0:
+		e.dance_t = party_t   # Chapeau de fête : arrivé en pleine fête, il danse jusqu'à la fin
 	return e
 
 
@@ -673,7 +701,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	base *= float(wst.get("ghost", 1.0))   # Reflet : ton double fait 40 % des dégâts
 	var scale: String = wst.get("scale", "")
 	if scale != "":
-		base = Stats.scaled_damage(base, scale)
+		base = Stats.scaled_damage(base, scale, int(wst.get("rar", 0)))   # (+15 % de ratio par rang)
 	# Pierre à aiguiser : +1 dégât par rang de rareté de l'arme
 	base += float(wst.get("rar", 0)) * Run.amulet_count("pierre_aiguiser")
 	var dmg: float = base * (1.0 + s.dmg / 100.0)
@@ -736,7 +764,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 			dmg *= 0.92
 	if crit:
 		# Cutter : ses critiques grandissent avec le taux de critique
-		dmg *= maxf(s.crit_mult, 2.0 + crit_chance / 35.0) if scale == "crit" else s.crit_mult
+		dmg *= maxf(s.crit_mult, Stats.crit_ratio(crit_chance, int(wst.get("rar", 0)))) if scale == "crit" else s.crit_mult
 	dmg = maxf(1.0, dmg)
 	if Run.amulet_count("estompe") > 0:
 		e.slow_t = maxf(e.slow_t, 0.8 * Run.amulet_count("estompe"))
@@ -759,7 +787,7 @@ func hit_enemy(e: Enemy, base: float, wst: Dictionary, dir: Vector2, knock: floa
 	if wst.has("ref_hit") and float(wst.ref_hit) > 0.0:
 		hs = clampf(base / float(wst.ref_hit), 0.2, 1.5)
 	# Vol de vie (Pipette : ×3 + 5 %) ; au-delà de 100 %, plusieurs PV par coup
-	var ls := Stats.lifesteal_of(scale) / 100.0 * hs
+	var ls := Stats.lifesteal_of(scale, int(wst.get("rar", 0))) / 100.0 * hs
 	var heal := floorf(ls) + (1.0 if randf() < ls - floorf(ls) else 0.0)
 	if heal > 0.0:
 		var cal := Run.amulet_count("calice")
@@ -877,6 +905,16 @@ func kill_enemy(e: Enemy) -> void:
 		if banana_kills >= 8:
 			banana_kills = 0
 			peels.append({"pos": e.position, "t": 20.0, "a": randf() * TAU})
+	# Chapeau de fête : des confettis à chaque mort, et tous les 150 tués C'EST LA FÊTE
+	if Run.amulet_count("chapeau_fete") > 0:
+		for k in 3:
+			burst(e.position, Pal.SHADES[[1, 2, 3, 4, 5][randi() % 5]][1], 4, 90.0)
+		# (les ennemis tués PENDANT la fête ne comptent pas : le compteur repart quand elle finit)
+		if party_t <= 0.0:
+			Run.party_kills += 1
+			if Run.party_kills >= PARTY_EVERY:
+				Run.party_kills = 0
+				party()
 	if e.elite:
 		Run.elite_kills += 1
 	if e.is_boss:
@@ -1074,6 +1112,14 @@ func _end_wave() -> void:
 		else:
 			hud.announce("COMMANDE RATÉE", Pal.DIM)
 	Run.order = {}
+	# Pitcoin : le cours du jour
+	if Run.amulet_count("pitcoin") > 0:
+		var g := Run.pitcoin_roll()
+		if g > 0:
+			numbers.add(player.position + Vector2(0, -34), "PITCOIN  +● %d !" % g, Pal.ACCENT, 2.4, true)
+			Sfx.play("coin")
+		elif g < 0:
+			numbers.add(player.position + Vector2(0, -34), "PITCOIN  −● %d" % -g, Pal.BAD, 2.0)
 	Meta.map_cleared(Run.map)
 	if Run.wave_dmg > 0.0:
 		Run.wave_dmg = 0.0   # l'étoile du grattage ne dure qu'une vague
@@ -1575,6 +1621,7 @@ func _amulet_dmg_mult(e: Enemy, wst: Dictionary) -> float:
 		m *= (1.0 + 0.12 * sp) * pow(0.92, vi)
 	elif kind == "ranged":
 		m *= (1.0 + 0.12 * vi) * pow(0.92, sp)
+	m *= 1.0 + laugh_bonus()   # Rires en boîte
 	var ca := Run.amulet_count("cadran_solaire")
 	if ca > 0:
 		var late := elapsed > (wave_len * 0.5 if wave_len > 0.0 else 30.0)
@@ -1911,6 +1958,51 @@ func _tick_blotters(delta: float) -> void:
 		if b.t > 0.0:
 			keep.append(b)
 	blotters = keep
+
+
+## Amulettes visibles dans l'arène (Tête à l'envers) : au début de la vague, et aussi
+## quand l'outil de dev en donne une en pleine vague.
+func sync_amulets() -> void:
+	cam.ignore_rotation = Run.amulet_count("envers") == 0
+	cam.rotation = 0.0 if cam.ignore_rotation else PI   # Tête à l'envers : tout s'affiche retourné (les touches suivent l'écran)
+
+
+## Rires en boîte : bonus de dégâts actuel (0 à 0,4).
+func laugh_bonus() -> float:
+	return minf(LAUGH_MAX, laugh_t * LAUGH_RATE) if Run.amulet_count("rires") > 0 else 0.0
+
+
+## Le joueur vient de prendre un vrai coup (ni esquivé ni bloqué).
+func on_player_hit() -> void:
+	if Run.amulet_count("rires") > 0:
+		if laugh_t >= 1.0:
+			Sfx.laugh()
+			float_text(player.position + Vector2(randf_range(-10, 10), -30), ["HAHAHA", "HA HA HA !", "MDR", "HAHA"].pick_random(), Pal.ACCENT)
+		laugh_t = 0.0
+
+
+## Fête en cours : toute l'arène pulse en rythme (léger zoom), par-dessus les autres zooms.
+func _tick_party(delta: float) -> void:
+	var z := cam.zoom.x / party_pulse
+	party_pulse = 1.0
+	if party_t > 0.0:
+		party_t -= delta
+		if party_t > 0.0:
+			var beat := fmod((PARTY_SEC - party_t) * PARTY_BEAT, 1.0)
+			party_pulse = 1.0 + 0.035 * pow(1.0 - beat, 2.0)   # un coup net à chaque temps, qui retombe
+	cam.zoom = Vector2(z, z) * party_pulse
+
+
+## Chapeau de fête : tous les ennemis dansent sur place.
+func party() -> void:
+	hud.announce("C'EST LA FÊTE !", Pal.ACCENT)
+	Sfx.party()   # (la musique de la vague se met en pause, la musique de fête joue)
+	party_t = PARTY_SEC
+	for e in enemies:
+		if not e.dead and not e.is_boss:   # (les boss ne dansent pas)
+			e.dance_t = PARTY_SEC
+	for k in 6:
+		burst(player.position + Vector2(randf_range(-120, 120), randf_range(-70, 70)), Pal.SHADES[1 + randi() % 5][1], 10, 120.0)
 
 
 func darkness(sec: float) -> void:

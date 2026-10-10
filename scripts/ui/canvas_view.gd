@@ -125,6 +125,19 @@ func _draw() -> void:
 		_weapon_guide()
 	draw_texture_rect(screen.tex, Rect2(Vector2.ZERO, size), false)
 	_draw_edges()
+	if screen.cfg.has("fit"):
+		# Dessin trop grand pour sa toile : le cadre rouge = la taille permise (au centre),
+		# l'extérieur est voilé ; il faudra que tout le dessin tienne dans un cadre de cette taille
+		var f: Vector2i = screen.cfg.fit
+		@warning_ignore("integer_division")
+		var fo := (s - f) / 2
+		var fr := Rect2(Vector2(fo * px), Vector2(f * px))
+		var veil := Color(Pal.INK, 0.25)
+		draw_rect(Rect2(0, 0, size.x, fr.position.y), veil)
+		draw_rect(Rect2(0, fr.end.y, size.x, size.y - fr.end.y), veil)
+		draw_rect(Rect2(0, fr.position.y, fr.position.x, fr.size.y), veil)
+		draw_rect(Rect2(fr.end.x, fr.position.y, size.x - fr.end.x, fr.size.y), veil)
+		draw_rect(fr, Pal.BAD, false, 2.0)
 	if screen.mirror:
 		var mx := s.x * px / 2.0
 		draw_line(Vector2(mx, 0), Vector2(mx, size.y), Color(Pal.BAD, 0.6), 1.0)

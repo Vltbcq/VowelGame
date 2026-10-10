@@ -25,7 +25,6 @@ var pic_mat: ShaderMaterial
 var keep_btn: Button
 var mod_btn: Button
 var alt_row: Control      # « Modifier » / « Nouveau » : cachés quand il n'y a encore aucun dessin
-var why_label: Label
 var bord_btn: Button
 var gallery_btns := []
 
@@ -41,11 +40,18 @@ func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	UI.fill_bg(self)
 	UI.put(self, UI.label(cfg.title, 20, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER), Vector2(0, 8), Vector2(640, 24))
-	# Pas de texte d'aide ici (il reste sur la toile) ; seule une couleur imposée est rappelée
-	var need := ("COULEUR IMPOSÉE : %s (au moins la moitié de la couleur)" % String(Pal.NAMES[int(cfg.need_el)]).to_upper()) if cfg.has("need_el") else ""
-	var sub := UI.label(need, 10, Pal.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UI.put(self, sub, Vector2(20, 34), Vector2(600, 26))
+	# Pas de texte d'aide ici (il reste sur la toile) ; seule une couleur imposée est rappelée,
+	# en grand : l'icône de l'élément et son nom
+	if cfg.has("need_el"):
+		var el := int(cfg.need_el)
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 8)
+		UI.put(self, row, Vector2(0, 36), Vector2(640, 22))
+		row.add_child(_el_icon(el, 20))
+		var nl := UI.label("COULEUR IMPOSÉE : %s" % String(Pal.NAMES[el]).to_upper(), 16, Pal.SHADES[el][1].lightened(0.25))
+		nl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(nl)
 
 	# --- Gauche : le dessin choisi
 	frame_cap = UI.label(caption, 10, Pal.DIM)
@@ -76,8 +82,6 @@ func _ready() -> void:
 	bord_btn = UI.hotkey(UI.button("", _toggle_outline), [KEY_C])
 	bord_btn.tooltip_text = "Contour noir autour du dessin en jeu"
 	UI.put(self, bord_btn, Vector2(24, 322), Vector2(200, 16))
-	why_label = UI.label("", 10, Pal.BAD, HORIZONTAL_ALIGNMENT_CENTER)
-	UI.put(self, why_label, Vector2(24, 342), Vector2(200, 12))
 
 	if existing != null:
 		from_carnet = true
@@ -108,13 +112,17 @@ func _ready() -> void:
 		th.position = Vector2(4, 4)
 		b.add_child(th)
 		b.tooltip_text = "Encre : %d" % Analyzer.ink_cost(gi)
-		if block != "":
-			# grisé, avec la raison au survol (rien n'est caché en silence)
-			b.disabled = true
+		if cfg.has("need_el"):
+			# icône de l'élément de sa couleur dominante, dans le coin
+			var ic := _el_icon(int(Analyzer.analyze(gi).dominant), 13)
+			ic.position = Vector2(43, 2)
+			b.add_child(ic)
+		var issue: String = block if block != "" else f[3]
+		if issue != "":
+			# pas utilisable tel quel (trop grand, couleurs verrouillées, mauvaise couleur) : pâli,
+			# mais on peut le prendre pour le MODIFIER ; c'est au joueur de le rendre valide
 			th.modulate = Color(1, 1, 1, 0.3)
-			b.tooltip_text = block
-			grid.add_child(b)
-			continue
+			b.tooltip_text = "%s\n(tu peux le prendre et le modifier)" % issue
 		b.pressed.connect(func():
 			Sfx.play("click")
 			from_carnet = false
@@ -136,29 +144,42 @@ func _ready() -> void:
 				_style_thumb(o, false)), Vector2(248, 338), Vector2(200, 18))
 	if cfg.get("cancel", false):
 		UI.put(self, UI.hotkey(UI.button(String(cfg.get("cancel_label", "Retour")), func(): done.emit({"a": "cancel"})), [KEY_ESCAPE]), Vector2(528, 338), Vector2(100, 18))
-	Tips.show(self, "carnet")
 
 
 func _style_thumb(b: Button, on: bool) -> void:
 	b.add_theme_stylebox_override("normal", UI.sb(Pal.PAPER, Pal.ACCENT if on else Pal.BORDER, 3 if on else 1))
 	b.add_theme_stylebox_override("hover", UI.sb(Pal.PAPER, Pal.ACCENT, 2))
 	b.add_theme_stylebox_override("pressed", UI.sb(Pal.PAPER, Pal.ACCENT, 3))
+	b.add_theme_stylebox_override("disabled", UI.sb(Pal.PAPER, Pal.BORDER, 1))   # (pas de case sombre)
+
+
+## Icône d'un élément (0 = l'Ombre), agrandie au pixel près.
+static func _el_icon(el: int, px: int) -> TextureRect:
+	var t := TextureRect.new()
+	t.texture = UI.element_icon(el if el > 0 else Pal.NOIR)
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.custom_minimum_size = Vector2(px, px)
+	t.size = Vector2(px, px)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
 
 
 ## Met un dessin dans le grand cadre (ou un « ? » si aucun).
 func _select(img: Image, effect: String) -> void:
-	sel_img = _fit_canvas(img) if img else null
+	sel_img = _fit_canvas(img) if img else null   # (un dessin trop grand reste entier : à retoucher)
 	sel_effect = effect
 	var shown: Image = Analyzer.trim(sel_img) if sel_img else Gfx.icon(Gfx.ICON_UNKNOWN)
 	pic.texture = ImageTexture.create_from_image(Gfx.padded(shown))
 	pic_mat = Gfx.material(sel_effect, outline and sel_img != null)
 	pic.material = pic_mat
-	var why := _usable(sel_img) if sel_img else "Rien pour l'instant : dessine-le !"
+	var why := _usable(img) if img else "Rien pour l'instant : dessine-le !"   # (sur le dessin d'origine)
 	keep_btn.disabled = why != ""
 	mod_btn.disabled = sel_img == null
 	alt_row.visible = sel_img != null   # pas de dessin : seul « Dessiner » (Nouveau ferait pareil)
 	mod_btn.text = "Modifier" + ("  (+%d ◆)" % reward if reward > 0 and from_carnet else "")
-	why_label.text = why if sel_img else ""
+	keep_btn.tooltip_text = why if sel_img else ""   # pourquoi on ne peut pas l'utiliser tel quel
 	keep_btn.text = "Utiliser ce dessin" if sel_img else "Dessiner"
 	if sel_img == null:
 		keep_btn.disabled = false
@@ -214,9 +235,11 @@ func _fitting() -> Array:
 		var gi := Meta.gallery_image(e)
 		if gi == null:
 			continue
-		out.append([e, gi, DrawCfg.gallery_block(cfg, gi)])
-	# les utilisables d'abord, puis les grisés
-	out.sort_custom(func(a, b): return a[2] == "" and b[2] != "")
+		var block := DrawCfg.gallery_block(cfg, gi)
+		out.append([e, gi, block, DrawCfg.color_issue(cfg, gi) if block == "" else ""])
+	# les utilisables d'abord, puis ceux de la mauvaise couleur, puis les bloqués
+	var rank := func(f: Array) -> int: return 2 if f[2] != "" else (1 if f[3] != "" else 0)
+	out.sort_custom(func(a, b): return rank.call(a) < rank.call(b))
 	return out
 
 
@@ -224,12 +247,13 @@ func _effect_ok(fx: String) -> String:
 	return fx if fx in Meta.effects() else ""
 
 
-## Recentre le dessin sur une toile de la taille attendue.
+## Recentre le dessin sur une toile de la taille attendue. Un dessin trop grand n'est PAS coupé :
+## la toile s'agrandit (il ne pourra pas être utilisé tel quel, seulement modifié).
 func _fit_canvas(src: Image) -> Image:
-	var s: Vector2i = cfg.size
 	var t := Analyzer.trim(src)
-	var out := Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
 	var ss := t.get_size()
+	var s := Vector2i(maxi(cfg.size.x, ss.x), maxi(cfg.size.y, ss.y))
+	var out := Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
 	@warning_ignore("integer_division")
-	out.blit_rect(t, Rect2i(Vector2i.ZERO, Vector2i(mini(ss.x, s.x), mini(ss.y, s.y))), Vector2i(maxi(0, (s.x - ss.x) / 2), maxi(0, (s.y - ss.y) / 2)))
+	out.blit_rect(t, Rect2i(Vector2i.ZERO, ss), (s - ss) / 2)
 	return out

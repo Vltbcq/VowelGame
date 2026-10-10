@@ -108,7 +108,6 @@ func _ready() -> void:
 	for i in 3:
 		_spawn_walker(randf_range(40.0, 600.0))
 	UI.use_menu_font(self)   # tout l'écran titre en Yoster Island
-	Tips.show(self, "welcome")
 
 
 # ------------------------------------------------------------------ Cadres

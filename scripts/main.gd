@@ -254,6 +254,38 @@ func _get_amulet(id: String) -> bool:
 	return true
 
 
+## Objets à effet immédiat (ni dessin ni pose : ils disparaissent aussitôt).
+func _consume(id: String) -> bool:
+	match id:
+		"pandore":
+			var ch := Run.open_pandora()
+			if ch.is_empty():
+				return false
+			Sfx.play("level")
+			for c in ch:
+				Run.log_event("event", "Boîte de Pandore : %s → %s" % c)
+			if Run.amulet_count("oculiste") > 0 and Run.oculist_ok < 0:
+				var ok = await _ask(OculistTest.new())
+				Run.oculist_ok = 1 if ok else 0
+				Run.recompute()
+			await _ask(ChoiceScreens.info("BOÎTE DE PANDORE", "\n".join(ch.map(func(c): return "%s  →  %s" % c))))
+			return true
+		"diplome":
+			var idx := []
+			for i in Run.weapons.size():
+				if int(Run.weapons[i].rar) < 3:
+					idx.append(i)
+			if idx.is_empty():
+				return false
+			var i: int = idx.pick_random()
+			var w: Dictionary = Run.weapons[i]
+			Run.log_event("event", "Diplôme : %s → %s" % [Run.item_label("weapon", w.type, int(w.rar)), Pal.RARITY_NAMES_F[int(w.rar) + 1].to_lower()])
+			await _upgrade_weapon(i)
+			Run.recompute()
+			return true
+	return false
+
+
 # ------------------------------------------------------------------ Partie
 
 ## Reprend la partie sauvegardée de la sauvegarde active.
@@ -474,6 +506,8 @@ func _buy(i: int) -> void:
 			ok = Run.weapons.size() < Run.max_weapons() and await _get_weapon(o.wtype, o.rar, o.price)
 	elif o.type == "familiar":
 		ok = await _get_familiar(o.id)
+	elif AmuletDB.get_def(o.id).get("consume", false):
+		ok = await _consume(o.id)
 	else:
 		ok = await _get_amulet(o.id)
 	if not ok:

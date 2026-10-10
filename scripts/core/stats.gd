@@ -105,8 +105,7 @@ static func player(run: Node) -> Dictionary:
 			s.res[e] += af[e] * 20.0
 	# Bonus choisis en montant de niveau
 	# Palimpseste : les bonus de niveau comptent double ; Stéroïdes : +50 %
-	var bm := 2.0 if run.amulet_count("palimpseste") > 0 else 1.0
-	bm *= pow(1.5, run.amulet_count("encrier"))
+	var bm: float = run.bonus_mult()
 	for k in run.bonus:
 		s[k] += run.bonus[k] * bm
 	# Marques d'encre : leur couleur donne un peu de résistance (elles ne comptent pas dans la taille)
@@ -193,35 +192,51 @@ static func weapon(w: Dictionary) -> Dictionary:
 
 ## Armes à RATIO : dégâts d'un coup selon la stat liée (appliqué à chaque coup, donc
 ## toujours à jour : or dans la bourse, armes possédées, stats du moment...).
-static func scaled_damage(base: float, scale: String) -> float:
+## Armes à ratio : la partie ratio grandit de 15 % par rang de rareté (fusion) :
+## commune ×1, rare ×1,15, épique ×1,3, légendaire ×1,45.
+const RATIO_PER_RAR := 0.15
+
+
+static func ratio_k(rar: int) -> float:
+	return 1.0 + RATIO_PER_RAR * rar
+
+
+static func scaled_damage(base: float, scale: String, rar := 0) -> float:
 	var s: Dictionary = Run.stats
+	var k := ratio_k(rar)
 	match scale:
 		"free_slots":
-			return base * (1.0 + 0.6 * maxi(0, Run.max_weapons() - Run.weapons.size()))
+			return base * (1.0 + k * 0.6 * maxi(0, Run.max_weapons() - Run.weapons.size()))
 		"max_hp":
-			return base + 0.15 * float(s.get("max_hp", 0.0))
+			return base + k * 0.15 * float(s.get("max_hp", 0.0))
 		"armor":
-			return base + 1.5 * maxf(0.0, s.get("armor", 0.0))
+			return base + k * 1.5 * maxf(0.0, s.get("armor", 0.0))
 		"speed":
-			return base * (1.0 + maxf(0.0, s.get("speed", 0.0)) / 100.0)
+			return base * (1.0 + k * maxf(0.0, s.get("speed", 0.0)) / 100.0)
 		"luck":
-			return base + 0.25 * maxf(0.0, s.get("luck", 0.0))
+			return base + k * 0.25 * maxf(0.0, s.get("luck", 0.0))
 		"gold":
-			return base + floorf(Run.gold / 12.0)
+			return base + floorf(k * Run.gold / 12.0)
 		"range":
-			return base * (1.0 + 1.5 * maxf(0.0, s.get("range", 0.0)) / 100.0)
+			return base * (1.0 + k * 1.5 * maxf(0.0, s.get("range", 0.0)) / 100.0)
 		"colors":
-			return base * (1.0 + 0.35 * int(Run.char_a.get("elements", 0)))
+			return base * (1.0 + k * 0.35 * int(Run.char_a.get("elements", 0)))
 		"pixels":
-			return base * pixel_mult()
+			var pm := pixel_mult()
+			return base * (1.0 + k * (pm - 1.0) if pm > 1.0 else pm)   # (un malus ne grandit pas)
 	return base
+
+
+## Cutter : multiplicateur de ses critiques (×2 + critique ÷ 35, la partie ratio grandit avec la rareté).
+static func crit_ratio(crit: float, rar := 0) -> float:
+	return 2.0 + ratio_k(rar) * crit / 35.0
 
 
 ## Vol de vie (en %) d'un coup de cette arme. Pipette : ×3 + 5 %. Au-delà de 100 %,
 ## un coup soigne plusieurs PV.
-static func lifesteal_of(scale: String) -> float:
+static func lifesteal_of(scale: String, rar := 0) -> float:
 	var ls: float = maxf(0.0, Run.stats.get("lifesteal", 0.0))
-	return ls * 3.0 + 5.0 if scale == "lifesteal" else ls
+	return ls * 3.0 * ratio_k(rar) + 5.0 if scale == "lifesteal" else ls
 
 
 ## Valeur actuelle d'une amulette dont l'effet dépend de la partie ("" sinon).
@@ -273,32 +288,33 @@ static func pixel_mult() -> float:
 
 
 ## Texte « valeur actuelle du ratio » (boutique, collection).
-static func scale_text(scale: String) -> String:
+static func scale_text(scale: String, rar := 0) -> String:
 	var s: Dictionary = Run.stats
+	var b := 10.0   # (dégâts d'exemple pour lire les multiplicateurs)
 	match scale:
 		"free_slots":
 			var free := maxi(0, Run.max_weapons() - Run.weapons.size())
-			return "Ratio : %d emplacement(s) libre(s) = ×%.1f" % [free, 1.0 + 0.6 * free]
+			return "Ratio : %d emplacement(s) libre(s) = ×%.1f" % [free, scaled_damage(b, scale, rar) / b]
 		"max_hp":
-			return "Ratio : %d PV max = +%d dégâts" % [int(s.get("max_hp", 0)), roundi(0.15 * float(s.get("max_hp", 0.0)))]
+			return "Ratio : %d PV max = +%d dégâts" % [int(s.get("max_hp", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"armor":
-			return "Ratio : %d armure = +%d dégâts" % [int(s.get("armor", 0)), roundi(1.5 * maxf(0.0, s.get("armor", 0.0)))]
+			return "Ratio : %d armure = +%d dégâts" % [int(s.get("armor", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"speed":
-			return "Ratio : vitesse %+d%% = ×%.2f" % [int(s.get("speed", 0)), 1.0 + maxf(0.0, s.get("speed", 0.0)) / 100.0]
+			return "Ratio : %+d%% vitesse = ×%.2f" % [int(s.get("speed", 0)), scaled_damage(b, scale, rar) / b]
 		"crit":
-			return "Ratio : %d%% critique = critiques ×%.1f" % [int(s.get("crit", 0)), maxf(float(s.get("crit_mult", 2.0)), 2.0 + float(s.get("crit", 0.0)) / 35.0)]
+			return "Ratio : %d%% critique = critiques ×%.1f" % [int(s.get("crit", 0)), maxf(float(s.get("crit_mult", 2.0)), crit_ratio(float(s.get("crit", 0.0)), rar))]
 		"luck":
-			return "Ratio : %d chance = +%d dégâts" % [int(s.get("luck", 0)), roundi(0.25 * maxf(0.0, s.get("luck", 0.0)))]
+			return "Ratio : %d chance = +%d dégâts" % [int(s.get("luck", 0)), roundi(scaled_damage(0.0, scale, rar))]
 		"gold":
-			return "Ratio : %d or = +%d dégâts" % [Run.gold, floori(Run.gold / 12.0)]
+			return "Ratio : %d or = +%d dégâts" % [Run.gold, roundi(scaled_damage(0.0, scale, rar))]
 		"range":
-			return "Ratio : portée %+d%% = ×%.2f" % [int(s.get("range", 0)), 1.0 + 1.5 * maxf(0.0, s.get("range", 0.0)) / 100.0]
+			return "Ratio : %+d%% portée = ×%.2f" % [int(s.get("range", 0)), scaled_damage(b, scale, rar) / b]
 		"colors":
-			return "Ratio : %d couleur(s) sur ton perso = ×%.2f" % [int(Run.char_a.get("elements", 0)), 1.0 + 0.35 * int(Run.char_a.get("elements", 0))]
+			return "Ratio : %d couleur(s) sur ton perso = ×%.2f" % [int(Run.char_a.get("elements", 0)), scaled_damage(b, scale, rar) / b]
 		"pixels":
-			return "Ratio : %d pixels = ×%.2f" % [int(Run.char_a.get("pixels", 0)), pixel_mult()]
+			return "Ratio : %d pixels = ×%.2f" % [int(Run.char_a.get("pixels", 0)), scaled_damage(b, scale, rar) / b]
 		"lifesteal":
-			return "Ratio : vol de vie %d%% = %d%% sur ses coups" % [int(s.get("lifesteal", 0)), roundi(lifesteal_of("lifesteal"))]
+			return "Ratio : %d%% vol de vie = %d%% sur ses coups" % [int(s.get("lifesteal", 0)), roundi(lifesteal_of("lifesteal", rar))]
 	return ""
 
 

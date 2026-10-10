@@ -81,7 +81,6 @@ func _ready() -> void:
 	ok_btn = UI.hotkey(UI.button("VALIDER →", _validate), [KEY_ENTER, KEY_KP_ENTER])
 	UI.put(self, ok_btn, Vector2(496, 330), Vector2(136, 18))
 	_update()
-	Tips.show(self, "arrange")
 
 
 func _entry(type: String, rar: int, rot: int, flip: bool, idx: int) -> Dictionary:

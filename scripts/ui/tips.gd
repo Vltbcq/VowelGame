@@ -1,44 +1,13 @@
 class_name Tips
 extends RefCounted
-## Tutoriel par conseils contextuels : chaque conseil n'apparaît qu'une fois, au moment
-## où le joueur découvre la mécanique. Désactivable dans les options.
+## Conseils : chacun n'apparaît qu'une fois. Il n'en reste que deux (fin de partie, Atelier) ;
+## le réglage « tips » n'est plus dans les options (les tests s'en servent pour les couper).
 
 const TEXT := {
-	"welcome": ["Bienvenue dans Paint It Until You Make It !",
-		"Ici, tu dessines TOUT : ton perso, tes armes, tes balles, tes amulettes... et même tes ennemis.\n\nChaque trait change tes stats. Survis à 15 vagues de monstres (un boss toutes les 5 vagues) pour gagner.\n\nQuelques conseils vont apparaître au fil de ta première partie."],
-	"draw_perso": ["Dessine ton perso",
-		"• Seuls les TRAITS coûtent de l'encre : le contour d'une forme. Remplir l'intérieur (outil Remplir, touche F) est gratuit !\n• Ton dessin change tes stats : à toi de découvrir comment.\n\nRegarde l'APERÇU à droite : il se met à jour à chaque trait. Clic droit = gomme, Ctrl+Z = défaire."],
-	"colors": ["Les couleurs = les éléments",
-		"Chaque couleur a un élément : rouge = Feu, bleu = Glace, jaune = Foudre...\n\n• Sur ton perso : une résistance et un bonus (dégâts, armure, vitesse d'attaque...).\n• Sur une arme : un effet (brûlure, gel, éclairs...). Plus il y a de pixels d'une couleur, plus l'effet se déclenche souvent.\n• 3 armes du même élément = une SYNERGIE."],
-	"draw_weapon": ["Dessine ton arme",
-		"Dessine-la POINTÉE VERS LA DROITE : c'est ce côté qui vise les ennemis.\n\nLa forme de ton dessin change ses stats : regarde l'APERÇU à droite."],
-	"draw_bullet": ["Dessine tes balles",
-		"• Chaque MORCEAU séparé devient un projectile : 5 petits points = une rafale de 5 balles !\n• La forme des balles change leurs stats : regarde l'APERÇU."],
-	"draw_enemy": ["Dessine un ennemi",
-		"Oui, tu dessines aussi tes ennemis !\n\n• Sa couleur dominante devient son élément : il te fait des dégâts de cet élément et y résiste.\n\nIl est gardé dans le CODEX pour les prochaines parties. « Au hasard » dessine un monstre pour toi."],
-	"draw_amulet": ["Dessine ton amulette",
-		"Chaque amulette a ses bonus et ses défauts : choisis-les selon ton build.\n\nEnsuite tu la poseras où tu veux sur ton perso : l'endroit donne un bonus en plus."],
-	"draw_mark": ["Dessine une marque",
-		"En montant de niveau, tu peux dessiner une marque sur ton perso (tatouage, cicatrice...).\nElle ne compte PAS dans ta taille : tu ne deviens ni plus gros ni plus lent.\n\nPlus le bonus est rare, plus elle peut être grande. « Passer » si tu ne veux pas dessiner."],
-	"carnet": ["Réutilise tes dessins",
-		"Avant chaque dessin, le jeu te propose d'abord :\n• ton DERNIER dessin pour cet objet (à gauche) ;\n• tes dessins de la GALERIE qui conviennent (à droite).\n\nUn clic et c'est réglé. « Dessiner » ou « Nouveau » si tu veux un nouveau dessin. Dans l'écran de dessin, « < Choix » revient ici."],
-	"arrange": ["Pose tes armes",
-		"Clique pour poser ton arme n'importe où sur ou autour de ton perso : elle attaquera depuis là.\nClique une arme déjà posée pour la déplacer. R = tourner, M = miroir.\n\nTu pourras réorganiser tes armes à tout moment depuis la boutique (« Ranger mes armes »)."],
-	"controls": ["C'est parti !",
-		"• ZQSD / WASD / flèches (ou manette) pour bouger.\n• Tes armes attaquent TOUTES SEULES l'ennemi le plus proche.\n• Ramasse les gouttes d'encre : elles donnent de l'or et de l'expérience.\n• Tes PV ne remontent PAS entre les vagues : fais attention !\n\nÉchap = pause · Molette = zoom. Survis jusqu'à la fin du chrono !"],
-	"levelup": ["Niveau supérieur !",
-		"Choisis 1 bonus parmi 3. Sa couleur indique sa rareté.\nLes « PACTES » donnent un bonus doublé... mais font baisser un autre attribut.\n\nPlus tu montes de niveau, plus les bonus rares apparaissent."],
-	"shop": ["La boutique",
-		"• Achète des armes (max 6) et des amulettes. Un « ? » = pas encore dessiné.\n• Les potions (quand il y en a) sont ta seule façon de te soigner.\n• Relancer coûte de plus en plus cher à chaque fois.\n• 2 armes identiques = FUSION en une arme plus rare.\n• Tout devient plus cher au fil des vagues : dépense bien !"],
 	"end": ["Fin de partie",
 		"Tu gagnes des PIGMENTS ◆ à chaque partie, même en perdant.\n\nDépense-les dans l'ATELIER (menu principal) : nouvelles couleurs, plus d'encre, outils de dessin, effets animés..."],
 	"atelier": ["L'Atelier",
 		"Ici tu débloques des choses pour tes prochaines parties.\nConseil : commence par le PACK PRIMAIRE (rouge, bleu, jaune) : les couleurs ouvrent les éléments et les synergies."],
-	# Bandeaux pendant les vagues (non bloquants)
-	"hint_hazard": ["", "Les flaques d'encre te ralentissent, et les traits frais d'un Gribouille font mal !"],
-	"hint_boss": ["", "Un BOSS ! La vague se termine quand il meurt. Suis la grosse flèche rouge s'il sort de l'écran."],
-	"hint_lowhp": ["", "PV bas ! Ils ne remontent pas entre les vagues : cherche une potion en boutique."],
-	"hint_elite": ["", "Un ÉLITE (aura dorée) : 3× plus de PV, mais 3× plus de butin."],
 }
 
 
@@ -54,11 +23,6 @@ static func mark(id: String) -> void:
 	if not Meta.data.has("tips_seen"):
 		Meta.data.tips_seen = {}
 	Meta.data.tips_seen[id] = true
-	Meta.save()
-
-
-static func reset() -> void:
-	Meta.data.tips_seen = {}
 	Meta.save()
 
 

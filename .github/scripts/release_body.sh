@@ -2,8 +2,9 @@
 # Description d'une Release : ce qui compte le plus pour le joueur d'abord, + lien vers le changelog.
 # Usage : release_body.sh <version> [--short]   (écrit sur la sortie standard)
 # - Résumé écrit à la main : .github/release-notes/<version>.md, en 2 parties :
-#     « ## À la une » (3 à 5 points forts, mis en avant) puis « ## Le reste » (dans un bloc à déplier).
-#   --short (annonce Discord) : seulement la une.
+#     « ## À la une » (3 à 5 points forts, mis en avant), « ## Nouveaux objets » (facultatif : une ligne
+#     par amulette / arme / familier ajouté : nom, type et rareté, effet) puis « ## Le reste » (à déplier).
+#   --short (annonce Discord) : la une et les nouveaux objets (toujours annoncés).
 #   Ancien format (sans ces titres) : les 5 premières lignes.
 # - Sans résumé : les 4 derniers titres de commits, puis « … et N autres changements »
 set -euo pipefail
@@ -28,6 +29,13 @@ if [ -f "$NOTES" ] && grep -q '^## À la une' "$NOTES"; then
   # Format « À la une » + « Le reste » : la une est mise en avant, le reste se déplie
   echo "## ✨ À la une"
   sed -n '/^## À la une/,/^## /p' "$NOTES" | sed '/^## /d; /^[[:space:]]*$/d'
+  # Nouveaux objets : toujours affichés, même dans l'annonce Discord (qui retire les lignes « ## »)
+  ITEMS=$(sed -n '/^## Nouveaux objets/,/^## Le reste/p' "$NOTES" | sed '/^## /d; /^[[:space:]]*$/d')
+  if [ -n "$ITEMS" ]; then
+    echo
+    if [ "$SHORT" = "1" ]; then echo "**🆕 Nouveaux objets**"; else echo "## 🆕 Nouveaux objets"; fi
+    echo "$ITEMS"
+  fi
   REST=$(sed -n '/^## Le reste/,$p' "$NOTES" | sed '/^## /d; /^[[:space:]]*$/d')
   if [ "$SHORT" != "1" ] && [ -n "$REST" ]; then
     echo

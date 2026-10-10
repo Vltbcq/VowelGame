@@ -105,6 +105,83 @@ func play(snd: String, pitch_var := 0.08) -> void:
 			return
 
 
+## Quelqu'un frappe à la porte (amulette « La Porte ») : un vrai enregistrement, en stéréo 3D,
+## un peu plus bas que les bruitages (une porte au loin ; sons faits par docs/knock_sfx.py).
+const KNOCKS := 5
+var knock_player: AudioStreamPlayer
+
+
+func knock() -> void:
+	var path := "res://assets/sfx/knock_%d.ogg" % randi_range(1, KNOCKS)
+	if not ResourceLoader.exists(path):
+		return
+	if knock_player == null:
+		knock_player = AudioStreamPlayer.new()
+		knock_player.bus = Meta.BUS_SFX
+		knock_player.volume_db = -6.0
+		add_child(knock_player)
+	knock_player.stream = load(path)
+	knock_player.play()
+
+
+## Rires en boîte : le chat qui rit (assets/sfx/laugh.ogg, découpé de docs/laugh_source.mp3 :
+## ffmpeg -ss 3.95, fondu de sortie 0,3 s, crête à -11 dB). Pas relancé s'il rit encore.
+var laugh_player: AudioStreamPlayer
+
+
+func laugh() -> void:
+	if laugh_player == null:
+		if not ResourceLoader.exists("res://assets/sfx/laugh.ogg"):
+			return
+		laugh_player = AudioStreamPlayer.new()
+		laugh_player.bus = Meta.BUS_SFX
+		laugh_player.volume_db = -6.0
+		laugh_player.stream = load("res://assets/sfx/laugh.ogg")
+		add_child(laugh_player)
+	if not laugh_player.playing:
+		laugh_player.play()
+
+
+## Chapeau de fête : 7 s de musique de fête (assets/music/party.ogg = docs/party_source.ogg à partir de 0:36,
+## « Funky Disco Beats to Boogie/Woogie to » de Fupi, CC0, opengameart.org). La musique de la vague
+## est mise en PAUSE pendant ce temps, puis reprend où elle en était. Sans fichier : la petite fanfare.
+const PARTY_PATH := "res://assets/music/party.ogg"
+const PARTY_SEC := 7.0
+var party_player: AudioStreamPlayer
+var _party_tw: Tween
+var _party_paused: AudioStreamPlayer
+
+
+func party() -> void:
+	if not ResourceLoader.exists(PARTY_PATH):
+		play("win")
+		return
+	if party_player == null:
+		party_player = AudioStreamPlayer.new()
+		party_player.bus = Meta.BUS_MUSIC
+		party_player.stream = load(PARTY_PATH)
+		add_child(party_player)
+	if _party_tw:
+		_party_tw.kill()
+	_party_resume()
+	_party_paused = music_players[_music_i]
+	_party_paused.stream_paused = true
+	party_player.volume_db = MUSIC_DB + 4.0
+	party_player.play()
+	_party_tw = create_tween()
+	_party_tw.tween_interval(PARTY_SEC - 0.4)
+	_party_tw.tween_property(party_player, "volume_db", -60.0, 0.4)
+	_party_tw.tween_callback(func():
+		party_player.stop()
+		_party_resume())
+
+
+func _party_resume() -> void:
+	if _party_paused:
+		_party_paused.stream_paused = false
+		_party_paused = null
+
+
 ## Change de musique avec un fondu (rien si c'est déjà celle-là). "" = silence.
 func music(id: String) -> void:
 	if id == music_now:

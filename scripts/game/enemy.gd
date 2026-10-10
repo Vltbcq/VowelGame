@@ -101,6 +101,7 @@ var shroom_cd := 0.0         # Champignon : délai entre deux nuages
 var slow_t := 0.0
 var chill := 0
 var freeze_t := 0.0
+var dance_t := 0.0         # Chapeau de fête : il danse sur place
 var burn_ticks := 0
 var burn_dmg := 0.0
 var burn_acc := 0.0
@@ -332,7 +333,7 @@ func tick(delta: float) -> void:
 		mult *= 0.7
 	if pin_t > 0.0 and not is_boss:
 		mult = 0.0
-	if freeze_t > 0.0:
+	if freeze_t > 0.0 or dance_t > 0.0:
 		mult = 0.0
 	if slip_t > 0.0:
 		slip_t -= delta
@@ -445,6 +446,9 @@ func tick(delta: float) -> void:
 		body.position.y = -absf(sin(t * 9.0 + phase)) * 1.5 * mult
 	if slip_t > 0.0:
 		body.rotation = t * (14.0 if slide.length() > 20.0 else 4.0)   # il tourne en glissant, puis titube
+	if dance_t > 0.0:
+		body.rotation = sin(t * 12.0 + phase) * 0.45   # C'EST LA FÊTE
+		body.position.y = -absf(sin(t * 12.0 + phase)) * 4.0
 
 	if squash > 0.0:
 		squash = maxf(0.0, squash - delta * 7.0)
@@ -477,6 +481,7 @@ func _on_wall(hit: Vector2) -> void:
 func _status(delta: float) -> void:
 	slow_t -= delta
 	freeze_t -= delta
+	dance_t -= delta
 	mark_t -= delta
 	if burn_ticks > 0:
 		burn_acc += delta
@@ -502,7 +507,9 @@ func _status(delta: float) -> void:
 
 func _update_tint() -> void:
 	var c := Color.WHITE
-	if freeze_t > 0.0:
+	if dance_t > 0.0:
+		c = Color.from_hsv(fmod(floorf(t * 4.0) * 0.17 + phase, 1.0), 0.45, 1.25)   # couleurs de fête, en rythme
+	elif freeze_t > 0.0:
 		c = Color(0.6, 0.85, 1.4)
 	elif poison > 0:
 		c = Color(0.8, 1.25, 0.8)

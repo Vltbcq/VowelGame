@@ -9,8 +9,6 @@ var announce_sub: Label      # ligne sous l'annonce (ex. l'objectif de la comman
 var ann_tw: Tween
 var sub_tw: Tween
 var pause_menu: Control
-var hint_label: Label
-var hint_t := 0.0
 var hurt_flash := 0.0
 var dev_panel: DevPanel     # OUTIL DE DEV (Ctrl+P) — à retirer avant de publier
 var _amulet_btn: Button
@@ -36,12 +34,6 @@ func _ready() -> void:
 	announce_sub.add_theme_color_override("font_outline_color", Pal.INK)
 	announce_sub.modulate.a = 0.0
 	add_child(announce_sub)
-	hint_label = UI.label("", 10, Pal.TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-	hint_label.position = Vector2(60, 300)
-	hint_label.size = Vector2(520, 14)
-	hint_label.add_theme_stylebox_override("normal", UI.sb(Color(Pal.BG, 0.85), Pal.ACCENT, 1, 8, 3))
-	hint_label.visible = false
-	add_child(hint_label)
 	# Afficher / cacher les amulettes sur ton perso (réglage gardé d'une partie à l'autre)
 	var ab := UI.button("", _toggle_amulets)
 	ab.tooltip_text = "Afficher ou cacher les amulettes posées sur ton perso"
@@ -50,12 +42,6 @@ func _ready() -> void:
 	_refresh_amulet_btn()
 	order_label = UI.label("", 10, Pal.ACCENT)
 	UI.put(self, order_label, Vector2(8, 70), Vector2(300, 12))
-	if Run.wave == 1:
-		var holder := Control.new()
-		holder.set_anchors_preset(Control.PRESET_FULL_RECT)
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(holder)
-		(func(): Tips.show(holder, "controls", true)).call_deferred()
 
 
 func _toggle_amulets() -> void:
@@ -81,37 +67,6 @@ func _process(delta: float) -> void:
 	else:
 		order_label.text = "Commande : %s (%d/%d)" % [o.text, int(o.progress), int(o.n)]
 	draw_layer.queue_redraw()
-	if hint_t > 0.0:
-		hint_t -= delta
-		if hint_t <= 0.0:
-			hint_label.visible = false
-	_check_hints()
-
-
-## Petit bandeau de conseil en bas de l'écran (une seule fois, sans mettre en pause).
-func hint(id: String) -> void:
-	if not Tips.enabled() or Tips.seen(id) or hint_t > 0.0:
-		return
-	Tips.mark(id)
-	hint_label.text = Tips.TEXT[id][1]
-	hint_label.visible = true
-	hint_t = 6.0
-
-
-func _check_hints() -> void:
-	if arena == null or arena.player == null or arena.ended:
-		return
-	var p := arena.player
-	if arena.hazard_effect(p.position, p.radius)[0] < 1.0:
-		hint("hint_hazard")
-	if arena.boss and is_instance_valid(arena.boss):
-		hint("hint_boss")
-	if p.hp < p.max_hp * 0.3:
-		hint("hint_lowhp")
-	for e in arena.enemies:
-		if e.elite:
-			hint("hint_elite")
-			break
 
 
 func announce(text: String, color: Color, sub := "") -> void:
@@ -178,7 +133,7 @@ func _draw_hud() -> void:
 	if arena.dark_t > 0.0:
 		var a := clampf(arena.dark_t, 0.0, 1.0) * clampf((6.0 - arena.dark_t) * 2.0, 0.0, 1.0)
 		var sp: Vector2 = arena.get_viewport().get_canvas_transform() * arena.player.global_position
-		var r := 44.0 * arena.cam.zoom.x
+		var r: float = arena.dark_r * arena.cam.zoom.x
 		var ink := Color(0.05, 0.04, 0.08, 0.95 * a)
 		# Bord doux du cercle de lumière
 		for k in 8:
@@ -217,6 +172,7 @@ func _draw_hud() -> void:
 	if arena == null or arena.player == null:
 		return
 	var p := arena.player
+	_draw_party()
 	_draw_arrows()
 	var hp_txt := "♥ %d / %d" % [ceili(maxf(0.0, p.hp)), int(p.max_hp)]
 	if p.erase_mult < 1.0:
@@ -239,6 +195,51 @@ func _draw_hud() -> void:
 	if b and is_instance_valid(b) and not b.dead:
 		_text(Vector2(0, 334), b.def.name, Pal.BAD, 10, 640, HORIZONTAL_ALIGNMENT_CENTER)
 		_bar(Vector2(170, 340), Vector2(300, 8), b.hp / b.max_hp, Pal.BAD)
+
+
+## Chapeau de fête : pendant la fête, la salle s'assombrit, des spots colorés balayent la page,
+## une boule à facettes descend et il pleut des confettis (tout en repère écran 640×360).
+const PARTY_COLS := [Color("e84a4a"), Color("3a86ff"), Color("f0c43a"), Color("4caf50"), Color("c071f0"), Color("ff8ad0")]
+
+
+func _draw_party() -> void:
+	if arena.party_t <= 0.0:
+		return
+	var t: float = Arena.PARTY_SEC - arena.party_t
+	var a := clampf(t / 0.3, 0.0, 1.0) * clampf(arena.party_t / 0.5, 0.0, 1.0)   # entrée / sortie en fondu
+	var beat := pow(1.0 - fmod(t * Arena.PARTY_BEAT, 1.0), 2.0)
+	draw_layer.draw_rect(Rect2(0, 0, 640, 360), Color(0.06, 0.03, 0.12, 0.32 * a))
+	# Spots : de gros ronds de lumière qui balayent la page
+	for k in 6:
+		var c: Color = PARTY_COLS[k]
+		var p := Vector2(320.0 + sin(t * (0.9 + 0.23 * k) + k * 1.7) * 280.0, 190.0 + cos(t * (1.3 + 0.17 * k) + k * 2.3) * 130.0)
+		for r in 3:
+			draw_layer.draw_circle(p, 62.0 - r * 16.0, Color(c, (0.08 + 0.05 * beat) * a))
+	# Boule à facettes : elle descend, tourne, et renvoie de petits reflets
+	var by := lerpf(-20.0, 34.0, clampf(t / 0.5, 0.0, 1.0)) - 60.0 * (1.0 - clampf(arena.party_t / 0.4, 0.0, 1.0))
+	var bc := Vector2(430.0, by)   # (à droite du titre : le compte à rebours de la vague reste lisible)
+	draw_layer.draw_line(Vector2(bc.x, 0), bc, Color(0.75, 0.75, 0.8, a), 1.0)
+	draw_layer.draw_circle(bc, 15.0, Color(0.12, 0.1, 0.18, a))
+	draw_layer.draw_circle(bc, 14.0, Color(0.55, 0.58, 0.68, a))
+	for fy in range(-2, 3):
+		for fx in range(-3, 4):
+			var q := Vector2(fx * 4.4 + fmod(t * 9.0, 4.4) - 2.2, fy * 5.0)
+			if q.length() > 12.0:
+				continue
+			var lit := (fx + fy + int(t * 6.0)) % 3 == 0
+			draw_layer.draw_rect(Rect2(bc + q - Vector2(1.5, 1.5), Vector2(3, 3)), Color(1, 1, 1, (0.95 if lit else 0.3) * a))
+	for k in 14:
+		var ang := t * 1.6 + k * TAU / 14.0
+		var rp := Vector2(320.0, by) + Vector2(cos(ang) * (90.0 + 26.0 * (k % 5)) * 1.7, absf(sin(ang)) * (70.0 + 22.0 * (k % 4)) + 20.0)
+		draw_layer.draw_rect(Rect2(rp - Vector2(2, 2), Vector2(4, 4)), Color(1, 1, 0.9, (0.35 + 0.4 * beat) * a))
+	# Pluie de confettis (chacun a sa colonne, sa vitesse et sa couleur ; ils tournent en tombant)
+	for k in 90:
+		var sx := fmod(k * 73.13, 640.0)
+		var spd := 70.0 + fmod(k * 37.7, 80.0)
+		var y := fmod(t * spd + fmod(k * 51.9, 400.0), 400.0) - 20.0
+		var x := sx + sin(t * 3.0 + k) * 8.0
+		var w := 1.0 + 2.5 * absf(sin(t * 6.0 + k * 0.9))   # il tourne : sa largeur change
+		draw_layer.draw_rect(Rect2(x - w / 2.0, y, w, 4.0), Color(PARTY_COLS[k % PARTY_COLS.size()], 0.9 * a))
 
 
 ## Flèches au bord de l'écran vers les ennemis hors champ.
@@ -270,6 +271,8 @@ func _draw_arrows() -> void:
 		elif e.position.distance_to(arena.player.position) > 240.0:
 			continue
 		var dir := (e.position - center).normalized()
+		if not cam.ignore_rotation:
+			dir = dir.rotated(-cam.rotation)   # Tête à l'envers : l'écran est retourné
 		# Point sur le bord de l'écran (repère de l'écran 640x360)
 		var sc := Vector2(320, 180)
 		var k := minf((320.0 - 14.0) / maxf(absf(dir.x), 0.001), (180.0 - 14.0) / maxf(absf(dir.y), 0.001))

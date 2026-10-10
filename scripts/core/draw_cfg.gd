@@ -54,8 +54,8 @@ static func enemy(id: String) -> Dictionary:
 	return cfg
 
 
-## Aquarelle et plus : chaque type d'ennemi a une couleur imposée (au moins la moitié des pixels
-## de couleur, le noir et les gris ne comptent pas).
+## Aquarelle et plus : chaque type d'ennemi a une couleur imposée (elle doit être la couleur dominante,
+## comme l'élément de l'ennemi : le noir ne compte pas).
 static func _need_color(cfg: Dictionary, id: String) -> void:
 	if not Run.active:
 		return
@@ -63,7 +63,7 @@ static func _need_color(cfg: Dictionary, id: String) -> void:
 	if el <= 0:
 		return
 	cfg.need_el = el
-	cfg.sub = ("COULEUR IMPOSÉE : %s (au moins la moitié de la couleur).  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]).strip_edges()
+	cfg.sub = ("COULEUR IMPOSÉE : %s.  %s" % [String(Pal.NAMES[el]).to_upper(), cfg.sub]).strip_edges()
 
 
 ## Un dessin de la galerie peut-il servir sur cette toile ? "" si oui, sinon la raison.
@@ -84,12 +84,9 @@ static func color_issue(cfg: Dictionary, img: Image) -> String:
 	if not cfg.has("need_el") or img == null:
 		return ""
 	var el := int(cfg.need_el)
-	var frac: Array = Analyzer.analyze(img).get("frac", [])
-	if frac.is_empty():
-		return ""
-	var colored := 1.0 - float(frac[0])
-	if colored <= 0.0 or float(frac[el]) < colored * 0.5 - 0.0001:
-		return "Couleur imposée : au moins la moitié en %s" % Pal.NAMES[el]
+	# (la même règle que l'élément de l'ennemi : sa couleur dominante)
+	if int(Analyzer.analyze(img).dominant) != el:
+		return "Couleur imposée : %s doit être la couleur dominante" % Pal.NAMES[el]
 	return ""
 
 

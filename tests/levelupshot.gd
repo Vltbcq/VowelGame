@@ -1,6 +1,6 @@
 extends Node
 ## Capture : écran de montée de niveau (3 bonus + les stats du perso à droite).
-## Godot --path . res://tests/levelupshot.tscn -- <capture.png>
+## Godot --path . res://tests/levelupshot.tscn -- <capture.png> [amulette]
 
 
 func _ready() -> void:
@@ -18,6 +18,13 @@ func _ready() -> void:
 	Run.levelup_choices = [{"stat": "luck", "v": 5.0, "rar": 0, "text": "+5 chance"},
 		{"stat": "atk_speed", "v": 5.0, "rar": 0, "text": "+5% vit. d'attaque"},
 		{"stat": "harvest", "v": 3.0, "rar": 0, "text": "+3 pourboire"}]
+	# [amulette] : avec cette amulette (palimpseste = 2 choix doublés, encrier = 4 choix), vrai tirage
+	var args := OS.get_cmdline_user_args()
+	if args.size() > 1:
+		Run.set_amulet_art(args[1], img, "")
+		Run.add_amulet(args[1], img, Vector2i(30, 30))
+		seed(3)
+		Run.levelup_choices = []
 	var s := LevelUpScreen.new()
 	s.size = Vector2(640, 360)
 	add_child(s)

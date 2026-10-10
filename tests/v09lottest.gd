@@ -82,11 +82,11 @@ func _ready() -> void:
 	Meta.data = saved
 
 	# --- Familiers à débloquer
-	var locked := ["pie", "perroquet", "fantome", "paon", "pavel", "teemeo", "chimere"]
+	var locked := ["pie", "pigeon", "perroquet", "fantome", "paon", "pavel", "teemeo", "chimere"]
 	var all_cond := true
 	for id in locked:
 		all_cond = all_cond and ItemUnlockDB.CONDS.has("f:" + id)
-	_check(all_cond and FamiliarDB.LIST.size() == 14, "7 familiers sur 14 à débloquer")
+	_check(all_cond and FamiliarDB.LIST.size() == 15, "8 familiers sur 15 à débloquer")
 	_check(ItemUnlockDB.met(ItemUnlockDB.CONDS["f:chimere"], {"pets": 5}) and not ItemUnlockDB.met(ItemUnlockDB.CONDS["f:chimere"], {"pets": 4}), "Chimère : 5 familiers en même temps")
 	_check(ItemUnlockDB.met(ItemUnlockDB.CONDS["f:paon"], {"pets": 3, "cleared": 10}), "Paon : vague 10 avec 3 familiers")
 

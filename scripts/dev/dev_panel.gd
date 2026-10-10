@@ -335,6 +335,7 @@ func _give_amulet(id: String) -> void:
 	Run.add_amulet(id, img, pos)
 	_refresh_stats()
 	arena.player.refresh_image()
+	arena.sync_amulets()   # (Tête à l'envers : tout de suite)
 	arena.float_text(arena.player.position + Vector2(0, -26), "DEV : " + String(def.name), Pal.GOOD)
 	_build()
 

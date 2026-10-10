@@ -84,6 +84,16 @@ func _init(c: Dictionary) -> void:
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	var s: Vector2i = cfg.size
+	# Dessin de départ plus grand que la toile (pris dans la galerie pour le modifier) : la toile
+	# s'agrandit pour le montrer entier, un cadre montre la taille permise (cfg.fit) et on ne
+	# peut valider que quand tout le dessin tient dedans
+	if cfg.get("base") != null:
+		var u: Vector2i = (cfg.base as Image).get_used_rect().size
+		if u.x > s.x or u.y > s.y:
+			cfg = cfg.duplicate()   # (la config de l'appelant garde sa vraie taille)
+			cfg.fit = s
+			s = Vector2i(maxi(s.x, u.x), maxi(s.y, u.y))
+			cfg.size = s
 	img = Image.create_empty(s.x, s.y, false, Image.FORMAT_RGBA8)
 	if cfg.get("base") != null:
 		_blit_centered(cfg.base)
@@ -96,13 +106,6 @@ func _ready() -> void:
 	_build_ui()
 	_recount()
 	_changed()
-	var tip: String = {"character": "draw_perso", "melee": "draw_weapon", "ranged": "draw_weapon",
-		"bullet": "draw_bullet", "enemy": "draw_enemy", "boss": "draw_enemy", "amulet": "draw_amulet",
-		}.get(cfg.kind, "")
-	if tip != "":
-		Tips.show(self, tip)
-	if Meta.elements().size() > 1:
-		Tips.show(self, "colors")
 
 
 # ------------------------------------------------------------------ Interface
@@ -1050,16 +1053,32 @@ func _validate() -> void:
 	if Analyzer.count_pixels(img) < int(cfg.get("min", 1)):
 		_warn("Dessine un peu plus !")
 		return
+	if cfg.has("fit"):
+		var u := img.get_used_rect().size
+		if u.x > cfg.fit.x or u.y > cfg.fit.y:
+			_warn("Trop grand : ton dessin doit tenir dans le cadre rouge (%d×%d) !" % [cfg.fit.x, cfg.fit.y])
+			return
 	if used > eff_budget():
 		_warn("Trop d'encre !")
 		return
 	if used < int(cfg.get("min_ink", 0)):
 		_warn("Encore %d d'encre à utiliser (95%% minimum) !" % (int(cfg.min_ink) - used))
 		return
+	var lc := Meta.locked_colors(img)
+	if not lc.is_empty():
+		_warn("Couleurs pas encore débloquées : " + ", ".join(lc) + " !")
+		return
 	var ci := DrawCfg.color_issue(cfg, img)
 	if ci != "":
 		_warn(ci + " !")
 		return
+	if cfg.has("fit"):
+		# il tient dans le cadre : on le remet sur une toile de la vraie taille, centré
+		var t := Analyzer.trim(img)
+		var fit_img := Image.create_empty(cfg.fit.x, cfg.fit.y, false, Image.FORMAT_RGBA8)
+		@warning_ignore("integer_division")
+		fit_img.blit_rect(t, Rect2i(Vector2i.ZERO, t.get_size()), (Vector2i(cfg.fit) - t.get_size()) / 2)
+		img = fit_img
 	Meta.add_to_gallery(cfg.get("gallery", cfg.kind), img, effect)
 	Sfx.play("buy")
 	done.emit({"image": img, "effect": effect, "outline": outline})
@@ -1095,15 +1114,29 @@ func _open_gallery() -> void:
 		var th := UI.thumb(gi, Vector2(44, 44))
 		th.position = Vector2(4, 4)
 		b.add_child(th)
-		var block := DrawCfg.gallery_block(cfg, gi)
-		if not ok or not fits or block != "":
-			b.disabled = true
-			b.tooltip_text = block if block != "" else "Trop d'encre (%d)" % cost
+		# Pas utilisable tel quel : pâli, mais on peut quand même le charger et le retoucher
+		# (la validation refuse tant que ce n'est pas réglé)
+		var issue := DrawCfg.gallery_block(cfg, gi)
+		if issue == "" and not (ok and fits):
+			issue = "Trop d'encre (%d)" % cost
+		if issue == "":
+			issue = DrawCfg.color_issue(cfg, gi)
+		b.tooltip_text = "Encre : %d" % cost
+		var too_big := gi.get_used_rect().size.x > s.x or gi.get_used_rect().size.y > s.y
+		if too_big:
+			# (ici il serait coupé : on le prend depuis l'écran de choix, qui ouvre une toile agrandie)
 			th.modulate = Color(1, 1, 1, 0.3)
-		else:
-			b.tooltip_text = "Encre : %d" % cost
+			b.tooltip_text = "Trop grand pour cette toile\n(choisis-le avant de dessiner, puis « Modifier »)"
+		elif issue != "":
+			th.modulate = Color(1, 1, 1, 0.3)
+			b.tooltip_text = "%s\n(tu peux le charger et le retoucher)" % issue
+		if not too_big:
 			var entry: Dictionary = e
 			b.pressed.connect(func(): _load_gallery(entry, gi))
+		if cfg.has("need_el"):
+			var ic := BestiaryPrompt._el_icon(int(Analyzer.analyze(gi).dominant), 13)
+			ic.position = Vector2(37, 2)
+			b.add_child(ic)
 		grid.add_child(b)
 		shown += 1
 	if shown == 0:
