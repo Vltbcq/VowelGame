@@ -1597,29 +1597,10 @@ func _open_patron(i: int) -> void:
 
 # ------------------------------------------------------------------ Case opening (caisses façon CS:GO)
 
+## Icône d'une caisse (bois, argent, or, diamant × armes / amulettes) : images faites par docs/case_icons.py.
 func _case_icon(tier: int, kind: String) -> Image:
-	var n := 32
-	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
-	var body: Color = [Color("a0692f"), Color("c9d0d8"), Color("e8b53a"), Color("8eeaf5")][tier]
-	var dark: Color = [Color("5a3818"), Color("6a7078"), Color("8c6414"), Color("2a8aa0")][tier]
-	img.fill_rect(Rect2i(3, 9, 26, 19), dark)
-	img.fill_rect(Rect2i(4, 10, 24, 17), body)
-	img.fill_rect(Rect2i(3, 9, 26, 5), dark)       # couvercle
-	img.fill_rect(Rect2i(4, 10, 24, 3), body.lightened(0.15))
-	img.fill_rect(Rect2i(14, 12, 4, 5), Pal.INK)    # serrure
-	img.fill_rect(Rect2i(15, 13, 2, 2), GOLD)
-	# emblème : épée (armes) ou pendentif (amulettes)
-	if kind == "weapon":
-		for k in 8:
-			img.set_pixel(12 + k, 25 - k, Pal.INK)
-		img.fill_rect(Rect2i(11, 22, 4, 1), Pal.INK)
-	else:
-		for y in range(19, 26):
-			for x in range(12, 21):
-				if Vector2(x - 16, y - 22.5).length() < 3.3:
-					img.set_pixel(x, y, Pal.INK)
-		img.fill_rect(Rect2i(15, 18, 2, 2), Pal.INK)
-	return img
+	var tex := load("res://assets/ui/cases/case_%d_%s.png" % [tier, "weapon" if kind == "weapon" else "amulet"]) as Texture2D
+	return tex.get_image() if tex else Gfx.icon(Gfx.ICON_UNKNOWN)
 
 
 func _open_case(i: int) -> void:
