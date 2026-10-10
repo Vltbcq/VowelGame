@@ -7,3 +7,9 @@ builds/
 *.exe
 *.pck
 *.zip
+
+# Outil de dev (Ctrl+P) et son test : seulement sur l'ordinateur du développeur, jamais publiés
+scripts/dev/
+tests/devtest.gd
+tests/devtest.gd.uid
+tests/devtest.tscn

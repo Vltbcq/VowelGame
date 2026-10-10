@@ -62,3 +62,8 @@ else
 fi
 echo
 echo "▶ Télécharge \`PaintIt.exe\` (ou \`PaintIt-windows.zip\`, plus léger). Si Windows bloque : *Informations complémentaires* → *Exécuter quand même*."
+# Linux / SteamOS : seulement si cette version a bien l'archive (fichier juste construit, ou HAS_LINUX=1
+# quand la description d'une Release existante est réécrite)
+if [ -f builds/PaintIt-linux.tar.gz ] || [ "${HAS_LINUX:-0}" = "1" ]; then
+  echo "▶ Linux / Steam Deck : \`PaintIt-linux.tar.gz\` (décompresse, puis lance \`PaintIt.x86_64\`)."
+fi

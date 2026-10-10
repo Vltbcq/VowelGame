@@ -1,6 +1,8 @@
 name: Release
 
-# Exporte le jeu (Windows) sur les serveurs de GitHub et publie une Release avec le .exe et le zip.
+# Exporte le jeu (Windows, et Linux / SteamOS) sur les serveurs de GitHub et publie une Release avec
+# le .exe, le zip Windows et l'archive Linux. Si l'export Linux échoue, la Release sort quand même
+# avec Windows seul (avertissement dans le journal).
 # - À la main : onglet Actions > Release > Run workflow. Le numéro est calculé TOUT SEUL
 #   à partir du dernier tag : « contenu » v0.4 → v0.5, « correctif » v0.4 → v0.4.1 (v0.4.1 → v0.4.2).
 #   Le passage en v1.0 ne se fait jamais tout seul : il faut le saisir dans « version précise ».
@@ -99,6 +101,33 @@ jobs:
           test -s builds/PaintIt.exe
           cd builds && zip -q PaintIt-windows.zip PaintIt.exe && ls -la
 
+      - name: Exporter le jeu (Linux / SteamOS) et vérifier qu'il démarre
+        id: linux
+        continue-on-error: true   # un souci Linux ne bloque jamais la sortie Windows
+        run: |
+          timeout 600 "$RUNNER_TEMP/godot" --headless --path . --export-release "Linux" builds/PaintIt.x86_64
+          test -s builds/PaintIt.x86_64
+          chmod +x builds/PaintIt.x86_64
+          cd builds
+          # Test de démarrage : le jeu tourne 300 images sans écran, puis se ferme tout seul.
+          # (dossier de sauvegarde à part, pour ne rien laisser traîner)
+          HOME="$RUNNER_TEMP/linux_home" XDG_DATA_HOME="$RUNNER_TEMP/linux_home/data" \
+            timeout 120 ./PaintIt.x86_64 --headless --quit-after 300 > linux_run.log 2>&1 || { cat linux_run.log; echo "Le jeu Linux ne démarre pas."; exit 1; }
+          cat linux_run.log
+          if grep -q "SCRIPT ERROR\|Parse Error\|Failed to load" linux_run.log; then
+            echo "Erreurs au démarrage du jeu Linux."
+            exit 1
+          fi
+          # .tar.gz : garde le droit d'exécution (un zip le perd)
+          tar -czf PaintIt-linux.tar.gz PaintIt.x86_64
+          ls -la
+
+      - name: "Linux en échec : la Release sort avec Windows seul"
+        if: steps.linux.outcome != 'success'
+        run: |
+          rm -f builds/PaintIt-linux.tar.gz
+          echo "::warning::L'export Linux a échoué : cette Release ne contient que Windows. Voir l'étape « Exporter le jeu (Linux / SteamOS) »."
+
       - name: Écrire la description (résumé court + lien vers le changelog détaillé)
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
@@ -116,6 +145,7 @@ jobs:
           files: |
             builds/PaintIt.exe
             builds/PaintIt-windows.zip
+            builds/PaintIt-linux.tar.gz
 
   discord:
     # Une fois la Release publiée : annonce dans le salon Discord (si le secret DISCORD_WEBHOOK existe)

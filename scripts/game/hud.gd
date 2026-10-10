@@ -10,7 +10,10 @@ var ann_tw: Tween
 var sub_tw: Tween
 var pause_menu: Control
 var hurt_flash := 0.0
-var dev_panel: DevPanel     # OUTIL DE DEV (Ctrl+P) — à retirer avant de publier
+## OUTIL DE DEV (Ctrl+P) : le dossier scripts/dev/ n'est PAS dans le dépôt (.gitignore). Il n'existe
+## que sur l'ordinateur du développeur ; sans lui (versions publiées), Ctrl+P ne fait rien.
+const DEV_PATH := "res://scripts/dev/dev_panel.gd"
+var dev_panel: Control
 var _amulet_btn: Button
 var order_label: Label      # Carnet de commandes : la commande de la vague et où tu en es
 
@@ -289,7 +292,7 @@ func _draw_arrows() -> void:
 
 
 func _unhandled_input(ev: InputEvent) -> void:
-	if DevPanel.ENABLED and ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_P and ev.ctrl_pressed:
+	if ev is InputEventKey and ev.pressed and not ev.echo and ev.keycode == KEY_P and ev.ctrl_pressed and ResourceLoader.exists(DEV_PATH):
 		toggle_dev()
 		get_viewport().set_input_as_handled()
 		return
@@ -311,9 +314,11 @@ func toggle_dev() -> void:
 		return
 	if arena.ended or pause_menu:
 		return
+	if not ResourceLoader.exists(DEV_PATH):
+		return
 	get_tree().paused = true
-	dev_panel = DevPanel.new()
-	dev_panel.arena = arena
+	dev_panel = (load(DEV_PATH) as GDScript).new()
+	dev_panel.set("arena", arena)
 	add_child(dev_panel)
 
 
